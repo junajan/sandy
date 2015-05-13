@@ -1,0 +1,31 @@
+<div class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" ng-click="close('Cancel')" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" ng-if="!event.id">{{ 'CALENDAR.ADD_EVENT' | translate }}</h4>
+        <h4 class="modal-title" ng-if="event.id">{{ 'CALENDAR.EDIT_EVENT' | translate }}</h4>
+      </div>
+      <div class="modal-body">
+        <form class="eventEdit">
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label>Name:</label>
+                    <input type="text" ng-model="info.var" name="var" placeholder="Variable name" class="form-control" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label>Value:</label>
+                    <input name="value" datepicker ng-model="info.val" placeholder="Variable value" class="form-control" />
+                </div>
+            </div>
+        </form> 
+      </div>
+      <div class="modal-footer">
+        <button type="button" ng-click="close(0)" class="btn btn-default" data-dismiss="modal">{{ 'CANCEL' | translate }}</button>
+        <button type="button" ng-click="save(event)" class="btn btn-primary">{{ 'SAVE' | translate }}</button>
+      </div>
+    </div>
+  </div>
+</div>

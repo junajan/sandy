@@ -1,0 +1,68 @@
+// Strategie 90% uspesnosti podle winpes.cz
+
+#include <IndexComponents.afl>
+
+SetTradeDelays( 0, 0, 0, 0 );
+SetOption( "AllowSameBarExit", False );
+SetBacktestMode( backtestRegularRaw );
+
+BuySig = ( C > MA(C, 200) ) AND ( RSI(2) < 10 ) AND ( InSP100(Name(), Year()));						// pominka pro prvotni otevreni pozice
+bi = BarIndex();
+SellSig = C > MA(C,5) OR (bi == LastValue(bi));															// prodat symbol pri C>MA(5) nebo tesne pred delistovanim
+FirstBuySig = ExRem( BuySig, SellSig );
+SellSig = ExRem( SellSig, BuySig );
+InTrade = Ref( Flip( BuySig, SellSig ), -1 );															// po tuto dobu se da dokupovat
+   
+Buy = IIf( BuySig OR InTrade, sigScaleIn, 0);															// prvotni nakup a dokupovani sdruzime pod signal scaleIn, backtester si to rozdeli podle BuySig
+Sell = SellSig;
+PositionSize = 1;
+PositionScore = 100 - RSI( 2 );																			// øazení signálù, èím menší RSI(2), tím vyšší priorita
+StaticVarSet( "BuySignal" + Name(), BuySig );															// statické promìnné, které bude potøebovat custom backtester
+StaticVarSet( "ClosePrice" + Name(), Close );
+Short = Cover = False;
+
+SetOption( "UseCustomBacktestProc", True );
+SetCustomBacktestProc( "" );
+if ( Status( "action" ) == actionPortfolio ) {															// v custom backtester se bude øešit money management a dokupovani do pozic
+    bo = GetBacktesterObject();
+    bo.PreProcess();
+    for ( bar = 0; bar < BarCount; bar++ ) {
+        n = 0;
+        for ( sig = bo.GetFirstSignal( bar ); sig; sig = bo.GetNextSignal( bar ) ) {
+            if (( sig.Type == 1 ) OR ( sig.Type == 5 )) {                                                // pouze signaly scaleIn a Buy
+            
+                pos = bo.FindOpenPos( sig.Symbol );
+                if ( IsNull( pos ) ) {																	// pokud symbol jeste nema otevrenou pozici
+                
+                    bsig = StaticVarGet("BuySignal" + sig.Symbol); 
+                    cprice = StaticVarGet("ClosePrice" + sig.Symbol);
+                    if ( bsig[bar] AND (n++ < 1)) { 													// pokud se dnes muze uskutecnit provotni nakup tj. C>MA(200) AND RSI(2)<10
+                    																					// tak nakup za 5% kapitalu
+                        StaticVarSet("ScaleInCount" + sig.Symbol, 0 );                                  // do staticke promenne si uloz nakupni cenu a pocet škálování=0
+                        StaticVarSet("LastEntryPrice" + sig.Symbol, cprice[bar]);                      
+                        sig.PosSize = -5;
+                    } else {
+                        sig.PosSize = 0;
+                    }
+                } else {																					// symbol uz ma otevrenou pozici
+                
+                    if ( pos.GetPrice( bar, "C" ) < StaticVarGet("LastEntryPrice" + sig.Symbol) ) {		// pokud je aktualni cena nizsi nez predchozi nakup, muzeme dokupovat
+                    
+                      sic = StaticVarGet("ScaleInCount" + sig.Symbol);									// zjistime, kolikate dokupovani to je
+                      sig.PosSize = -10;																// pro první dokupovaní máme 10% kapitálu
+                      if (sic > 1) sig.PosSize = -15;                                                   // pro druhé dokupovaní máme 15% kapitálu
+                      if (sic > 2) sig.PosSize = -20;                                                   // pro tøetí dokupování máme 20% kapitálu
+                      if (sic > 3) sig.PosSize = 0;                                                     // další dokupování není povoleno
+                      if (Abs(sic % 1) > 0.25) StaticVarSet("LastEntryPrice" + sig.Symbol, pos.GetPrice( bar, "C" ));
+                      sic = sic +0.501;																	// backtester tudy projde dvakrát bìhem jednoho baru, proto pricitame 0.5
+                      StaticVarSet("ScaleInCount" + sig.Symbol, sic);                                   // ulozime si novy stav dokupovani
+                    } else {
+                      sig.PosSize = 0;
+                    }
+                }
+            }
+        }
+        bo.ProcessTradeSignals(bar);
+    }
+    bo.PostProcess();
+}

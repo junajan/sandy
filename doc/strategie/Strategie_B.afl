@@ -1,0 +1,35 @@
+// Strategie_B
+// Swingova mean reversion strategie typu stock-picking
+
+#include <IndexComponents.afl>
+
+SetTradeDelays( 0, 0, 0, 0 );
+SetOption("AllowSameBarExit", False);
+SetOption("ActivateStopsImmediately", False);
+
+SetOption("UseCustomBacktestProc", True );
+SetCustomBacktestProc("");
+if( Status("action") == actionPortfolio ) {
+  bo = GetBacktesterObject();
+  bo.PreProcess();
+  for( bar = 0; bar < BarCount; bar++ ) {
+    // pouze jedna nova pozice denne
+    // projde vsechny pozice splnujici oteviraci podminku a vynuluje vsechny krome te prvni
+    n = 0; 
+    for( sig = bo.GetFirstSignal(bar); sig; sig = bo.GetNextSignal(bar)) {
+      // vynuluje velikost nakupovane pozice - takze se nakupo neprovede
+      if (sig.IsEntry()) { if (n++ > 0) sig.PosSize = 0; }
+    }
+    bo.ProcessTradeSignals( bar );
+  }
+  bo.PostProcess();
+}
+
+Buy = (C > MA(C,200)) AND (RSI(2) < 10) AND (InSP100(Name(), Year()));  // alternativne pouzit InNASDAQ100 nebo InDOW30
+bi = BarIndex();
+Sell = (bi == LastValue(bi));
+PositionScore = 1 / RSI(2);
+PositionSize = -33;
+ApplyStop(stopTypeNBar, stopModeBars, 4);
+ApplyStop(stopTypeProfit, stopModePercent, 1);
+
