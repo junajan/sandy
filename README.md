@@ -15,5 +15,4 @@ This project is simple node.js tool for backtesting and trading strategies on st
 * Broker connection for paper/live trading (in future)
 
 ### Contacts ###
-Web: http://janjuna.cz
-Mail: mail@janjuna.cz
+Web: http://janjuna.cz | Mail: mail@janjuna.cz
