@@ -222,7 +222,7 @@ var Strategy = function(app) {
 					console.log(pos);
 					console.log(indicators);
 
-					console.log("CLOSE: ", pos.amount, "x ", pos.ticker, " price "+ indicators.price + " > SMA5 " +Math.round(indicators.sma5, 2) + " PROFIT: ", Math.round(indicators.price - pos.open_price,8));
+					console.log("CLOSE: ", pos.amount, "x ", pos.ticker, " price ", indicators.price, " > SMA5 ", Math.round(indicators.sma5, 2) ," PROFIT: ", Math.round(indicators.price - pos.open_price,8));
 
 					DB.update("positions", {
 						sell_import_id: config.importId,
@@ -338,6 +338,11 @@ var Strategy = function(app) {
  					// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
 					// https://www.youtube.com/watch?v=TU6ioRUCJSU
 					// pseudokod: http://www.investujeme.cz/rsi-hledani-sily-na-trhu/
+			}
+
+			if(config.indicators[ticker].rsi === false) {
+				delete config.data[ticker];
+				delete config.indicators[ticker];
 			}
 		}
 		done(null, config);

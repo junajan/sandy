@@ -26,6 +26,12 @@ function reportDay(info) {
 function reportAll(info) {
 }
 
+// var IB = require('./modules/IBApi2')(app);
+// IB.connect();
+// IB.getTime();
+// IB.disconnect();
+
+
 
 var Backtest = require('./modules/Backtest')(Strategy);
 Backtest.wipe(function() {

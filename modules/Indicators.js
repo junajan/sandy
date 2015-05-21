@@ -57,7 +57,7 @@ exports.rsiWilders = function(len, data) {
 exports.rsi = function(len, data) {
 
     if (data.length < len)
-        throw "Not enought data for RSI"
+        return false;
 
     var ups = [];
     var avgups = [];
