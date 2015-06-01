@@ -10,12 +10,13 @@ var Strategy = function(app) {
 	var Tickers = require('./Tickers');
 	var Yahoo = require('./HistYahoo');
 
+	var _INIT_CAPITAL = 210000;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
 	var _smaExitLen = 5;
 	var _maxPositionSize = 10; // 1 + 2 + 3 + 4 = 10 (max 2 fully loaded stocks will be bought)
-	var _rsiLen	= 14;
+	var _rsiLen	= 2;
 	var _minRSI	= 10;
 	var _rsiWildersLen	= 2;
 	var _dataLen = _smaEntryLen + app.get("conf").dateOffset;
@@ -46,7 +47,7 @@ var Strategy = function(app) {
 	};
 
 	this.clearPreviousData = function(config, done) {
-		console.log("Removing previous data imports");
+		// console.log("Removing previous data imports");
 
 		if(config.dontPersist) return done(null, 1);
 		DB.delete("stock_history", "import_id < (SELECT MAX(import_id) FROM import_batch) - 3", done);
@@ -139,7 +140,7 @@ var Strategy = function(app) {
 		var dateTo = self.getWeekDaysInPast(1, config.date);
 		var tickers = "'"+config.tickers.join("','")+"'";
 
-		console.log("Reading history data from "+dateFrom +" to " + dateTo);
+		// console.log("Reading history data from "+dateFrom +" to " + dateTo);
 
 		if(config.internalHistory)
 			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
@@ -170,7 +171,7 @@ var Strategy = function(app) {
 	};
 
 	this.printState = function(config, state) {
-		console.log(("Current: Date: "+self.getDate(config.date)+" Equity: "+ Math.round(state.current_capital, 2)+ " Unused: "+ Math.round(state.unused_capital, 2)+ " Free pieces: "+ state.free_pieces).yellow);
+		console.log(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
 	}
 
 	this.saveCurrentState = function(config, done) {
@@ -219,10 +220,9 @@ var Strategy = function(app) {
 				async.each(Object.keys(config.closePositions), function(ticker, done) {
 					var pos = config.closePositions[ticker];
 					var indicators = config.indicators[ticker];
-					console.log(pos);
-					console.log(indicators);
-
-					console.log("CLOSE: ", pos.amount, "x ", pos.ticker, " price ", indicators.price, " > SMA5 ", Math.round(indicators.sma5, 2) ," PROFIT: ", Math.round(indicators.price - pos.open_price,8));
+					// console.log(pos);
+					// console.log(indicators);
+					console.log("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
 
 					DB.update("positions", {
 						sell_import_id: config.importId,
@@ -246,7 +246,7 @@ var Strategy = function(app) {
 				config.changedPositions += config.openPositions.length;
 
 				async.each(config.openPositions, function(pos, done) {
-					console.log("OPEN " + pos.amount + "x ", pos.ticker, " for ", pos.price, "with rsi: ", Math.round(pos.rsi, 2));
+					console.log("OPEN: ".green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
 					DB.insert("positions", {
 						requested_open_price: pos.requested_open_price,
 						buy_import_id: config.importId,
@@ -302,25 +302,7 @@ var Strategy = function(app) {
 		], done);
 	};
 
-	this.init = function(config, done) {
-		console.time("Downloaded historical data");
-		async.waterfall([
-			self.createImportId.bind(null, config),
-			function(config, done) {
-				async.parallel({
-					clear: self.clearPreviousData.bind(null, config),
-					tickers: self.queryTickers.bind(null, config)
-				},done);
-			},
-			self.processTickers.bind(null, config),
-			self.downloadHistory,
-			self.saveData,
-			self.markImportAsFinished,
-		], done);
-	};
-
 	this.processIndicators = function(config, done) {
-
 		config.indicators = {};
 		for(var ticker in config.data) {
 			var data = config.data[ticker];
@@ -330,14 +312,11 @@ var Strategy = function(app) {
 				price: parseFloat(data[data.length-1].close),
 				sma5: Indicators.sma(_smaExitLen, data),
 				sma200: Indicators.sma(_smaEntryLen, data),
-				rsi: Indicators.rsi(_rsiLen, data),
-				// rsiWilders: Indicators.rsiWilders(_rsiWildersLen, data),  // TODO .. dodelat wilderovo vyhlazovani
+				rsi: Indicators.rsiWilders(_rsiLen, data),
 					// Vypočítej mi prosím RSI2 tickeru SPY k 1.8.2014, ukaž mi, jak Ti to vyšlo „přesně (ověřeno na freestockcharts)“ a pak se můžeme pohnout dál.
 					//Má vyjít 0.80.
 					// RSI2 = 0,807851951
  					// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
-					// https://www.youtube.com/watch?v=TU6ioRUCJSU
-					// pseudokod: http://www.investujeme.cz/rsi-hledani-sily-na-trhu/
 			}
 
 			if(config.indicators[ticker].rsi === false) {
@@ -345,6 +324,7 @@ var Strategy = function(app) {
 				delete config.indicators[ticker];
 			}
 		}
+
 		done(null, config);
 	};
 
@@ -480,20 +460,23 @@ var Strategy = function(app) {
 
 	this.getStockForBuy = function(config) {
 		var stocks = [];
+		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
 
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
-			if(item.rsi <= _minRSI && item.price > item.sma200 && !config.closePositions[ticker])
-				stocks.push(item);
+			// console.log(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
+			if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
+				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200))
+					stocks.push(item);
+			}
 		};
 
 		// serad je podle RSI
 		stocks.sort(function(a, b) {
 			return (a.rsi > b.rsi) ? 1 : -1;
 		});
-
-		return stocks.length? stocks[0] : false;
+		return stocks;
 	};
 
 	this.getCapitalByPiece = function(info, pieces) {
@@ -515,7 +498,9 @@ var Strategy = function(app) {
 
 	this.filterBuyStocks = function(config, done) {
 		var item;
-		var newBuy = false;
+		var stocksToBuy = [];
+		var newBuyPosition = false;
+		var newScalePosition = false;
 		var newPos = false;
         config.openPositions = [];
 		
@@ -525,11 +510,27 @@ var Strategy = function(app) {
 			return done(null, config);
 		}
 
-		if(item = self.getStockForBuy(config)) {
+		stocksToBuy = self.getStockForBuy(config);
+		for(var i in stocksToBuy) {
+			item = stocksToBuy[i];
+
 			if(!config.newState.free_pieces) {
 				console.log("Ending buy selection loop - not enought free pieces");
 				return done(null, config);
 			}
+
+			// otevira se jen jedna nova pozice za den
+			if((newBuyPosition && !config.positionsAggregated[item.ticker]) || (newScalePosition && config.positionsAggregated[item.ticker]))
+				continue;
+
+			if(!config.positionsAggregated[item.ticker])
+				newBuyPosition = true;
+
+			if(config.positionsAggregated[item.ticker])
+				newScalePosition = true;
+
+
+			console.log("Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
 
 			// jestlize akcii uz drzime, naskaluj ji
 			if(config.positionsAggregated[item.ticker]) {
@@ -540,11 +541,14 @@ var Strategy = function(app) {
 					return done(null, config);
 				}
 
-				console.log("Scaling up "+ item.ticker +" +"+(position.pieces+1)+" pieces");
-
 				var piecesCount = self.getNextPiecesCount(position.pieces);
-				if(piecesCount > config.newState.free_pieces)
-					piecesCount = config.newState.free_pieces;
+				console.log("Scaling up "+ item.ticker +" +"+piecesCount+" pieces (actual: "+position.pieces+")");
+
+				if(piecesCount > config.newState.free_pieces) {
+					console.log("Not enought free pieces".red);
+					// piecesCount = config.newState.free_pieces;
+					continue;
+				}
 
 				newPos = {
 					ticker: item.ticker,
@@ -612,8 +616,9 @@ var Strategy = function(app) {
 		async.each(Object.keys(config.positionsAggregated), function(ticker, done) {
 			var pos = config.positionsAggregated[ticker];
 			var indicators = config.indicators[ticker];
-	
+			
 			self.isLastPriceEntry(ticker, config.date, function(isLast) {
+
 	        	// test for close condition
 		        if(indicators.price > indicators.sma5 || isLast) { // is openned and actual price > sma5
 	        		// we will close this position
@@ -640,8 +645,8 @@ var Strategy = function(app) {
 		console.log("Clearing before start");
 
 		var initConf = {
-			current_capital: 20000,
-		  	unused_capital: 20000,
+			current_capital: _INIT_CAPITAL,
+		  	unused_capital: _INIT_CAPITAL,
 		  	free_pieces: 20
 		};
 
@@ -664,7 +669,25 @@ var Strategy = function(app) {
 		], done);
 	};
 
+	this.init = function(config, done) {
+		console.time("Downloaded historical data");
+		async.waterfall([
+			self.createImportId.bind(null, config),
+			function(config, done) {
+				async.parallel({
+					clear: self.clearPreviousData.bind(null, config),
+					tickers: self.queryTickers.bind(null, config)
+				},done);
+			},
+			self.processTickers.bind(null, config),
+			self.downloadHistory,
+			self.saveData,
+			self.markImportAsFinished,
+		], done);
+	};
+
 	this.process = function(config, done) {
+
 		async.waterfall([
 			self.getConfig.bind(null, config),
 			self.getOpenPositions,

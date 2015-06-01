@@ -74,7 +74,10 @@ function MySQLClass(config) {
                     if (config.showSQL)
                         console.log("SELECT: " + sql + " | PARAMS: " + JSON.stringify(args[3]));
 
-                    conn.query(sql, args[3], function(err, rows) {
+                    var q = conn.query(sql, args[3], function(err, rows) {
+                        if(err)
+                            console.error(q.sql);
+                        
                         cb(err, rows);
                         conn.release()
                     });
@@ -86,7 +89,7 @@ function MySQLClass(config) {
             var args = arguments;
 
             this.getData(args[0],args[1],args[2],args[3],args[4],args[5],1,function(err, res) {
-                cb && cb(err, res[0]);
+                cb && cb(err, res ? res[0]: null);
             });
         },
         insert: function() {
@@ -105,7 +108,10 @@ function MySQLClass(config) {
                     if (config.showSQL)
                         console.log("INSERT: " + where + " | PARAMS: " + JSON.stringify(args[1]));
 
-                    conn.query(where, args[1], function(err, res) {
+                    var q = conn.query(where, args[1], function(err, res) {
+                        if(err)
+                            console.error(q.sql);
+
                         conn.release();
                         cb(err, res);
                     });
@@ -128,7 +134,10 @@ function MySQLClass(config) {
                     if (config.showSQL)
                         console.log("INSERT VALUES: " + where + " | PARAMS: " + JSON.stringify(args[1]));
 
-                    conn.query(where, [args[1]], function(err, res) {
+                    var q = conn.query(where, [args[1]], function(err, res) {
+                        if(err)
+                            console.error(q.sql);
+                        
                         conn.release();
                         cb(err, res);
                     });
@@ -173,7 +182,10 @@ function MySQLClass(config) {
                     if (config.showSQL)
                         console.log("UPDATE: " + sql + " | PARAMS: " + JSON.stringify(arr));
 
-                    conn.query(sql, arr, function(err, res) {
+                    var q = conn.query(sql, arr, function(err, res) {
+                        if(err)
+                            console.error(q.sql);
+                        
                         conn.release();
                         cb(err, res)
                     });
@@ -198,7 +210,10 @@ function MySQLClass(config) {
                     if (config.showSQL)
                         console.log("DELETE: " + sql + " | PARAMS: " + JSON.stringify(args[2]));
 
-                    conn.query(sql, args[2], function(err, res) {
+                    var q = conn.query(sql, args[2], function(err, res) {
+                        if(err)
+                            console.error(q.sql);
+                        
                         conn.release();
                         cb(err, res)
                     });
@@ -215,7 +230,10 @@ function MySQLClass(config) {
                 } else {
                     if (config.showSQL)
                         console.log("SQL: " + args[0] + " | PARAMS: " + JSON.stringify(args[1]));
-                    conn.query(sql, params, function(err, rows) {
+                    var q = conn.query(sql, params, function(err, rows) {
+                        if(err)
+                            console.error(q.sql);
+                        
                         conn.release();
                         cb(err, rows)
                     });

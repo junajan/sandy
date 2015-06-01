@@ -16,7 +16,7 @@ var Backtest = function(Strategy) {
 	this.run = function(config, dayCallback, finishCallback) {
 		if(!self.testConfig(config))
 			return console.log("Config must contain from and to attributes");
-		console.log("Starting backest from ", config.from, " to ", config.to);
+		console.log("Starting backtest from", config.from, "to", config.to);
 
 		var testDay = moment(config.from);
 		var endDay = moment(config.to);

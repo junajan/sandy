@@ -72,6 +72,15 @@ var Tickers = function(app) {
 		return self;
 	};
 
+	self.getWatchlist = function(done) {
+		DB.getData('ticker', "watchlist", function(err, res) {
+			if(err) return done(err, null);
+			
+			var r = res.map(function(a) {return a.ticker}).join(',');
+			done(err, r);
+		});
+	};
+
 	self.get = function(v) {
 		if(!self.data[v])
 			return self.data[v];

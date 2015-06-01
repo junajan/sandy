@@ -19,13 +19,14 @@ var Scheduler = function() {
 		return schedule.scheduleJob(schedule, cb);
 	};
 
-	self.today = function(h, m, cb) {
+	self.today = function(time, cb) {
+		time = time.split(":");
+		
 		var date = (new Date());
-		date.setMinutes(m);
-		date.setHours(h);
+		date.setMinutes(time[1]);
+		date.setHours(time[0]);
 		date.setSeconds(0); 
 		
-		console.log(moment().format(), " => ", moment(date).format());
 		return schedule.scheduleJob(date, cb);
 	}
 	return this;
