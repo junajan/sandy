@@ -19,24 +19,24 @@ var Backtest = require('./modules/Backtest')(Strategy);
 
 // var Robot = require('./modules/Robot')(app);
 
-var config = {
-	from: "2015-04-01",
-	to: "2015-04-31",
-};
+// var config = {
+// 	from: "2006-01-01",
+// 	to: "2015-01-01",
+// };
 
-function reportDay(info) {
-}
+// function reportDay(info) {
+// }
 
-function reportAll(info) {
-}
+// function reportAll(info) {
+// }
 
-Backtest.wipe(function() {
-	Backtest.run(config, reportDay, reportAll);
-});
+// Backtest.wipe(function() {
+// 	Backtest.run(config, reportDay, reportAll);
+// });
 
 
-// var Robot = require("./modules/Robot")(app);
-// Robot.start();
+var Robot = require("./modules/Robot")(app);
+Robot.start();
 
 
 

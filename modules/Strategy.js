@@ -10,7 +10,7 @@ var Strategy = function(app) {
 	var Tickers = require('./Tickers');
 	var Yahoo = require('./HistYahoo');
 
-	var _INIT_CAPITAL = 210000;
+	var _INIT_CAPITAL = 20000;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
@@ -647,7 +647,7 @@ var Strategy = function(app) {
 		var initConf = {
 			current_capital: _INIT_CAPITAL,
 		  	unused_capital: _INIT_CAPITAL,
-		  	free_pieces: 20
+		  	free_pieces: 10
 		};
 
 		async.parallel([
