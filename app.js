@@ -36,7 +36,16 @@ var Backtest = require('./modules/Backtest')(Strategy);
 
 
 var Robot = require("./modules/Robot")(app);
-Robot.start();
+// Robot.start(Strategy);
+Strategy.initClear();
+
+Robot.setStrategy(Strategy);
+
+// Robot.strategyInit(function() {
+// 	Robot.strategyProcess();
+// });
+
+
 
 
 

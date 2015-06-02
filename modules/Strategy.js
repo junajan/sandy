@@ -101,7 +101,7 @@ var Strategy = function(app) {
 		
 		DB.insertValues(
 			'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
-			self.serializeHistoricalData(config.importId, info.data),
+			self.serializeHistoricalData(config.importId, config.data),
 			function(err, res) {
 				config.insert = res;
 				done(err, config);
@@ -647,7 +647,7 @@ var Strategy = function(app) {
 		var initConf = {
 			current_capital: _INIT_CAPITAL,
 		  	unused_capital: _INIT_CAPITAL,
-		  	free_pieces: 10
+		  	free_pieces: 20
 		};
 
 		async.parallel([

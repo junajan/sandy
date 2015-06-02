@@ -6,34 +6,38 @@ var Robot = function(app) {
 	var scheduleMorningHour = 3;
 	var Openings = require("./Openings")(app);
 	
-	var Strategy = null;
-	var strategyInited = false;
-	var strategyConfig = {};
+	self.Strategy = null;
+	self.strategyInited = false;
+	self.strategyConfig = {};
 
 	this.init = function() {
 		console.log("Starting robot");
 	};
 
-	this.strategyInit = function() {
-		console.log("Initing strategy at: ", moment().format('LT'));
+	this.strategyInit = function(done) {
+		console.log(("Initing strategy at: "+moment().format('LT')).green);
 		console.time("Initing finished");
 		self.strategyInited = false;
 		self.strategyConfig = {date: moment(), backtest: true};
 
-		Strategy.init(config, function(err, res) {
+		self.Strategy.init(self.strategyConfig, function(err, res) {
 			if(err) return console.log("Strategy init returned error:", err);
 			
 			console.timeEnd("Initing finished");
-			self.strategyInited = false;
+			self.strategyConfig = res;
+			self.strategyInited = true;
+
+			done && done(self.strategyConfig);
 		});
+
 	};
 
 	this.strategyProcess = function() {
-		console.log("Running strategy at:", moment().format('LT'));
+		console.log(("Running strategy at:"+ moment().format('LT')).green);
 		console.time("Processing finished");
 		if(!self.strategyInited) return console.log('Strategy was not properly inited, exiting');
 
-		Strategy.process(self.strategyConfig, function(err, res) {
+		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
 		});
 	};
@@ -64,13 +68,17 @@ var Robot = function(app) {
 	};
 
 	this.start = function(strategy) {
-		self.Strategy = strategy;
+		self.setStrategy(strategy);
 
 		scheduler.everyWorkweekHour(3, self.scheduleToday);
 
 		if(moment().hour() >= scheduleMorningHour)
 			self.scheduleToday();
-	}
+	};
+
+	this.setStrategy = function(strategy) {
+		self.Strategy = strategy;
+	};
 
 	this.init();
 	return this;
