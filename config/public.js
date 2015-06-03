@@ -7,7 +7,6 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 
-
 var _config = {
 	port: 3000,
 	scheduleHour: 5,
@@ -37,7 +36,7 @@ module.exports = function(app) {
 		assert.fail(app.get('env'), 'development or production', 'Invalid environment was specified');
 
 	// merge local and public config
-	_config = _.merge(_config, require("./" + app.get('env')));
+	_config = _.merge(_config, require("./config"));
 
 	// set to app so other modules can use it	
 	app.set('conf', _config);
@@ -55,7 +54,7 @@ module.exports = function(app) {
         resave: true,
         saveUninitialized: true,
         store: new FileStore({ path: __dirname+'/../sessions/',}),
-        secret: 'keyboard cat'
+        secret: _config.sessionSecret || 'keyboard cat'
     }));
     
 	return _config;

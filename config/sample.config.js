@@ -1,7 +1,7 @@
 module.exports = {
 	mysql: {
 		user: "root",
-		password: "toor",
+		password: "",
 		database: "sandy",
 		host: 'localhost',
 		// showSQL: true,
@@ -11,4 +11,5 @@ module.exports = {
 		port: 4001
 	},
 	livereload: true,
+	sessionSecret: 'old man is standing still on the coast'
 };

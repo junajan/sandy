@@ -20,3 +20,4 @@ node_modules
 npm-debug.log
 # Bower vendor files
 web/public/vendor
+config/config.js
