@@ -11,6 +11,7 @@ var Strategy = function(app) {
 	var Yahoo = require('./HistYahoo');
 
 	var _INIT_CAPITAL = 20000;
+	var _CLEAR_DATA_TTL = 50;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
@@ -47,10 +48,10 @@ var Strategy = function(app) {
 	};
 
 	this.clearPreviousData = function(config, done) {
-		// console.log("Removing previous data imports");
-
 		if(config.dontPersist) return done(null, 1);
-		DB.delete("stock_history", "import_id < (SELECT MAX(import_id) FROM import_batch) - 3", done);
+
+		// console.log("Removing previous data imports");
+		DB.delete("stock_history", "import_id < (SELECT MAX(import_id) FROM import_batch) - "+ _CLEAR_DATA_TTL, done);
 	};
 
 	this.serializeHistoricalData = function(importId, data) {
@@ -140,7 +141,7 @@ var Strategy = function(app) {
 		var dateTo = self.getWeekDaysInPast(1, config.date);
 		var tickers = "'"+config.tickers.join("','")+"'";
 
-		// console.log("Reading history data from "+dateFrom +" to " + dateTo);
+		console.log("Reading history data from "+dateFrom +" to " + dateTo);
 
 		if(config.internalHistory)
 			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {

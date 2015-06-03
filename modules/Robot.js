@@ -52,7 +52,10 @@ var Robot = function(app) {
 			var timeClose = moment(time, "HH:mm");
 			if(!timeClose.isValid()) return console.log('Time is invalid'.red);
 
-			var timeStrategyInit = moment(timeClose).subtract(30, 'minutes');
+
+			timeClose.add(5, 'hours');
+
+			var timeStrategyInit = moment(timeClose).subtract(24, 'minutes');
 			var timeStrategyProcess = moment(timeClose).subtract(1, 'minutes');
 			
 			console.log("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
@@ -62,8 +65,8 @@ var Robot = function(app) {
 			}
 
 			// schedule strategy init
-			scheduler.today(timeStrategyInit.format('HH:mm'));
-			scheduler.today(timeStrategyProcess.format('HH:mm'));
+			scheduler.today(timeStrategyInit.format('HH:mm'), self.strategyInit);
+			scheduler.today(timeStrategyProcess.format('HH:mm'), self.strategyProcess);
 		});
 	};
 
