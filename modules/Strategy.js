@@ -452,6 +452,9 @@ var Strategy = function(app) {
 	};
 	
 	this.isLastPriceEntry = function(ticker, date, done) {
+		if(!config.internalHistory)
+			return done(false);
+
 		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [date.format(), ticker], function(err, res) {
 			if(err)
 				throw err;
