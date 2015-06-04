@@ -1,11 +1,12 @@
 require('colors');
 var async = require("async");
 var moment = require("moment");
-var server = require('./modules/App');
+var server = require('./modules/Server');
 var conf = require("./config/public")(server.app);
 var app = server.run(conf);
-require('./routes')(app);
 app.set("db",require('./modules/Mysql')(conf.mysql));
+
+require('./routes')(app);
 
 var Strategy = require('./modules/Strategy')(app);
 var StrategyStockPicking = require('./modules/StrategyStockPicking')(app);
@@ -17,7 +18,6 @@ var Backtest = require('./modules/Backtest')(Strategy);
 
 // HistYahoo.cleanImport(app.get('db'), tickers, console.log);
 
-// var Robot = require('./modules/Robot')(app);
 
 // var config = {
 // 	from: "2006-01-01",

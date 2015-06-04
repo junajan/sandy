@@ -31,10 +31,6 @@ var _config = {
 module.exports = function(app) {
 	var self = this;
 
-	// check if we have config file for this env
-	if (!fs.existsSync('./config/' + app.get('env') + '.js'))
-		assert.fail(app.get('env'), 'development or production', 'Invalid environment was specified');
-
 	// merge local and public config
 	_config = _.merge(_config, require("./config"));
 
