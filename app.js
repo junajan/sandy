@@ -42,9 +42,9 @@ Robot.start(Strategy);
 // Strategy.initClear();
 
 
-Robot.strategyInit(function() {
-	Robot.strategyProcess();
-});
+// Robot.strategyInit(function() {
+// 	Robot.strategyProcess();
+// });
 
 
 
