@@ -52,9 +52,6 @@ var Robot = function(app) {
 			var timeClose = moment(time, "HH:mm");
 			if(!timeClose.isValid()) return console.log('Time is invalid'.red);
 
-
-			timeClose.add(5, 'hours');
-
 			var timeStrategyInit = moment(timeClose).subtract(24, 'minutes');
 			var timeStrategyProcess = moment(timeClose).subtract(1, 'minutes');
 			
