@@ -451,11 +451,11 @@ var Strategy = function(app) {
 		});
 	};
 	
-	this.isLastPriceEntry = function(ticker, date, done) {
+	this.isLastPriceEntry = function(ticker, config, done) {
 		if(!config.internalHistory)
 			return done(false);
 
-		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [date.format(), ticker], function(err, res) {
+		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [config.date.format(), ticker], function(err, res) {
 			if(err)
 				throw err;
 			done(!res);
@@ -621,7 +621,7 @@ var Strategy = function(app) {
 			var pos = config.positionsAggregated[ticker];
 			var indicators = config.indicators[ticker];
 			
-			self.isLastPriceEntry(ticker, config.date, function(isLast) {
+			self.isLastPriceEntry(ticker, config, function(isLast) {
 
 	        	// test for close condition
 		        if(indicators.price > indicators.sma5 || isLast) { // is openned and actual price > sma5
