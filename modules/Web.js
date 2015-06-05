@@ -1,7 +1,7 @@
 var Web = function(app) {
     var self = this;
 
-    this.getApp = function(req, res, next) {
+    this.getApp = function(req, res) {
         res.render('app');
     };
     

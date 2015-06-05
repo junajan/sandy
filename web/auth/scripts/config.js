@@ -1,5 +1,3 @@
 var $$config = {
-	
+	api: '/api/'
 };
-
-$$api = "/api";

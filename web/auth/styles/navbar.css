@@ -1,0 +1,21 @@
+body {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.navbar {
+  margin-bottom: 20px;
+}
+
+.watchlist td b,
+.profit_loss {
+	color: green;
+}
+
+.red {
+	color: red;
+}
+
+li {
+	list-style: none;
+}

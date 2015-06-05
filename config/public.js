@@ -1,6 +1,4 @@
 var _ = require('lodash');
-var fs = require('fs');
-var assert = require('assert');
 var cookieParser = require('cookie-parser');
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -46,12 +44,5 @@ module.exports = function(app) {
 	app.use(cookieParser());
 	app.use(bodyParser.urlencoded({extended:false}));
 	
-    app.use(session({
-        resave: true,
-        saveUninitialized: true,
-        store: new FileStore({ path: __dirname+'/../sessions/',}),
-        secret: _config.sessionSecret || 'keyboard cat'
-    }));
-    
 	return _config;
 };

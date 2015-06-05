@@ -1,59 +1,45 @@
 'use strict';
 
-var Sandy = angular.module("sandy", ['angularModalService', 'ngRoute', 'ngResource', 'yaru22.angular-timeago'])
+var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
     .config([
         '$httpProvider', '$locationProvider', '$routeProvider',
         function($httpProvider, $locationProvider, $routeProvider) {
 
             // configure html5 like urls (without # character)
             $locationProvider.html5Mode(true);
-
-            // what will we send on api
             $httpProvider.defaults.headers.common["Content-type"] = "application/json";
-            $httpProvider.interceptors.push('LoginInterceptor');
-
             delete $httpProvider.defaults.headers.common['X-Requested-With'];
         }
     ])
     .config([
         '$routeProvider',
         function($routeProvider) {
-            var viewFolder = "/app/views/";
+            var viewFolder = "/views/";
 
             $routeProvider.when("/", {
                 templateUrl: viewFolder+"Dashboard.html",
                 controller: "Dashboard",
                 title: "Dashboard"
             })
-            .when("/settings", {
-                templateUrl: viewFolder+"Settings.html",
-                controller: "Settings",
-                title: "Settings"
+            .when("/equity", {
+                templateUrl: viewFolder+"Equity.html",
+                controller: "Equity",
+                title: "Equity"
             })
-            .when("/time-schedule", {
-                templateUrl: viewFolder+"TimeSchedule.html",
-                controller: "TimeSchedule",
-                title: "Time Schedule"
+            .when("/log", {
+                templateUrl: viewFolder+"Log.html",
+                controller: "Log",
+                title: "Log"
             })
-            .when("/user-settings", {
-                templateUrl: viewFolder+"UserSettings.html",
-                controller: "UserSettings",
-                title: "User Settings"
+            .when("/watchlist", {
+                templateUrl: viewFolder+"Watchlist.html",
+                controller: "Watchlist",
+                title: "Watchlist"
             })
-            .when("/history", {
-                templateUrl: viewFolder+"History.html",
-                controller: "History",
-                title: "History"
-            })
-            .when("/tickers", {
-                templateUrl: viewFolder+"Tickers.html",
-                controller: "Tickers",
-                title: "Tickers"
-            })
-            .when("/actual-info", {
-                templateUrl: viewFolder+"ActualInfo.html",
-                controller: "ActualInfo",
-                title: "Actual Info"
+            .when("/orders", {
+                templateUrl: viewFolder+"Orders.html",
+                controller: "Orders",
+                title: "Orders"
             })
             .otherwise({
                 templateUrl: viewFolder+"/Error404.html",

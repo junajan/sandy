@@ -1,14 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <title>Sandy bot</title>
-    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
-    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
     <script src="/reload/reload.js"></script>
-    <base href="/app/" />
-  </head>
-  <body class="skin-blue" ng-app="sandy" ng-controller="Base">
     
+    <title>Sandy bot</title>
+
+    <base href="/"></base>
+    <link href="./styles/bootstrap.min.css" rel="stylesheet">
+    <link href="./styles/navbar.css" rel="stylesheet">
+
+  </head>
+
+  <body ng-app="sandy" ng-controller="Base">
+
+    <div class="container">
+
+      <!-- Static navbar -->
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">
+              <span>
+                <img src="./images/icon.png" width="20"  style="position: relative; top: -4px;" />
+                Sandy bot
+              </span>
+            </a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li class="home"><a href="/">Equity</a></li>
+              <li class="orders"><a href="orders">Orders</a></li>
+              <li class="log"><a href="log">Log</a></li>
+              <li class="watchlist"><a href="watchlist">Watchlist</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="">Capital: {{ statistics.current_capital | currency:'$' }}</a></li>
+              <li><a href="">Free: {{ statistics.unused_capital | currency:'$' }}</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <div class="jumbotron" ng-view></div>
+
+    </div> <!-- /container -->
+
+
+    <script src="./vendor_js/jquery.min.js"></script>
+    <script src="./vendor_js/bootstrap.min.js"></script>
+    <script src="./vendor_js/ie10-viewport-bug-workaround.js"></script>
+
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-route.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.23/angular-resource.min.js"></script>
+    <script src="//code.highcharts.com/highcharts.js"></script>
+    
+
+    <script src="./scripts/config.js"></script>
+    <script src="./scripts/app.js"></script>
+
+    <script src="./scripts/Controllers/Common/Base.js"></script>
+    <script src="./scripts/Controllers/Common/Error404.js"></script>
+    <script src="./scripts/Controllers/Common/Navigation.js"></script>
+    
+    <script src="./scripts/Controllers/Dashboard.js"></script>
+    <script src="./scripts/Controllers/Orders.js"></script>
+    <script src="./scripts/Controllers/Log.js"></script>
+    <script src="./scripts/Controllers/Watchlist.js"></script>
+    
+    <script src="./scripts/Directives/Chart.js"></script>
+
+    <script src="./scripts/Services/Resources/Statistics.js"></script>
+    <script src="./scripts/Services/Resources/Equity.js"></script>
+    <script src="./scripts/Services/Resources/Log.js"></script>
+    <script src="./scripts/Services/Resources/Orders.js"></script>
+    <script src="./scripts/Services/Resources/Watchlist.js"></script>
   </body>
 </html>

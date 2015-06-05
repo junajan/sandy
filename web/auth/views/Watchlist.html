@@ -1,0 +1,20 @@
+<div class="row">
+	<table class="watchlist table table-striped">
+		<thead>
+			<tr>
+				<th width="30">#</th>
+				<th>Ticker</th>
+				<th>Name</th>
+				<th>Note</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="item in list">
+				<td>{{item.id}}</td>
+				<td><b ng-class="{red: !item.active}">{{item.ticker}}</b></td>
+				<td>{{item.name}}</td>
+				<td>{{item.note}}</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
