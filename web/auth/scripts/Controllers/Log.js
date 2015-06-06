@@ -1,18 +1,24 @@
 Sandy.controller ( "Log", [
-    '$scope', '$timeout', 'SocketIO',
-    function ($scope, $timeout, SocketIO) {
+    '$scope', '$timeout',
+    function ($scope, $timeout) {
         $scope.data = [];
         var maxLen = 50;
-        
-        var evHandler = SocketIO.socket.on('logEntry', function(d) {
+        var socket = io();
+
+        function updateLog(d) {
             $scope.data = d.concat($scope.data);
 
             if($scope.data.length > maxLen)
                  $scope.data = $scope.data.slice(0, maxLen);
+        }
+
+        socket.emit('getLog', function(res) {
+            $scope.data = res;
         });
+        socket.on('logEntry', updateLog);
 
         $scope.$on('$destroy', function() {
-            evHandler();
+            socket.removeListener('connection', updateLog);
         });
     }
 ]);

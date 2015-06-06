@@ -25,6 +25,9 @@ module.exports = (function() {
         io.on('connection', function (socket) {
             console.log("Client has connected to socket.io server");
             socket.emit('logEntry', log);
+            socket.on('getLog', function(cb) {
+                cb(log);
+            });
         });
 
         var tail = require('child_process').spawn("tail", ["-f", conf.logFile]);
@@ -34,7 +37,7 @@ module.exports = (function() {
             io.emit('logEntry', newData);
 
             log = newData.concat(log);
-
+            
             if(log.length > maxLen)
                  log = log.slice(0, maxLen);
         });

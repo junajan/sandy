@@ -1,5 +1,5 @@
 Sandy.service("SocketIO", function($rootScope) {
-  this.socket = io();
+  // this.socket = io();
 });
 
 
