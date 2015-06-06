@@ -7,7 +7,7 @@ Sandy.directive('chart', [
 			scope: {
 				data: '=',
 			},
-            template: '<div class="chart" style="height: 450px; width: 99%;"></div>',
+            template: '<div class="chart" style="height: 450px; width: 100%;"></div>',
 			link: function($scope, element, attrs) {
 				var len = 0;
 				var chart = null;
@@ -37,8 +37,12 @@ Sandy.directive('chart', [
 			        },
 			        tooltip: {
 		                xDateFormat: '%Y-%m-%d',
+					    backgroundColor: '#FCFFC5',
+					    borderColor: 'black',
+					    borderRadius: 10,
+					    borderWidth: 3,
 			        	valueSuffix: '$'
-			        },
+					},
 			        plotOptions: {
 			            line: {
 			                dataLabels: {
