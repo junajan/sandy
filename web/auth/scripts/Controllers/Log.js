@@ -1,18 +1,18 @@
 Sandy.controller ( "Log", [
-    '$scope', '$timeout', 'Log', 
-    function ($scope, $timeout, Log) {
-    	
-    	$scope.load = function() {
-	    	Log.query(function(res) {
-				$scope.list = res;
+    '$scope', '$timeout', 'SocketIO',
+    function ($scope, $timeout, SocketIO) {
+        $scope.data = [];
+        var maxLen = 50;
+        
+        var evHandler = SocketIO.socket.on('logEntry', function(d) {
+            $scope.data = d.concat($scope.data);
 
-				$scope.load && $timeout($scope.load, 1000);
-	    	});
-    	};
+            if($scope.data.length > maxLen)
+                 $scope.data = $scope.data.slice(0, maxLen);
+        });
 
-    	$scope.load();
         $scope.$on('$destroy', function() {
-            $scope.load = null;
+            evHandler();
         });
     }
 ]);

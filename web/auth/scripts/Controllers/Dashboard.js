@@ -6,10 +6,9 @@ Sandy.controller ( "Dashboard", [
     	$scope.load = function() {
             var from = ($scope.equity && $scope.equity.length) ? $scope.equity[$scope.equity.length-1].date : null;
 	    	Equity.get({from: from}, function(res) {
-                console.log(res.length);
 				$scope.equity = $scope.equity.concat(res);
 
-				$scope.load && $timeout($scope.load, 1000);
+				$scope.load && $timeout($scope.load, 2000);
 	    	});
 
 	    	Orders.query({limit: 15}, function(res) {

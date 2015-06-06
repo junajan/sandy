@@ -37,6 +37,7 @@
     "request": "^2.53.0",
     "session-file-store": "0.0.3",
     "sha1": "^1.1.0",
+    "socket.io": "^1.3.5",
     "yahoo-finance": "^0.2.10"
   }
 }

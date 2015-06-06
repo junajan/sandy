@@ -1,6 +1,6 @@
 Sandy.controller ( "Base", [
-    '$scope', '$rootScope', 'Statistics', '$timeout',
-    function ($scope, $rootScope, Statistics, $timeout) {
+    '$scope', '$rootScope', 'Statistics', '$timeout', 'SocketIO',
+    function ($scope, $rootScope, Statistics, $timeout, SocketIO) {
 
 		$rootScope.$on('$routeChangeSuccess', function(scope, current, pre) {
 			$rootScope.currentTitle = current.title;
@@ -20,6 +20,7 @@ Sandy.controller ( "Base", [
 				$timeout($scope.readStatistics, 1000);
 			});
 		};
+
 
 		$scope.readStatistics();
     }
