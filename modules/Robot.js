@@ -29,7 +29,6 @@ var Robot = function(app) {
 
 			done && done(self.strategyConfig);
 		});
-
 	};
 
 	this.strategyProcess = function() {
@@ -72,8 +71,14 @@ var Robot = function(app) {
 
 		scheduler.everyWorkweekHour(3, self.scheduleToday);
 
-		if(moment().hour() >= scheduleMorningHour)
-			self.scheduleToday();
+		var dayOfWeek = moment().isoWeekday();
+
+		if(dayOfWeek == 6 || dayOfWeek == 7)
+			return console.log("Today is weekday - strategy will continue on monday");
+		if(moment().hour() < scheduleMorningHour)
+			return console.log("Strategy will be scheduled at", scheduleMorningHour);
+
+		self.scheduleToday();
 	};
 
 	this.setStrategy = function(strategy) {
