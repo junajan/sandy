@@ -3,6 +3,7 @@ var moment = require('moment');
 var ydl = require('./HistYahoo');
 var Indicators = require('./Indicators');
 var async = require('async');
+var log = require('log4js').getLogger('Strategy'); 
 
 var Strategy = function(app) {
 	var self = this;
@@ -50,7 +51,7 @@ var Strategy = function(app) {
 	this.clearPreviousData = function(config, done) {
 		if(config.dontPersist) return done(null, 1);
 
-		// console.log("Removing previous data imports");
+		// log.info("Removing previous data imports");
 		DB.delete("stock_history", "import_id < (SELECT MAX(import_id) FROM import_batch) - "+ _CLEAR_DATA_TTL, done);
 	};
 
@@ -94,7 +95,7 @@ var Strategy = function(app) {
 	};
 
 	this.saveData = function(config, done) {
-		console.log("Saving data for ", Object.keys(config.data).length, " tickers");
+		log.info("Saving data for ", Object.keys(config.data).length, " tickers");
 
 		if(config.internalHistory) {
 			return done(null, config);
@@ -118,7 +119,7 @@ var Strategy = function(app) {
 		for(var i in config.actual)
 			data.push([i, config.actual[i].close, config.importId]);	
 
-		console.log("Saving actual prices for ", data.length, " tickers");
+		log.info("Saving actual prices for ", data.length, " tickers");
 		DB.insertValues('stock_actual (symbol, price, import_id) ', data, function(err, res) {
 			done(err, config);
 		});
@@ -127,7 +128,7 @@ var Strategy = function(app) {
 	this.createImportId = function(config, done) {
 		DB.insert("import_batch", {trigger: "robot"}, function(err, res) {
 			if(!res) {
-				console.log(err, res);
+				log.info(err, res);
 				return done(err, res);
 			}
 
@@ -141,7 +142,7 @@ var Strategy = function(app) {
 		var dateTo = self.getWeekDaysInPast(1, config.date);
 		var tickers = "'"+config.tickers.join("','")+"'";
 
-		console.log("Reading history data from "+dateFrom +" to " + dateTo);
+		log.info("Reading history data from "+dateFrom +" to " + dateTo);
 
 		if(config.internalHistory)
 			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
@@ -172,7 +173,7 @@ var Strategy = function(app) {
 	};
 
 	this.printState = function(config, state) {
-		console.log(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
+		log.info(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
 	}
 
 	this.saveCurrentState = function(config, done) {
@@ -221,9 +222,9 @@ var Strategy = function(app) {
 				async.each(Object.keys(config.closePositions), function(ticker, done) {
 					var pos = config.closePositions[ticker];
 					var indicators = config.indicators[ticker];
-					// console.log(pos);
-					// console.log(indicators);
-					console.log("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
+					// log.info(pos);
+					// log.info(indicators);
+					log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
 
 					DB.update("positions", {
 						sell_import_id: config.importId,
@@ -247,7 +248,7 @@ var Strategy = function(app) {
 				config.changedPositions += config.openPositions.length;
 
 				async.each(config.openPositions, function(pos, done) {
-					console.log("OPEN: ".green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
+					log.info("OPEN: ".green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
 					DB.insert("positions", {
 						requested_open_price: pos.requested_open_price,
 						buy_import_id: config.importId,
@@ -334,7 +335,7 @@ var Strategy = function(app) {
 			var item = config.actual[symbol];
 
 			if(!config.data[symbol]) {
-				console.log(("Ticker("+symbol+") does not exists in data feed!").red);
+				log.info(("Ticker("+symbol+") does not exists in data feed!").red);
 				continue;
 			}
 			config.data[symbol].push(config.actual[symbol]);
@@ -469,7 +470,7 @@ var Strategy = function(app) {
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
-			// console.log(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
+			// log.info(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
 			if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
 				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200))
 					stocks.push(item);
@@ -510,7 +511,7 @@ var Strategy = function(app) {
 		
 		// jestlize nejsou dilky na prikupovani
 		if(!config.newState.free_pieces) {
-			console.log("There are no more free pieces for buy stocks");
+			log.info("There are no more free pieces for buy stocks");
 			return done(null, config);
 		}
 
@@ -519,7 +520,7 @@ var Strategy = function(app) {
 			item = stocksToBuy[i];
 
 			if(!config.newState.free_pieces) {
-				console.log("Ending buy selection loop - not enought free pieces");
+				log.info("Ending buy selection loop - not enought free pieces");
 				return done(null, config);
 			}
 
@@ -534,22 +535,22 @@ var Strategy = function(app) {
 				newScalePosition = true;
 
 
-			console.log("Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
+			log.info("Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
 
 			// jestlize akcii uz drzime, naskaluj ji
 			if(config.positionsAggregated[item.ticker]) {
 				var position = config.positionsAggregated[item.ticker];
 
 				if(position.pieces >= _maxPositionSize) {
-					console.log("Stock "+ item.ticker + " is on max "+ position.pieces + " pieces .. selecting another stock");
+					log.info("Stock "+ item.ticker + " is on max "+ position.pieces + " pieces .. selecting another stock");
 					return done(null, config);
 				}
 
 				var piecesCount = self.getNextPiecesCount(position.pieces);
-				console.log("Scaling up "+ item.ticker +" +"+piecesCount+" pieces (actual: "+position.pieces+")");
+				log.info("Scaling up "+ item.ticker +" +"+piecesCount+" pieces (actual: "+position.pieces+")");
 
 				if(piecesCount > config.newState.free_pieces) {
-					console.log("Not enought free pieces".red);
+					log.info("Not enought free pieces".red);
 					// piecesCount = config.newState.free_pieces;
 					continue;
 				}
@@ -646,7 +647,7 @@ var Strategy = function(app) {
 	};
 
 	this.initClear = function(done) {
-		console.log("Clearing before start");
+		log.info("Clearing before start");
 
 		var initConf = {
 			current_capital: _INIT_CAPITAL,

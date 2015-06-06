@@ -1,5 +1,6 @@
 var scheduler = require("./Scheduler");
 var moment = require('moment');
+var log = require('log4js').getLogger('Robot'); 
 
 var Robot = function(app) {
 	var self = this;
@@ -11,17 +12,17 @@ var Robot = function(app) {
 	self.strategyConfig = {};
 
 	this.init = function() {
-		console.log("Starting robot");
+		log.info("Starting robot");
 	};
 
 	this.strategyInit = function(done) {
-		console.log(("Initing strategy at: "+moment().format('LT')).green);
+		log.info(("Initing strategy at: "+moment().format('LT')).green);
 		console.time("Initing finished");
 		self.strategyInited = false;
 		self.strategyConfig = {date: moment(), backtest: true};
 
 		self.Strategy.init(self.strategyConfig, function(err, res) {
-			if(err) return console.log("Strategy init returned error:", err);
+			if(err) return log.error("Strategy init returned error:", err);
 			
 			console.timeEnd("Initing finished");
 			self.strategyConfig = res;
@@ -32,9 +33,9 @@ var Robot = function(app) {
 	};
 
 	this.strategyProcess = function() {
-		console.log(("Running strategy at:"+ moment().format('LT')).green);
+		log.info(("Running strategy at:"+ moment().format('LT')).green);
 		console.time("Processing finished");
-		if(!self.strategyInited) return console.log('Strategy was not properly inited, exiting');
+		if(!self.strategyInited) return log.error('Strategy was not properly inited, exiting');
 
 		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
@@ -43,7 +44,7 @@ var Robot = function(app) {
 
 	this.scheduleToday = function() {
 		Openings.getTodaysClosingTime('2015-12-21', function(err, time) {
-			if(err) return console.log("ERROR when scheduling: ".red, err);
+			if(err) return log.error("error when scheduling: ".red, err);
 
 			console.log("Todays closing time is: ", time);
 			if(!time) return false;
@@ -54,10 +55,10 @@ var Robot = function(app) {
 			var timeStrategyInit = moment(timeClose).subtract(24, 'minutes');
 			var timeStrategyProcess = moment(timeClose).subtract(1, 'minutes');
 			
-			console.log("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
+			log.info("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
 
 			if(moment().isAfter(timeStrategyInit)) {
-				return console.log("It is too late to start strategy init today - exiting");
+				return log.error("It is too late to start strategy init today - exiting");
 			}
 
 			// schedule strategy init
@@ -74,9 +75,9 @@ var Robot = function(app) {
 		var dayOfWeek = moment().isoWeekday();
 
 		if(dayOfWeek == 6 || dayOfWeek == 7)
-			return console.log("Today is weekday - strategy will continue on monday");
+			return log.info("Today is weekday - strategy will continue on monday");
 		if(moment().hour() < scheduleMorningHour)
-			return console.log("Strategy will be scheduled at", scheduleMorningHour);
+			return log.info("Strategy will be scheduled at", scheduleMorningHour);
 
 		self.scheduleToday();
 	};
