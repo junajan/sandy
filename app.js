@@ -35,9 +35,9 @@ var Backtest = require('./modules/Backtest')(Strategy);
 // });
 
 
-// var Robot = require("./modules/Robot")(app);
-// Robot.setStrategy(Strategy);
-// Robot.start(Strategy);
+var Robot = require("./modules/Robot")(app);
+Robot.setStrategy(Strategy);
+Robot.start(Strategy);
 
 // Strategy.initClear();
 
