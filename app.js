@@ -46,7 +46,7 @@ var config = {
 // 	Backtest.run(config, reportDay, reportAll);
 // });
 
-Strategy.initClear(config);
+// Strategy.initClear(config);
 
 var Robot = require("./modules/Robot")(app);
 Robot.setStrategy(Strategy);
