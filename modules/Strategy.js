@@ -145,7 +145,7 @@ var Strategy = function(app) {
 		log.info("Reading history data from "+dateFrom +" to " + dateTo);
 
 		if(config.internalHistory)
-			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+			DB.getData("symbol, close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
 				
 				config.data = self.deserializeHistoricalData(res);
@@ -193,12 +193,12 @@ var Strategy = function(app) {
 			free_pieces: state.free_pieces,
 			unused_capital: state.unused_capital,
 			import_id: config.importId,
-			date: self.getTimeDate(config.date)
+			date: self.getDBDate(config.date)
 		}, function(err, res) {done(err, config)});
 	};
 
-	this.getTimeDate = function(d) {
-		return d.toISOString();
+	this.getDBDate = function(d) {
+		return d.format(_dateFormat);
 	};
 
 	this.getDate = function(d) {
@@ -230,8 +230,8 @@ var Strategy = function(app) {
 						sell_import_id: config.importId,
 						requested_close_price: indicators.price,
 						close_price: indicators.price,
-						requested_close_date: self.getTimeDate(config.date),
-						close_date: self.getTimeDate(config.date)
+						requested_close_date: self.getDBDate(config.date),
+						close_date: self.getDBDate(config.date)
 					}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, res) {
 
 						// decrement available resources
@@ -256,7 +256,7 @@ var Strategy = function(app) {
 						pieces: pos.pieces,
 						amount: pos.amount,
 						open_price: pos.requested_open_price,
-						open_date: self.getTimeDate(config.date)
+						open_date: self.getDBDate(config.date)
 					}, function(err, res) {
 
 						// decrement available resources
@@ -294,7 +294,7 @@ var Strategy = function(app) {
 
 	this.getLastImportId = function(done) {
 
-		DB.get("*", "import_batch", "result = 1", null, "import_id DESC", done);
+		DB.get("import_id", "import_batch", "result = 1", null, "import_id DESC", done);
 	};
 
 	this.getLastImport = function(done) {
@@ -646,12 +646,12 @@ var Strategy = function(app) {
 		}, done);
 	};
 
-	this.initClear = function(done) {
+	this.initClear = function(config, done) {
 		log.info("Clearing before start");
 
 		var initConf = {
-			current_capital: _INIT_CAPITAL,
-		  	unused_capital: _INIT_CAPITAL,
+			current_capital: config.capital || _INIT_CAPITAL,
+			unused_capital: config.capital || _INIT_CAPITAL,
 		  	free_pieces: 20
 		};
 

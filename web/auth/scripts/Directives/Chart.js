@@ -36,12 +36,13 @@ Sandy.directive('chart', [
 			            }
 			        },
 			        tooltip: {
-		                xDateFormat: '%Y-%m-%d',
-					    backgroundColor: '#FCFFC5',
-					    borderColor: 'black',
-					    borderRadius: 10,
-					    borderWidth: 3,
-			        	valueSuffix: '$'
+			        	shared: true,
+		       //          xDateFormat: '%Y-%m-%d',
+					    // backgroundColor: '#FCFFC5',
+					    // borderColor: 'black',
+					    // borderRadius: 10,
+					    // borderWidth: 3,
+			      //   	valueSuffix: '$'
 					},
 			        plotOptions: {
 			            line: {
@@ -71,7 +72,7 @@ Sandy.directive('chart', [
 							for(var i in data) {
 								var date = (new Date(data[i].date)).getTime();
 								if(date) {
-									d.push([date, data[i].capital])
+									d.push([date, parseInt(data[i].capital)])
 								}
 							}
 
