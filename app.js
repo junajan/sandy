@@ -30,11 +30,11 @@ var tickers = "'"+tickers.join("','")+"'";
 // 	console.timeEnd('LOADING END');
 // });
 
-var config = {
-	from: "2014-01-05",
-	to: "2014-01-06",
-	capital: 20000,
-};
+// var config = {
+// 	from: "2014-01-01",
+// 	to: "2014-03-01",
+// 	capital: 20000,
+// };
 
 // function reportDay(info) {
 // }
