@@ -43,6 +43,11 @@ var Robot = function(app) {
 	};
 
 	this.scheduleToday = function() {
+		var dayOfWeek = moment().isoWeekday();
+
+		if(dayOfWeek == 6 || dayOfWeek == 7)
+			return log.info("Today is weekday - strategy will continue on monday");
+		
 		Openings.getTodaysClosingTime('2015-12-21', function(err, time) {
 			if(err) return log.error("error when scheduling: ".red, err);
 
