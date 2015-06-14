@@ -1,14 +1,22 @@
 var schedule = require('node-schedule');
 var moment = require('moment');
 
-
 var Scheduler = function() {
 	var self = this;
 
 	self.everyWorkweekHour = function(hour, cb) {
 		
 		var rule = new schedule.RecurrenceRule();
-		rule.dayOfWeek = [0, new schedule.Range(1, 5)];
+		rule.dayOfWeek = [new schedule.Range(1, 5)];
+		rule.hour = hour;
+		rule.minute = 0;
+		 
+		var j = schedule.scheduleJob(rule, cb);
+	};
+
+	self.everyDayHour = function(hour, cb) {
+		
+		var rule = new schedule.RecurrenceRule();
 		rule.hour = hour;
 		rule.minute = 0;
 		 
