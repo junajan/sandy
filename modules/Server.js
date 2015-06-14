@@ -18,7 +18,7 @@ module.exports = (function() {
             reload(server, self.app, conf.livereloadTime || 2000);
 
         var log = [];
-        var maxLen = 50;
+        var maxLen = 200;
 
         var io = require('socket.io')(server);
 
@@ -30,7 +30,7 @@ module.exports = (function() {
             });
         });
 
-        var tail = require('child_process').spawn("tail", ["-f", conf.logFile]);
+        var tail = require('child_process').spawn("tail", ["-f", "-n 200", conf.logFile]);
 
         tail.stdout.on("data", function (data) {
             var newData = data.toString().trim().split('\n').reverse();
