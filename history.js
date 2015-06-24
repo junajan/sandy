@@ -5,7 +5,7 @@
 require('colors');
 var async = require("async");
 var moment = require("moment");
-var server = require('./modules/App');
+var server = require('./modules/Server');
 var conf = require("./config/public")(server.app);
 var app = server.run(conf);
 var DB = require('./modules/Mysql')(conf.mysql);
@@ -17,10 +17,11 @@ var ydl = require('./modules/HistYahoo');
 const RUN = false;
 
 var dateFrom = '1990-01-01';
-var dateTo = '2015-03-15';
+var dateTo = '2015-06-14';
 const _TABLE = "stock_history_full";
 
 var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
+var tickers = ['UPRO','SPXS'];
 
 function downloadHistory(ticker, done) {
 	console.log(("Reading "+ticker+" history data from "+dateFrom +" to " + dateTo).yellow);

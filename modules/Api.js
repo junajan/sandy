@@ -1,6 +1,9 @@
+var Yahoo = require('./HistYahoo');
+
 var Api = function(app) {
 	var self = this;
 	var DB = app.get('db');
+	this.openPrices = {'MO': 123};
 
 	this.getWatchlist = function(req, res) {
 		DB.getData('*', 'watchlist', function(err, data) {
@@ -28,7 +31,7 @@ var Api = function(app) {
 	this.getOrders = function(req, res) {
 		var limit = parseInt(req.query.limit) || null;
 
-		DB.getData('id, ticker, pieces, amount, open_price, open_date, close_price, close_date', 'positions', '1=1', null, 'close_date', 'ASC', limit, function(err, data) {
+		DB.getData('id, ticker, pieces, amount, open_price, open_date, close_price, close_date', 'positions', '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date DESC', limit, function(err, data) {
 			res.json(data);
 		});
 	};
@@ -37,6 +40,30 @@ var Api = function(app) {
 		res.json([]);
 	};
 
+	this.getOpenPrices = function(req, res) {
+		res.json(self.openPrices);
+	};
+
+	this.loadUfinishedPrices = function() {
+		DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
+			tickers = tickers.map(function(p) {
+				return p.ticker;
+			});
+			Yahoo.actual(tickers, function(err, res) {
+				var out = {};
+
+				if(err) console.error(err);
+				else
+					res.map(function(d) {
+						out[d[0]] = d[1];
+					});
+
+				self.openPrices = out;
+			});
+		});
+	};
+
+	setInterval(this.loadUfinishedPrices, 1000);
 	return this;
 };
 

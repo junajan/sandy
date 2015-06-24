@@ -9,7 +9,7 @@ app.set("db",require('./modules/Mysql')(conf.mysql));
 require('./routes')(app);
 
 var Strategy = require('./modules/Strategy')(app);
-var StrategyStockPicking = require('./modules/StrategyStockPicking')(app);
+var StrategyLeveraged = require('./modules/StrategyLeveraged')(app);
 var StrategySpy = require('./modules/StrategySpy')(app);
 var Scheduler = require('./modules/Scheduler');
 var HistYahoo = require('./modules/HistYahoo');
@@ -31,8 +31,8 @@ var tickers = "'"+tickers.join("','")+"'";
 // });
 
 // var config = {
-// 	from: "2014-01-01",
-// 	to: "2014-03-01",
+// 	from: "2010-01-01",
+// 	to: "2015-06-10",
 // 	capital: 20000,
 // };
 
@@ -46,9 +46,9 @@ var tickers = "'"+tickers.join("','")+"'";
 // 	Backtest.run(config, reportDay, reportAll);
 // });
 
-// Strategy.initClear(config);
 
 var Robot = require("./modules/Robot")(app);
+// Strategy.initClear(config);
 Robot.setStrategy(Strategy);
 Robot.start(Strategy);
 

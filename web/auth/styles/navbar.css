@@ -19,3 +19,7 @@ body {
 li {
 	list-style: none;
 }
+
+.shadow {
+	color: #999;
+}

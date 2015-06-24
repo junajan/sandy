@@ -14,21 +14,28 @@
 	<tbody>
 		<tr ng-repeat="item in orders">
 			<td>{{item.id}}</td>
-			<td><b>{{item.ticker}}</b></td>
+			<td><b><a href='//finance.yahoo.com/echarts?s={{item.ticker}}' target="_blank">{{item.ticker}}</a></b></td>
 			<td>{{item.amount}} ({{item.pieces}})</td>
 			<td>{{item.open_date | date}}</td>
-			<td>{{item.open_price * item.amount | currency:'$'}}</td>
+			<td>{{item.open_price * item.amount | currency:'$'}} ({{ item.open_price | currency:'$'}})</td>
 			<td>
 				<span ng-if="item.close_date">{{item.close_date | date}}</span>
 			</td>
 			<td>
 				<span ng-if="item.close_date">
-					{{item.close_price * item.amount | currency:'$'}}
+					{{item.close_price * item.amount | currency:'$'}} ({{ item.close_price | currency:'$'}})
+				</span>
+				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
+					{{ openTickersPrices[item.ticker] * item.amount | currency:'$' }}
+					({{ openTickersPrices[item.ticker] | currency:'$' }})
 				</span>
 			</td>
 			<td class="profit_loss" ng-class="{red: item.close_price <= item.open_price}">
 				<span ng-if="item.close_date">
 					{{(item.close_price - item.open_price) * item.amount  | currency:'$' }}
+				</span>
+				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
+					{{(openTickersPrices[item.ticker] - item.open_price) * item.amount  | currency:'$' }}
 				</span>
 			</td>
 		</tr>
