@@ -23,7 +23,7 @@ module.exports = (function() {
         var io = require('socket.io')(server);
 
         io.on('connection', function (socket) {
-            console.log("Client has connected to socket.io server");
+            // console.log("Client has connected to socket.io server");
             socket.emit('logEntry', log);
             socket.on('getLog', function(cb) {
                 cb(log);

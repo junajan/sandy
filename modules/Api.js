@@ -52,8 +52,9 @@ var Api = function(app) {
 			Yahoo.actual(tickers, function(err, res) {
 				var out = {};
 
-				if(err) console.error(err);
-				else
+				if(err)
+					console.error(err);
+				else if(res)
 					res.map(function(d) {
 						out[d[0]] = d[1];
 					});
