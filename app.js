@@ -5,8 +5,10 @@ var server = require('./modules/Server');
 var conf = require("./config/public")(server.app);
 var app = server.run(conf);
 app.set("db",require('./modules/Mysql')(conf.mysql));
+app.set("config", conf);
 
 require('./routes')(app);
+var Mailer = require('./modules/Mailer')(app);
 
 var Strategy = require('./modules/Strategy')(app);
 var StrategyLeveraged = require('./modules/StrategyLeveraged')(app);

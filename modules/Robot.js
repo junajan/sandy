@@ -48,7 +48,7 @@ var Robot = function(app) {
 		if(dayOfWeek == 6 || dayOfWeek == 7)
 			return log.info("Today is weekday - strategy will continue on monday");
 		
-		Openings.getTodaysClosingTime('2015-12-21', function(err, time) {
+		Openings.getTodaysClosingTime(moment().format('YYYY-MM-DD'), function(err, time) {
 			if(err) return log.error("error when scheduling: ".red, err);
 
 			console.log("Todays closing time is: ", time);
@@ -57,12 +57,20 @@ var Robot = function(app) {
 			var timeClose = moment(time, "HH:mm");
 			if(!timeClose.isValid()) return console.log('Time is invalid'.red);
 
-			var timeStrategyInit = moment(timeClose).subtract(24, 'minutes');
+			var timeStrategyInit = moment(timeClose).subtract(10, 'minutes');
 			var timeStrategyProcess = moment(timeClose).subtract(1, 'minutes');
 			
 			log.info("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
 
 			if(moment().isAfter(timeStrategyInit)) {
+
+				if(moment().isBefore(moment(timeClose)))
+					app.emit('event:error_late_start', {
+						now: moment(),
+						timeStrategyInit: timeStrategyInit,
+						timeClose: moment(timeClose)
+					});
+
 				return log.error("It is too late to start strategy init today - exiting");
 			}
 
