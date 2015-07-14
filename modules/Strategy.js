@@ -98,6 +98,7 @@ var Strategy = function(app) {
 		log.info("Saving data for ", Object.keys(config.data).length, " tickers");
 
 		if(config.internalHistory) {
+			log.info('Using internal history');
 			return done(null, config);
 		}
 		
@@ -105,16 +106,21 @@ var Strategy = function(app) {
 			'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
 			self.serializeHistoricalData(config.importId, config.data),
 			function(err, res) {
+				log.info('Data was saved');
 				config.insert = res;
 				done(err, config);
 			});
 	};
 
 	this.saveActualPrices = function(config, done) {
+		log.info("Saving actual prices");
 		var data = [];
 		
-		if(config.internalHistory)
+		if(config.internalHistory) {
+			log.info("Using internal history");
+			
 			return done(null, config);
+		}
 
 		for(var i in config.actual)
 			data.push([i, config.actual[i].close, config.importId]);	
@@ -163,6 +169,7 @@ var Strategy = function(app) {
 	};
 
 	this.markImportAsFinished = function(info, done) {
+		log.info('Marking import as finished');
 		DB.update("import_batch", {result: 1, rows_imported: info.insert && info.insert.affectedRows}, "import_id = ?", info.importId, function(err, res) {
 			done(err, info);
 		});
@@ -177,11 +184,15 @@ var Strategy = function(app) {
 	}
 
 	this.saveCurrentState = function(config, done) {
+		log.info('Saving config to DB');
+
 		self.printState(config, config.currentState);
 		self.saveConfig(config.currentState, function(err, res){done(err, config)});
 	};
 
 	this.saveNewEquity = function(config, done) {
+		log.info('Saving new equity');
+
 		var state = config.currentState;
 
 		// dont save when there are no changes in positions
@@ -276,7 +287,9 @@ var Strategy = function(app) {
 	};
 
 	this.sendOrders = function(config, done) {
-		if(config.backtest)
+		log.info('Sending orders');
+
+		if(config.backtestOrders)
 			self.sendBacktestOrders(config, done);
 		else
 			self.sendInteractiveBrokersOrders(config, done);
@@ -305,6 +318,8 @@ var Strategy = function(app) {
 	};
 
 	this.processIndicators = function(config, done) {
+		log.info('Processing indicators');
+
 		config.indicators = {};
 		for(var ticker in config.data) {
 			var data = config.data[ticker];
@@ -331,6 +346,7 @@ var Strategy = function(app) {
 	};
 
 	this.appendActualPrices = function(config, done) {
+		log.info('Appending actual prices');
 		for(var symbol in config.actual) {
 			var item = config.actual[symbol];
 
@@ -346,6 +362,7 @@ var Strategy = function(app) {
 	};
 
 	this.getActualPrices = function(config, done) {
+		log.info('Get actual prices');
 		var date = moment(config.date).format(_dateFormat);
 		var tickers = "'"+config.tickers.join("','")+"'";
 		config.actual = {};
@@ -386,6 +403,7 @@ var Strategy = function(app) {
 	};
 
 	this.getConfig = function(config, done) {
+		log.info('Retrieving config');
 		DB.getData("*", "config", "1=1", function(err, res) {
 			if(err) return done(err);
 
@@ -431,6 +449,7 @@ var Strategy = function(app) {
 	};
 
 	this.getOpenPositions = function(config, done) {
+		log.info('Selecting openned positions');
 		DB.getData("*", "positions", "close_date IS null", null, "open_date ASC", function(err, res) {
 			config.positions = self.deserializeOpenPositions(res);
 			config.positionsAggregated = self.aggregatePositions(res);
@@ -439,6 +458,7 @@ var Strategy = function(app) {
 	};
 
 	this.saveIndicators = function(config, done) {
+		log.info('Saving indicators');
 
 		var buffer = [];
 		Object.keys(config.indicators).forEach(function(ticker) {
@@ -502,6 +522,8 @@ var Strategy = function(app) {
  	};
 
 	this.filterBuyStocks = function(config, done) {
+		log.info('Filtering stocks for buy condition');
+
 		var item;
 		var stocksToBuy = [];
 		var newBuyPosition = false;
@@ -605,7 +627,8 @@ var Strategy = function(app) {
 	};
 
 	this.filterSellStocks = function(config, done) {
-        
+        log.info('Filtering stocks for sell condition');
+
         config.closePositions = {};
         config.newState = {
 			current_capital: parseFloat(config.settings.current_capital, 2),
