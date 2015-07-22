@@ -63,8 +63,8 @@ var Api = function(app) {
 			});
 		});
 	};
-
-	setInterval(this.loadUfinishedPrices, 1000);
+	
+	setInterval(this.loadUfinishedPrices, 10000);
 	return this;
 };
 
