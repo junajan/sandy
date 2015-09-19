@@ -1,5 +1,5 @@
 
-exports.sma = function(len, data) {
+exports.sma = function(len, data, print) {
     var count = 0;
     if (!len) return 0;
 
@@ -12,9 +12,13 @@ exports.sma = function(len, data) {
     }
 
     for (; i >= max; i--) {
+      if(print) console.log(parseFloat(data[i].close));
+
         count += parseFloat(data[i].close);
     }
 
+    if(print)
+      console.log(count, len, ' = ', count / len);
     return count / len;
 };
 

@@ -11,17 +11,33 @@ var Strategy = function(app) {
 	var Tickers = require('./Tickers');
 	var Yahoo = require('./HistYahoo');
 
+	// 1, 2, 4, 8
+	// 1, 2, 3, 6
+	var _PRICE_COLUMN_NAME = 'adjClose';
+	var _INIT_FREE_PIECES = 30;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 50;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
-	var _smaExitLen = 5;
-	var _maxPositionSize = 10; // 1 + 2 + 3 + 4 = 10 (max 2 fully loaded stocks will be bought)
+	var _smaExitLen = 8;
+	var _maxPositionSize = 15; // 1 + 2 + 3 + 4 + 5 = 10 (max 2 fully loaded stocks will be bought)
 	var _rsiLen	= 2;
 	var _minRSI	= 10;
 	var _rsiWildersLen	= 2;
 	var _dataLen = _smaEntryLen + app.get("conf").dateOffset;
+
+
+    this.getNextPiecesCount = function(c) {
+        if(!c) return 1;
+		if(c == 1) return 2;
+		if(c == 3) return 3;
+		if(c == 6) return 4;
+		if(c == 10) return 5;
+
+
+		throw "Err - not defined pieces count";
+ 	};
 
 	function addWeekends(count) {
 		return Math.floor(count / 5 * 7);
@@ -151,7 +167,7 @@ var Strategy = function(app) {
 		log.info("Reading history data from "+dateFrom +" to " + dateTo);
 
 		if(config.internalHistory)
-			DB.getData("symbol, close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+			DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
 				
 				config.data = self.deserializeHistoricalData(res);
@@ -467,6 +483,9 @@ var Strategy = function(app) {
 			buffer.push(item);
 		});
 
+		if(!buffer.length)
+			return done(null, config);
+
 		DB.insertValues("indicators (ticker, price, sma5, sma200, rsi14, import_id)", buffer, function(err, res) {
 			done(err, config);
 		});
@@ -490,6 +509,7 @@ var Strategy = function(app) {
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
+
 			// log.info(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
 			if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
 				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200))
@@ -511,15 +531,6 @@ var Strategy = function(app) {
 	this.getAmountByCapital = function(capital, price) {
 		return parseInt(capital/price);
 	};
-
-    this.getNextPiecesCount = function(c) {
-        if(!c) return 1;
-		if(c == 1) return 2;
-		if(c == 3) return 3;
-		if(c == 6) return 4;
-
-		throw "Err - not defined pieces count";
- 	};
 
 	this.filterBuyStocks = function(config, done) {
 		log.info('Filtering stocks for buy condition');
@@ -675,7 +686,7 @@ var Strategy = function(app) {
 		var initConf = {
 			current_capital: config.capital || _INIT_CAPITAL,
 			unused_capital: config.capital || _INIT_CAPITAL,
-		  	free_pieces: 20
+		  	free_pieces: _INIT_FREE_PIECES
 		};
 
 		async.parallel([

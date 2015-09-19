@@ -181,6 +181,7 @@ var Backtest = function(Strategy) {
 		var endDay = moment(config.to);
 		config.dontPersist = true;
 		config.backtest = true;
+		config.backtestOrders = true;
 		config.internalHistory = true;
 		console.time("============== Finished ==============");
 		

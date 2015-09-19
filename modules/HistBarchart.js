@@ -1,5 +1,4 @@
 var csv = require("fast-csv");
-var yahooFinance = require('yahoo-finance');
 var request = require('request');
 var _ = require('lodash');
 var async = require('async');
@@ -14,8 +13,9 @@ function chunkArray(array, chunkSize) {
     );
 }
 
-function yDownloader() {
+function bDownloader() {
 	var self = this;
+	var historyUrl = "http://marketdata.websol.barchart.com/getHistory.json?key=419094f12f68553970480282838353f9&dividends=0&splits=0&symbol=$$symbol$$&type=daily&startDate=$$startDate$$"
 	// var _defaultFields = ['s', 'n', 'd1', 'l1', 'y', 'r'];
 	// var _fields;
 
@@ -33,18 +33,20 @@ function yDownloader() {
 
 	this.serializeHistoricalData = function(importId, data) {
 		var importData = [];
+
+
 		Object.keys(data).forEach(function(ticker) {
 			for(var i in data[ticker]) {
 				var item = data[ticker][i];
+				if(item.open== null) continue;
 				importData.push([
 					importId,
-					item.date,
+					item.timestamp,
 					item.open,
 					item.high,
 					item.low,
 					item.close,
 					item.volume,
-					item.adjClose,
 					item.symbol,
 				]);
 			}
@@ -80,7 +82,21 @@ function yDownloader() {
 	};
 
 	this.historical = function(conf, done) {
-		yahooFinance.historical(conf, done);
+		var from = moment(conf.from, "YYYY-MM-DD").format('YYYYMMDD');
+		var to = moment(conf.to, "YYYY-MM-DD").format('YYYYMMDD');
+		var url = historyUrl.replace('$$symbol$$', conf.symbol).replace('$$startDate$$', from).replace('$$endDate$$', to);
+
+		request(url, function(err, res) {
+			if(err) return err;
+
+			try {
+				res = JSON.parse(res.body);
+			} catch(e) {
+				return done('bad json');
+			}
+
+			return done(err, res.results);
+		});
 	};
 
 	this.get = function(ticker, from, to, cb) {
@@ -135,4 +151,4 @@ function yDownloader() {
 	return this;
 }
 
-module.exports = new yDownloader();
+module.exports = new bDownloader();
