@@ -14,14 +14,14 @@ var Strategy = function(app) {
 	// 1, 2, 4, 8
 	// 1, 2, 3, 6
 	var _PRICE_COLUMN_NAME = 'adjClose';
-	var _INIT_FREE_PIECES = 30;
+	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
-	var _CLEAR_DATA_TTL = 50;
+	var _CLEAR_DATA_TTL = 20;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
-	var _smaExitLen = 8;
-	var _maxPositionSize = 15; // 1 + 2 + 3 + 4 + 5 = 10 (max 2 fully loaded stocks will be bought)
+	var _smaExitLen = 5;
+	var _maxPositionSize = 10; // 1 + 2 + 3 + 4 = 10 (max 2 fully loaded stocks will be bought)
 	var _rsiLen	= 2;
 	var _minRSI	= 10;
 	var _rsiWildersLen	= 2;
@@ -33,8 +33,6 @@ var Strategy = function(app) {
 		if(c == 1) return 2;
 		if(c == 3) return 3;
 		if(c == 6) return 4;
-		if(c == 10) return 5;
-
 
 		throw "Err - not defined pieces count";
  	};
