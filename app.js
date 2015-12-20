@@ -15,10 +15,10 @@ var StrategyLeveraged = require('./modules/StrategyLeveraged')(app);
 var StrategySpy = require('./modules/StrategySpy')(app);
 var Scheduler = require('./modules/Scheduler');
 var HistYahoo = require('./modules/HistYahoo');
-var tickers = "SPY,XLF,XLV,XLP,AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
+// var tickers = "SPY,XLF,XLV,XLP,AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 var Backtest = require('./modules/Backtest')(Strategy);
-var tickers = "'"+tickers.join("','")+"'";
+// var tickers = "'"+tickers.join("','")+"'";
 
 // HistYahoo.cleanImport(app.get('db'), tickers, console.log);
 
@@ -34,11 +34,16 @@ var tickers = "'"+tickers.join("','")+"'";
 
 // var config = {
 // 	// from: "2005-01-01",
-// 	from: "2015-09-10",
-// 	// from: '2014-06-09',
+// 	// from: "2007-01-01",
+// 	// from: "2015-09-10",
+// 	from: '2013-01-01',
+// 	// from: '2014-12-01',
+// 	// to: '2015-01-01',
+// 	// to: '2015-10-15',
 // 	to: moment().format('YYYY-MM-DD'),
-// 	to: "2015-09-11",
-// 	capital: 20000,
+// 	// to: "2015-09-11",
+// 	capital: 60000,
+// 	// monthlyAdd: 0
 // };
 
 // function reportDay(info) {
@@ -56,8 +61,6 @@ var Robot = require("./modules/Robot")(app);
 // Strategy.initClear(config);
 Robot.setStrategy(Strategy);
 Robot.start(Strategy);
-
-
 
 // Robot.strategyInit(function() {
 // 	Robot.strategyProcess();

@@ -29,6 +29,11 @@ SELECT sc.date, sc.capital as capital_4, sp.capital as capital_5, ss.capital as 
 -- === COMPARE 90 vs actual
 SELECT s.date, s.capital as cap, s2.capital as cap90 FROM `equity_history` s JOIN equity_history_90 s2 ON s.date = s2.date 
 
+SELECT s.date, s.capital as cap1, s2.capital as cap2, s3.capital as cap3 FROM 
+`equity_history_2_years_s1` s 
+JOIN `equity_history_2_years_s2` s2 ON s.date = s2.date 
+JOIN `equity_history_2_years_s3` s3 ON s.date = s3.date 
+
 
 
 SELECT e1.date, capYahoo, capBarchart, capBarchartAdj FROM

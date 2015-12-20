@@ -1,0 +1,39 @@
+=================================================
+===== Testy za obdobi 1.1.2007 - 3.10.2015 ======
+=================================================
+
+===============================================
+================ Strategie 1 ==================
+===============================================
+
+Dokupovani vzdy, prvni nakup max jeden
+
+===== YEAR STATS ====
+Year: 2007 Start: 20000.00 End: 24224.72 Percent: 21.12 OrderCount: 478 Profit/Loss: 4224.72
+Year: 2008 Start: 24224.72 End: 27375.90 Percent: 13.01 OrderCount: 279 Profit/Loss: 3151.18
+Year: 2009 Start: 27375.90 End: 34758.20 Percent: 26.97 OrderCount: 348 Profit/Loss: 7382.30
+Year: 2010 Start: 34758.20 End: 39272.56 Percent: 12.99 OrderCount: 454 Profit/Loss: 4514.36
+Year: 2011 Start: 39272.56 End: 39541.04 Percent: 0.68 OrderCount: 427 Profit/Loss: 268.48
+Year: 2012 Start: 39541.04 End: 46223.27 Percent: 16.90 OrderCount: 517 Profit/Loss: 6682.23
+Year: 2013 Start: 46223.27 End: 56987.21 Percent: 23.29 OrderCount: 505 Profit/Loss: 10763.94
+Year: 2014 Start: 56987.21 End: 66016.47 Percent: 15.84 OrderCount: 501 Profit/Loss: 9029.26
+Year: 2015 Start: 66016.47 End: 69923.25 Percent: 5.92 OrderCount: 306 Profit/Loss: 3906.78
+
+
+===============================================
+=============== Strategie 2 ===================
+===============================================
+
+Dokupovani vzdy, prvni nakup max jeden (nebo dva pokud se lisi jen o 0.5 RSI)
+
+===== YEAR STATS ====
+Year: 2007 Start: 20000.00 End: 24007.30 Percent: 20.04 OrderCount: 524 Profit/Loss: 4007.30
+Year: 2008 Start: 24007.30 End: 27725.96 Percent: 15.49 OrderCount: 298 Profit/Loss: 3718.66
+Year: 2009 Start: 27725.96 End: 35244.91 Percent: 27.12 OrderCount: 376 Profit/Loss: 7518.95
+Year: 2010 Start: 35244.91 End: 40330.63 Percent: 14.43 OrderCount: 486 Profit/Loss: 5085.72
+Year: 2011 Start: 40330.63 End: 40657.20 Percent: 0.81 OrderCount: 493 Profit/Loss: 326.57
+Year: 2012 Start: 40657.20 End: 46777.31 Percent: 15.05 OrderCount: 587 Profit/Loss: 6120.11
+Year: 2013 Start: 46777.31 End: 58840.45 Percent: 25.79 OrderCount: 566 Profit/Loss: 12063.14
+Year: 2014 Start: 58840.45 End: 69043.05 Percent: 17.34 OrderCount: 576 Profit/Loss: 10202.60
+Year: 2015 Start: 69043.05 End: 73584.34 Percent: 6.58 OrderCount: 341 Profit/Loss: 4541.29
+

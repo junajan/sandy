@@ -80,7 +80,6 @@ var Backtest = function(Strategy) {
 		console.log(self.getStatItem("Month", month, stats.months[month]).yellow);
 	};
 
-
 	this.statsOnStartMonth = function(info, month) {
 
 		stats.months[month] = {
@@ -91,7 +90,6 @@ var Backtest = function(Strategy) {
 			ordersCount: 0
 		};
 	};
-
 
 	this.statsOnEndYear = function(info, year) {
 		if(!year) return;
@@ -197,17 +195,33 @@ var Backtest = function(Strategy) {
 
 			config.date = testDay;
 
+			if(testDay.format("YYYY-MM-DD") == config.to) {
+				console.log('Last day of backtests.. will close all remaining positions')
+				config.sellAll = true;
+			}
+
 			Strategy.init(config, function(err, res) {
 				if(err) console.log(err);
-				
-				Strategy.process(config, function(err, res) {
 
-					self.statsOnEndDay(config);
+				async.series([
+					function(done) {
+						if(config.monthlyAdd && Number(testDay.format("DD")) == 1)
+							Strategy.increaseCapital(config, config.monthlyAdd, done);
+						else
+							done(null, 1);
+					},
+					function(done) {
+						
+						Strategy.process(config, function(err, res) {
 
-					dayCallback && dayCallback();
-					console.timeEnd("============== Date End ==============");
-					done(err);
-				});
+							self.statsOnEndDay(config);
+
+							dayCallback && dayCallback();
+							console.timeEnd("============== Date End ==============");
+							done(err);
+						});
+					}], done);
+
 			});
 			
 		}, function() {

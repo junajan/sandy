@@ -13,7 +13,7 @@ var Strategy = function(app) {
 
 	// 1, 2, 4, 8
 	// 1, 2, 3, 6
-	var _PRICE_COLUMN_NAME = 'adjClose';
+	var _PRICE_COLUMN_NAME = 'close';
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
@@ -273,7 +273,11 @@ var Strategy = function(app) {
 				config.changedPositions += config.openPositions.length;
 
 				async.each(config.openPositions, function(pos, done) {
-					log.info("OPEN: ".green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
+					var type = "OPEN: ";
+					if(config.positionsAggregated[pos.ticker])
+						type = "SCALE: ";
+
+					log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
 					DB.insert("positions", {
 						requested_open_price: pos.requested_open_price,
 						buy_import_id: config.importId,
@@ -503,7 +507,9 @@ var Strategy = function(app) {
 	this.getStockForBuy = function(config) {
 		var stocks = [];
 		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
-
+		if(config.sellAll)
+			return stocks;
+		
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
@@ -538,6 +544,8 @@ var Strategy = function(app) {
 		var newBuyPosition = false;
 		var newScalePosition = false;
 		var newPos = false;
+		var opennedPositions = 0;
+		var opennedFirstRSI = 0;
         config.openPositions = [];
 		
 		// jestlize nejsou dilky na prikupovani
@@ -555,12 +563,41 @@ var Strategy = function(app) {
 				return done(null, config);
 			}
 
-			// otevira se jen jedna nova pozice za den
-			if((newBuyPosition && !config.positionsAggregated[item.ticker]) || (newScalePosition && config.positionsAggregated[item.ticker]))
-				continue;
 
-			if(!config.positionsAggregated[item.ticker])
-				newBuyPosition = true;
+			// ============== OPEN STRATEGIE 3 ===============
+			
+			// otevira se jen jedna nova pozice za den
+			// TEST - oteviraji se jen 2 pozice
+			if(opennedPositions && !config.positionsAggregated[item.ticker]) {
+				if(opennedPositions >= 2) continue;
+				
+				if(opennedPositions == 1 && (item.rsi - opennedFirstRSI > 0.5 || item.rsi > 1)) {
+					continue;
+				}
+			}
+
+			if(!config.positionsAggregated[item.ticker]) {
+				opennedPositions++;
+				opennedFirstRSI = item.rsi;
+			}
+
+
+			// ============== OPEN STRATEGIE 2===============
+			// if((newBuyPosition && !config.positionsAggregated[item.ticker]))
+			// 	continue;
+
+			// if(!config.positionsAggregated[item.ticker])
+			// 	newBuyPosition = true;
+
+
+			// ============== OPEN STRATEGIE 1 ===============
+			// otevira se jen jedna nova pozice za den
+			// if((newBuyPosition && !config.positionsAggregated[item.ticker]) || (newScalePosition && config.positionsAggregated[item.ticker]))
+			// 	continue;
+
+			// if(!config.positionsAggregated[item.ticker])
+			// 	newBuyPosition = true;
+
 
 			if(config.positionsAggregated[item.ticker])
 				newScalePosition = true;
@@ -649,7 +686,7 @@ var Strategy = function(app) {
 		if(! Object.keys(config.positions).length) {
 			return done(null, config);
 		}
-		
+
 		async.each(Object.keys(config.positionsAggregated), function(ticker, done) {
 			var pos = config.positionsAggregated[ticker];
 			var indicators = config.indicators[ticker];
@@ -657,10 +694,10 @@ var Strategy = function(app) {
 			self.isLastPriceEntry(ticker, config, function(isLast) {
 
 	        	// test for close condition
-		        if(indicators.price > indicators.sma5 || isLast) { // is openned and actual price > sma5
+		        if(indicators.price > indicators.sma5 || isLast || config.sellAll) { // is openned and actual price > sma5
+	        		if(isLast) console.log('Closing because this has no more entries in DB'.yellow);
 	        		// we will close this position
 	        		config.closePositions[ticker] = pos;
-
 	        		config.newState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
 	        		config.newState.free_pieces += pos.pieces;
 		        }
@@ -669,6 +706,15 @@ var Strategy = function(app) {
 			});
 		}, function(err, res) {
 			done(null, config);
+		});
+	};
+
+	this.increaseCapital = function(config, inc, done) {
+		
+		self.getConfig(config, function(err, config) {
+			config.settings.current_capital = inc + Number(config.settings.current_capital);
+			config.settings.unused_capital = inc + Number(config.settings.unused_capital);
+			self.saveConfig(config.settings, done);
 		});
 	};
 
