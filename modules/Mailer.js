@@ -11,20 +11,37 @@ var Mailer = function(app) {
 		return d.format("YYYY-MM-DD HH:mm:ss");
 	}
 
-	this.send = function(title, text, email) {
-		email = email || emailConf.email;
+	this.sendDailyLog = function(log) {
+		if(!emailConf.dailyLog)
+			return false;
+		
+		var title = config.env+" sandy daily log";
+		var msg = '<b>Sandy bot - daily log for '+getFullDate(moment())+"</b>";
 
+		msg += '<br /><br />';
+		msg += log;
+
+		console.log('Sending daily log by email');
+		self.send(title, msg, null, true);
+	};
+
+	this.send = function(title, text, email, isHtml) {
+		email = email || emailConf.email;
 		if(!emailConf.enabled)
 			return false;
 
 		transport = nodemailer.createTransport();
-
-		transport.sendMail({  //email options
+		var mailConfig = {  //email options
 			from: emailConf.from, // sender address.  Must be the same as authenticated user if using Gmail.
 			to: email, // receiver
 			subject: title,
-			text: text
-		}, function(err, res){  //callback
+			text: text,
+		};
+
+		if(isHtml) mailConfig.html = text;
+		else mailConfig.text = text;
+
+		transport.sendMail(mailConfig, function(err, res){  //callback
 			if(err){
 			   console.error(err);
 			}

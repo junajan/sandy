@@ -9,6 +9,7 @@ app.set("config", conf);
 
 require('./routes')(app);
 var Mailer = require('./modules/Mailer')(app);
+app.mailer = Mailer;
 
 var Strategy = require('./modules/Strategy')(app);
 var StrategyLeveraged = require('./modules/StrategyLeveraged')(app);
@@ -35,25 +36,19 @@ var Backtest = require('./modules/Backtest')(Strategy);
 // var config = {
 // 	// from: "2005-01-01",
 // 	// from: "2007-01-01",
-// 	// from: "2015-09-10",
-// 	from: '2013-01-01',
+// 	from: "2015-12-10",
 // 	// from: '2014-12-01',
 // 	// to: '2015-01-01',
 // 	// to: '2015-10-15',
 // 	to: moment().format('YYYY-MM-DD'),
 // 	// to: "2015-09-11",
-// 	capital: 60000,
-// 	// monthlyAdd: 0
+// 	capital: 20000,
+// 	// monthlyAdd: 0,
+// 	mailLog: true
 // };
 
-// function reportDay(info) {
-// }
-
-// function reportAll(info) {
-// }
-
 // Backtest.wipe(config, function() {
-// 	Backtest.run(config, reportDay, reportAll);
+// 	Backtest.run(config, function(){}, function(){});
 // });
 
 
@@ -61,11 +56,6 @@ var Robot = require("./modules/Robot")(app);
 // Strategy.initClear(config);
 Robot.setStrategy(Strategy);
 Robot.start(Strategy);
-
-// Robot.strategyInit(function() {
-// 	Robot.strategyProcess();
-// });
-
 
 // // var IB = require('./modules/IBApi2')(app);
 // // IB.connect();

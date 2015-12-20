@@ -3,13 +3,13 @@ var moment = require('moment');
 var ydl = require('./HistYahoo');
 var Indicators = require('./Indicators');
 var async = require('async');
-var log = require('log4js').getLogger('Strategy'); 
 
 var Strategy = function(app) {
 	var self = this;
 	var DB = app.get("db");
 	var Tickers = require('./Tickers');
 	var Yahoo = require('./HistYahoo');
+	var log = require('./Log')(app);
 
 	// 1, 2, 4, 8
 	// 1, 2, 3, 6
@@ -109,7 +109,7 @@ var Strategy = function(app) {
 	};
 
 	this.saveData = function(config, done) {
-		log.info("Saving data for ", Object.keys(config.data).length, " tickers");
+		log.info("Saving data for "+ Object.keys(config.data).length +" tickers");
 
 		if(config.internalHistory) {
 			log.info('Using internal history');
@@ -139,7 +139,7 @@ var Strategy = function(app) {
 		for(var i in config.actual)
 			data.push([i, config.actual[i].close, config.importId]);	
 
-		log.info("Saving actual prices for ", data.length, " tickers");
+		log.info("Saving actual prices for "+ data.length+ " tickers");
 		DB.insertValues('stock_actual (symbol, price, import_id) ', data, function(err, res) {
 			done(err, config);
 		});
@@ -148,7 +148,7 @@ var Strategy = function(app) {
 	this.createImportId = function(config, done) {
 		DB.insert("import_batch", {trigger: "robot"}, function(err, res) {
 			if(!res) {
-				log.info(err, res);
+				log.info(JSON.stringify(err, res));
 				return done(err, res);
 			}
 
@@ -194,7 +194,7 @@ var Strategy = function(app) {
 	};
 
 	this.printState = function(config, state) {
-		log.info(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
+		log.info(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow, true);
 	}
 
 	this.saveCurrentState = function(config, done) {
@@ -249,7 +249,7 @@ var Strategy = function(app) {
 					var indicators = config.indicators[ticker];
 					// log.info(pos);
 					// log.info(indicators);
-					log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
+					log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2), true);
 
 					DB.update("positions", {
 						sell_import_id: config.importId,
@@ -277,7 +277,7 @@ var Strategy = function(app) {
 					if(config.positionsAggregated[pos.ticker])
 						type = "SCALE: ";
 
-					log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
+					log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2), true);
 					DB.insert("positions", {
 						requested_open_price: pos.requested_open_price,
 						buy_import_id: config.importId,
@@ -550,7 +550,7 @@ var Strategy = function(app) {
 		
 		// jestlize nejsou dilky na prikupovani
 		if(!config.newState.free_pieces) {
-			log.info("There are no more free pieces for buy stocks");
+			log.info("There are no more free pieces for buy stocks", true);
 			return done(null, config);
 		}
 
@@ -559,7 +559,7 @@ var Strategy = function(app) {
 			item = stocksToBuy[i];
 
 			if(!config.newState.free_pieces) {
-				log.info("Ending buy selection loop - not enought free pieces");
+				log.info("Ending buy selection loop - not enought free pieces", true);
 				return done(null, config);
 			}
 
@@ -610,15 +610,15 @@ var Strategy = function(app) {
 				var position = config.positionsAggregated[item.ticker];
 
 				if(position.pieces >= _maxPositionSize) {
-					log.info("Stock "+ item.ticker + " is on max "+ position.pieces + " pieces .. selecting another stock");
+					log.info("Stock "+ item.ticker + " is on max "+ position.pieces + " pieces .. selecting another stock", true);
 					return done(null, config);
 				}
 
 				var piecesCount = self.getNextPiecesCount(position.pieces);
-				log.info("Scaling up "+ item.ticker +" +"+piecesCount+" pieces (actual: "+position.pieces+")");
+				log.info("Scaling up "+ item.ticker +" +"+piecesCount+" pieces (actual: "+position.pieces+")", true);
 
 				if(piecesCount > config.newState.free_pieces) {
-					log.info("Not enought free pieces".red);
+					log.info("Not enought free pieces".red, true);
 					// piecesCount = config.newState.free_pieces;
 					continue;
 				}
@@ -752,8 +752,18 @@ var Strategy = function(app) {
 		], done);
 	};
 
+	this.sendMailLog = function(config, res, done) {
+		var logBuffer = log.getSerializedBuffer();
+		app.mailer.sendDailyLog(logBuffer);
+		return done(null, res);
+	};
+
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
+
+		log.flushBuffer();
+		log.startRecording();
+
 		async.waterfall([
 			self.createImportId.bind(null, config),
 			function(config, done) {
@@ -783,7 +793,8 @@ var Strategy = function(app) {
 			self.filterBuyStocks,
 			self.sendOrders,
 			self.saveCurrentState,
-			self.saveNewEquity
+			self.saveNewEquity,
+			self.sendMailLog.bind(null, config)
 		], done);
 	};
 
