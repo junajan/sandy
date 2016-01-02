@@ -1,0 +1,3 @@
+#!/bin/sh
+
+npm run openings >> /src/logs/sandy-openings.log

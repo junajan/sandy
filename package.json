@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "openings": "node openings.js",
     "start": "nodemon -e '.html,.js,.ejs,.css,.json' app.js"
   },
   "repository": {
