@@ -3,6 +3,7 @@ var async = require("async");
 var moment = require("moment");
 var server = require('./modules/Server');
 var conf = require("./config/public")(server.app);
+conf.port++;
 var app = server.run(conf);
 app.set("db",require('./modules/Mysql')(conf.mysql));
 app.set("config", conf);
