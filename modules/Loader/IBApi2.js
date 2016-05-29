@@ -118,7 +118,6 @@ function IB(app) {
   return this;
 }
 
-var o = null;
 module.exports = function(app) {
   return new IB(app);
-}
+};

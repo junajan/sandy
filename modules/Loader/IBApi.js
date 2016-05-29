@@ -225,7 +225,7 @@ function IB(app) {
 
 	// ib.disconnect();
 
-	}
+	
 	// this.connect();
 	return this;
 }

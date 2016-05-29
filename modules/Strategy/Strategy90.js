@@ -1,19 +1,20 @@
 var _ = require('lodash');
 var moment = require('moment');
-var ydl = require('./HistYahoo');
-var Indicators = require('./Indicators');
 var async = require('async');
 
 var Strategy = function(app) {
 	var self = this;
-	var DB = app.get("db");
-	var Tickers = require('./Tickers');
-	var Yahoo = require('./HistYahoo');
-	var log = require('./Log')(app);
+	var config = app.config;
+	var DB = app.DB;
 
-	// 1, 2, 4, 8
-	// 1, 2, 3, 6
-	var _PRICE_COLUMN_NAME = 'close';
+	// modules
+	var Indicators = require(config.dirCore+'./Indicators');
+	var Tickers = require(config.dirLoader+'./Tickers');
+	var Yahoo = require(config.dirLoader+'./HistYahoo');
+	var log = require(config.dirCore+'./Log')(app);
+
+	// settings
+	var _PRICE_COLUMN_NAME = 'adjClose';
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
@@ -24,8 +25,7 @@ var Strategy = function(app) {
 	var _maxPositionSize = 10; // 1 + 2 + 3 + 4 = 10 (max 2 fully loaded stocks will be bought)
 	var _rsiLen	= 2;
 	var _minRSI	= 10;
-	var _rsiWildersLen	= 2;
-	var _dataLen = _smaEntryLen + app.get("conf").dateOffset;
+	var _dataLen = _smaEntryLen + config.dateOffset;
 
 
     this.getNextPiecesCount = function(c) {
@@ -172,7 +172,7 @@ var Strategy = function(app) {
 				done(err, config);
 			});
 		else
-			ydl.historical({
+			Yahoo.historical({
 				symbols: config.tickers,
 				from: dateFrom,
 				to: dateTo
@@ -298,10 +298,6 @@ var Strategy = function(app) {
 		], function(err, res) {
 			done(err, config);
 		});
-	};
-
-	this.pickBestStocks = function(data, done) {
-		done(null, 3234);
 	};
 
 	this.sendOrders = function(config, done) {
@@ -540,8 +536,6 @@ var Strategy = function(app) {
 		log.info('Filtering stocks for buy condition');
 
 		var item;
-		var stocksToBuy = [];
-		var newBuyPosition = false;
 		var newScalePosition = false;
 		var newPos = false;
 		var opennedPositions = 0;

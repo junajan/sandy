@@ -4,7 +4,7 @@ var nodemailer = require('nodemailer');
 
 var Mailer = function(app) {
 	var self = this;
-	var config = app.get('config');
+	var config = app.config;
 	var emailConf = config.email;
 
 	function getFullDate(d) {
@@ -30,7 +30,7 @@ var Mailer = function(app) {
 		if(!emailConf.enabled)
 			return false;
 
-		transport = nodemailer.createTransport();
+		var transport = nodemailer.createTransport();
 		var mailConfig = {  //email options
 			from: emailConf.from, // sender address.  Must be the same as authenticated user if using Gmail.
 			to: email, // receiver

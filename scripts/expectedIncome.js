@@ -2,19 +2,20 @@
  *  Vyse prijmu v zavislosti na vstupnim kapitalu
  */
 
-var vydaje = 500 + 1000 + 1100 + 1000;
+var vydaje = 100; // server +
 var zhodnoceni = 43;
-var dane = 15;
-var kurz = 26;
+var poplatky = 30;		// dane + zdravotni + socialni (pausalni daneni)
+var kurz = 24.4;
 var komise = 1;
 var kapitalNasobky = 10000;
+var max = 5;
+var obchoduRocne = 400;
 
-for(var i = 1; i <= 10; i++ ) {
+for(var i = 1; i <= 5; i++ ) {
 	var kapital = kapitalNasobky * i;
 
 	var pa = kapital * (zhodnoceni / 100);
-	var zdanenePa = pa * (1 - (15 / 100));
-	var obchoduRocne = 160;
+	var zdanenePa = pa * (1 - (poplatky / 100));
 	var poplatkyRocne = obchoduRocne * 2 * komise;
 
 	var cistyZisk = zdanenePa - vydaje - poplatkyRocne;

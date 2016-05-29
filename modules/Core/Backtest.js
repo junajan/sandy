@@ -57,15 +57,6 @@ var Backtest = function(Strategy) {
 		stats.years[statsLastYear]['openOrdersCount'] += openCount;
 		stats.years[statsLastYear]['closeOrdersCount'] += closeCount;
 		stats.years[statsLastYear]['ordersCount'] += openCount + closeCount;
-
-
-		// var tommorow = self.getNextWorkDay(testDay);
-
-		// if(isEnd || tommorow.format('MM') !== statsLastMonth)
-		// 	self.statsOnEndMonth(info);
-		
-		// if(isEnd || tommorow.format('YYYY') !== statsLastYear)
-		// 	self.statsOnEndYear(info);
 	};
 
 

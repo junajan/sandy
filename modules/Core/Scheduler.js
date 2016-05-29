@@ -11,7 +11,7 @@ var Scheduler = function() {
 		rule.hour = hour;
 		rule.minute = 0;
 		 
-		var j = schedule.scheduleJob(rule, cb);
+		return schedule.scheduleJob(rule, cb);
 	};
 
 	self.everyDayHour = function(hour, cb) {
@@ -20,7 +20,7 @@ var Scheduler = function() {
 		rule.hour = hour;
 		rule.minute = 0;
 		 
-		var j = schedule.scheduleJob(rule, cb);
+		return schedule.scheduleJob(rule, cb);
 	};
 
 	self.cron = function(schedule, cb) {

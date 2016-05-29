@@ -1,8 +1,12 @@
-var Yahoo = require('./HistYahoo');
 
 var Api = function(app) {
 	var self = this;
-	var DB = app.get('db');
+	var config = app.config;
+	var DB = app.DB;
+
+	var Yahoo = require(config.dirLoader+'HistYahoo');
+
+
 	this.openPrices = {'MO': 123};
 
 	this.getWatchlist = function(req, res) {

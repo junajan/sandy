@@ -1,11 +1,15 @@
 {
-  "name": "ariva",
+  "name": "sandy",
   "version": "1.0.0",
-  "description": "",
+  "description": "Stock market automated trading system",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "openings": "node openings.js",
+    "openings": "node scripts/openings.js",
+    "expected-income": "node scripts/expectedIncome.js",
+    "history": "node scripts/history.js",
+    "history-barchart": "node scripts/historyBarchart.js",
+    "history-intraday": "node scripts/historyIntraday.js",
     "start": "nodemon -e '.html,.js,.ejs,.css,.json' app.js"
   },
   "repository": {

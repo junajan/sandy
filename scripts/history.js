@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * This will import historical data to Mysql table
  */
@@ -5,25 +7,21 @@
 require('colors');
 var async = require("async");
 var moment = require("moment");
-var server = require('./modules/Server');
-var conf = require("./config/public")(server.app);
-var app = server.run(conf);
-var DB = require('./modules/Mysql')(conf.mysql);
-app.set("db",DB);
-var Strategy = require('./modules/Strategy')(app);
-var ydl = require('./modules/HistYahoo');
+var config = require("../config");
 
+var DB = require(config.dirCore+'Mysql')(config.mysql);
+var ydl = require(config.dirLoader+'HistYahoo');
+var Strategy = require(config.dirStrategy+'Strategy90')({config: config, DB: DB});
 
 const RUN = true;
-
+const _TABLE = "stock_history_full";
 
 var dateFrom = '1990-01-01';
 var dateTo = moment().format('YYYY-MM-DD');
-const _TABLE = "stock_history_full";
 
 var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
-// var tickers = ['UPRO','SPXS', 'SPY'];
-// var tickers = ['VXX', 'VIX', 'XIV'];
+tickers = tickers.concat(['UPRO','SPXS', 'SPY', "LABU", "LABD"]);
+tickers = tickers.concat(['VXX', 'VIX', 'XIV']);
 
 function downloadHistory(ticker, done) {
 
@@ -33,7 +31,7 @@ function downloadHistory(ticker, done) {
 		var from = dateFrom;
 		if(res)
 			 from = moment(res.date).add(1, 'day').format('YYYY-MM-DD');
-			
+
 		console.log(("Reading "+ticker+" history data from "+from +" to " + dateTo).yellow);
 		ydl.historical({
 			symbol: ticker,
@@ -42,6 +40,12 @@ function downloadHistory(ticker, done) {
 		}, function(err, res) {
 			if(err)
 				throw err;
+			
+			res.map(function(item){
+				item.date =  moment(item.date).format("YYYY-MM-DD HH:mm:ss");
+				return item;
+			});
+
 			saveData(ticker, Strategy.serializeHistoricalData(0, {abcd: res}), done);
 		});
 	});

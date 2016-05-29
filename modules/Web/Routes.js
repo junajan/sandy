@@ -1,14 +1,15 @@
 var express = require('express');
 
 module.exports = function(app) {
+    var config = app.config;
 
-    var Web = require('./modules/Web')(app);
-    var Api = require('./modules/Api')(app);
+    var Web = require('./Web')(app);
+    var Api = require('./Api')(app);
 
     var authRoutes = express.Router();
     var apiRoutes = express.Router();
     
-    app.use(express.static(__dirname + '/web/auth'));
+    app.use(express.static(config.root + 'web/auth'));
     
     authRoutes.get('*', Web.getApp);
     
