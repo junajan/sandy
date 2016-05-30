@@ -32,7 +32,10 @@ var Openings = function(app) {
 	};
 
 	this.getTodaysClosingTime = function(date, done) {
-		async.parallel({regular: self.getDefaultHours, exception: self.checkSchedule.bind(null, date)}, function(err, res) {
+		async.parallel({
+			regular: self.getDefaultHours,
+			exception: self.checkSchedule.bind(null, date)
+		}, function(err, res) {
 			if(err) return done(err);
 
 			if(moment(date).format('d') % 6 == 0) { // is weekend
