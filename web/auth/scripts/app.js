@@ -41,6 +41,11 @@ var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
                 controller: "Orders",
                 title: "Orders"
             })
+            .when("/holidays", {
+                templateUrl: viewFolder+"Holidays.html",
+                controller: "Holidays",
+                title: "Holidays"
+            })
             .otherwise({
                 templateUrl: viewFolder+"/Error404.html",
                 controller: "Error404",

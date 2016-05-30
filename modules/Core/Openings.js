@@ -7,7 +7,8 @@ var Openings = function(app) {
 	const DB_TABLE = 'exchange_schedule';
 
 	var self = this;
-	var DB = app.get('db');
+	var DB = app.DB;
+	var config = app.config;
 	var defaultOpenings = false;
 
 	var nasdaqHoursUrl = "https://business.nasdaq.com/discover/events/trading-hours/index.html";

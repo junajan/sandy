@@ -1,13 +1,14 @@
+'use strict';
+
+/**
+ * This will import historical data to Mysql table
+ */
+
 require('colors');
-var server = require('./modules/Server');
-var conf = require("./config/public")(server.app);
-conf.port++;
-var app = server.run(conf);
-app.set("db",require('./modules/Mysql')(conf.mysql));
-app.set("config", conf);
+var config = require("../config");
 
-var Openings = require('./modules/Openings')(app);
-
+var DB = require(config.dirCore+'Mysql')(config.mysql);
+var Openings = require(config.dirCore+'Openings')({config: config, DB: DB});
 
 console.log('Loading openings');
 

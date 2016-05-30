@@ -17,6 +17,7 @@ module.exports = function(app) {
     apiRoutes.get('/watchlist', Api.getWatchlist);
     apiRoutes.get('/statistics', Api.getConfig);
     apiRoutes.get('/open-prices', Api.getOpenPrices);
+    apiRoutes.get('/holidays', Api.getHolidays);
     apiRoutes.get('/orders', Api.getOrders);
     apiRoutes.get('/log', Api.getLog);
 

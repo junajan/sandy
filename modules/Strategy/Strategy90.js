@@ -14,7 +14,7 @@ var Strategy = function(app) {
 	var log = require(config.dirCore+'./Log')(app);
 
 	// settings
-	var _PRICE_COLUMN_NAME = 'adjClose';
+	var _PRICE_COLUMN_NAME = 'close';
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
