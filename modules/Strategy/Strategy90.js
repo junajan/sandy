@@ -12,6 +12,7 @@ var Strategy = function(app) {
 	var Tickers = require(config.dirLoader+'./Tickers');
 	var Yahoo = require(config.dirLoader+'./HistYahoo');
 	var log = require(config.dirCore+'./Log')(app);
+	var Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
 	var _PRICE_COLUMN_NAME = 'close';
@@ -112,10 +113,10 @@ var Strategy = function(app) {
 		log.info("Saving data for "+ Object.keys(config.data).length +" tickers");
 
 		if(config.internalHistory) {
-			log.info('Using internal history');
+			log.info('Saving data - Using internal history so nothing was saved');
 			return done(null, config);
 		}
-		
+
 		DB.insertValues(
 			'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
 			self.serializeHistoricalData(config.importId, config.data),
@@ -124,25 +125,6 @@ var Strategy = function(app) {
 				config.insert = res;
 				done(err, config);
 			});
-	};
-
-	this.saveActualPrices = function(config, done) {
-		log.info("Saving actual prices");
-		var data = [];
-		
-		if(config.internalHistory) {
-			log.info("Using internal history");
-			
-			return done(null, config);
-		}
-
-		for(var i in config.actual)
-			data.push([i, config.actual[i].close, config.importId]);	
-
-		log.info("Saving actual prices for "+ data.length+ " tickers");
-		DB.insertValues('stock_actual (symbol, price, import_id) ', data, function(err, res) {
-			done(err, config);
-		});
 	};
 
 	this.createImportId = function(config, done) {
@@ -189,10 +171,6 @@ var Strategy = function(app) {
 		});
 	};
 
-	this.sendInteractiveBrokersOrders = function(config, done) {
-		done(null, 1234);
-	};
-
 	this.printState = function(config, state) {
 		log.info(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow, true);
 	}
@@ -230,13 +208,15 @@ var Strategy = function(app) {
 		return d.format(_dateFormat);
 	};
 
-	this.sendBacktestOrders = function(config, done) {
-        config.currentState = {
+	this.sendOrders = function(config, done) {
+		log.info('Sending orders');
+
+		config.currentState = {
 			current_capital: parseFloat(config.settings.current_capital, 2),
 			unused_capital: parseFloat(config.settings.unused_capital, 2),
 			free_pieces: parseInt(config.settings.free_pieces),
-        };
-        config.changedPositions = 0;
+		};
+		config.changedPositions = 0;
 		self.printState(config, config.currentState);
 
 		async.series([
@@ -251,6 +231,19 @@ var Strategy = function(app) {
 					// log.info(indicators);
 					log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2), true);
 
+					Broker.sendSellOrder(ticker, pos.amount, "MKT", function(err, res) {
+							if(err)
+								return log.error("Error while sending SELL order for "+ticker, res);
+							log.info("SELL ORDER for "+ticker+" was sent");
+						},
+						function(err, res) {
+
+							config.currentState.current_capital += parseFloat(indicators.price * pos.amount - pos.open_price * pos.amount, 2);
+							config.currentState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
+							config.currentState.free_pieces += pos.pieces;
+							done(err, res);
+						});
+
 					DB.update("positions", {
 						sell_import_id: config.importId,
 						requested_close_price: indicators.price,
@@ -258,13 +251,9 @@ var Strategy = function(app) {
 						requested_close_date: self.getDBDate(config.date),
 						close_date: self.getDBDate(config.date)
 					}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, res) {
-
 						// decrement available resources
-						config.currentState.current_capital += parseFloat(indicators.price * pos.amount - pos.open_price * pos.amount, 2);
-						config.currentState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
-						config.currentState.free_pieces += pos.pieces;
-						done(err, res);
 					});
+
 
 				}, done);
 			},
@@ -298,15 +287,6 @@ var Strategy = function(app) {
 		], function(err, res) {
 			done(err, config);
 		});
-	};
-
-	this.sendOrders = function(config, done) {
-		log.info('Sending orders');
-
-		if(config.backtestOrders)
-			self.sendBacktestOrders(config, done);
-		else
-			self.sendInteractiveBrokersOrders(config, done);
 	};
 
 	this.getHistoricalImport = function(info, done) {
@@ -381,19 +361,19 @@ var Strategy = function(app) {
 		var tickers = "'"+config.tickers.join("','")+"'";
 		config.actual = {};
 
-		function processYahooResult(err, res) {
+		function processApiResult(err, prices) {
 			if(err) return done(err, config);
 
-			res.forEach(function(item) {
-				config.actual[item[0]] = {
+			_.forEach(prices, function(info, ticker) {
+				config.actual[ticker] = {
 					date: date,
-					symbol: item[0],
+					symbol: ticker,
 					importId: config.importId,
-					open: item[1],
-					high: item[1],
-					low: item[1],
-					close: item[1],
-					adjClose: item[1],
+					open: info.price,
+					high: info.price,
+					low: info.price,
+					close: info.price,
+					adjClose: info.price,
 					volume: 0,
 				};
 			});
@@ -413,7 +393,7 @@ var Strategy = function(app) {
 		if(config.internalHistory)
 			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
 		else
-			Yahoo.actual(config.tickers, processYahooResult);
+			Broker.getMarketPriceBulk(config.tickers, processApiResult);
 	};
 
 	this.getConfig = function(config, done) {
@@ -752,6 +732,24 @@ var Strategy = function(app) {
 		return done(null, res);
 	};
 
+	this.startStreamingPrices = function (config, done) {
+		if(config.internalHistory) {
+
+			done(null, config);
+		} else {
+
+			Broker.startStreaming(config.tickers, function () {
+				done(null, config);
+			});
+		}
+	};
+
+	this.stopStreamingPrices = function (config, done) {
+		if(!config.internalHistory)
+			Broker.stopStreaming();
+		done(null, config);
+	};
+
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
 
@@ -770,6 +768,7 @@ var Strategy = function(app) {
 			self.downloadHistory,
 			self.saveData,
 			self.markImportAsFinished,
+			self.startStreamingPrices,
 		], done);
 	};
 
@@ -779,7 +778,6 @@ var Strategy = function(app) {
 			self.getConfig.bind(null, config),
 			self.getOpenPositions,
 			self.getActualPrices,
-			self.saveActualPrices,
 			self.appendActualPrices,
 			self.processIndicators,
 			self.saveIndicators,
@@ -788,6 +786,7 @@ var Strategy = function(app) {
 			self.sendOrders,
 			self.saveCurrentState,
 			self.saveNewEquity,
+			self.stopStreamingPrices,
 			self.sendMailLog.bind(null, config)
 		], done);
 	};

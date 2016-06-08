@@ -202,15 +202,20 @@ var Backtest = function(Strategy) {
 							done(null, 1);
 					},
 					function(done) {
-						
-						Strategy.process(config, function(err, res) {
+						if(config.processingDelay)
+							console.log("Delaying processing - "+config.processingDelay+"ms");
 
-							self.statsOnEndDay(config);
+						setTimeout(function () {
 
-							dayCallback && dayCallback();
-							console.timeEnd("============== Date End ==============");
-							done(err);
-						});
+							Strategy.process(config, function(err, res) {
+
+								self.statsOnEndDay(config);
+
+								dayCallback && dayCallback();
+								console.timeEnd("============== Date End ==============");
+								done(err);
+							});
+						}, config.processingDelay || 0);
 					}], done);
 
 			});

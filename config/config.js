@@ -11,7 +11,8 @@ var _config = {
     dirModule: modules,
     dirStrategy: modules+"Strategy/",
     dirWeb: modules+"Web/",
-    dirLoader: modules+"Loader/"
+    dirLoader: modules+"Loader/",
+    dirConnector: modules+"Connector/",
 };
 
 module.exports = _.merge(_config, require("./env"));

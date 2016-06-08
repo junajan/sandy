@@ -6,7 +6,10 @@ var Robot = function(app) {
 	var self = this;
 	var scheduleMorningHour = 3;
 	var Openings = require("./Openings")(app);
-	
+
+	var DELAY_PROCESSING = 1;
+	var DELAY_INIT = 10;
+
 	self.Strategy = null;
 	self.strategyInited = false;
 	self.strategyConfig = {};
@@ -39,6 +42,7 @@ var Robot = function(app) {
 
 		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
+			if(err) log.error("Strategy processing returned error: ", err);
 		});
 	};
 
@@ -57,8 +61,8 @@ var Robot = function(app) {
 			var timeClose = moment(time, "HH:mm");
 			if(!timeClose.isValid()) return console.log('Time is invalid'.red);
 
-			var timeStrategyInit = moment(timeClose).subtract(10, 'minutes');
-			var timeStrategyProcess = moment(timeClose).subtract(1, 'minutes');
+			var timeStrategyInit = moment(timeClose).subtract(DELAY_INIT, 'minutes');
+			var timeStrategyProcess = moment(timeClose).subtract(DELAY_PROCESSING, 'minutes');
 			
 			log.info("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
 
