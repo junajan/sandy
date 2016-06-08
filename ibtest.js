@@ -33,7 +33,8 @@ setTimeout(function() {
     //
     // });
 
-    Broker.sendBuyOrder("AAPL",  80, "MKT", console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
+    // Broker.sendSellOrder("AAPL", 2000, "MKT" , console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
+    Broker.sendSellOrder("ALL", 14, "MKT" , console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
     // Broker.printOrders();
-}, 500);
+}, 1000);
 

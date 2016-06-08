@@ -7,6 +7,7 @@ var ibApi = require("ib");
 var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
+var once = require('once');
 
 var LogMockup = {};
 ["fatal", "error", "info", "notice"].forEach(function (level) {
@@ -28,6 +29,7 @@ var IBApi = function(config, app) {
     var streamingPositions = false;
     var loadingOrders = false;
     var streamingOrders = [];
+    var placedOrders = {};
 
     var Log = app.Log || LogMockup;
     var DB = app.DB;
@@ -142,13 +144,36 @@ var IBApi = function(config, app) {
                 'clientId='.bold, clientId,
                 'whyHeld='.bold, whyHeld
             );
+
+            if(!placedOrders[id]) {
+                return console.error("Order id %d was not found in placed orders".red, id);
+            }
+
+
+            if(status === "Filled") {
+                var info = placedOrders[id];
+
+                info.doneFilled(null, {
+                    orderId: id,
+                    status: status,
+                    ticker: info.ticker,
+                    type: info.type,
+                    amount: filled,
+                    price: avgFillPrice,
+                    priceType: info.priceType,
+                });
+                clearTimeout(placedOrders[id].timeoutId);
+            }
+
         }).on('execDetails', function (reqId, contract, exec) {
-            console.log("ExecDetails".cyan);
-            console.dir({
-                reqId: reqId,
-                contract: contract,
-                exec: exec
-            });
+            console.log(arguments);
+            console.log("ExecDetails".cyan, "reqId:;".bold, reqId, "contract:".bold, contract, "exec:".bold, exec );
+
+            self.logOrder(exec.orderId, contract.symbol, exec.side, exec.shares, exec.price, "PROCESSED", JSON.stringify(arguments), function (err, res) {
+                if(err) log.error("There was an error while saving execDetails".red, arguments);
+
+
+            })
         });
 
     var getNextOrderId = function () {
@@ -312,12 +337,23 @@ var IBApi = function(config, app) {
         ib.reqOpenOrders();
     };
 
-    self.getOrderStatus = function () {
-        throw "NOT IMPLEMENTED"
+    self.logOrder = function (orderId, ticker, type, amount, price, priceType, done) {
+        DB.insert("api_log", {
+            order_id: orderId,
+            ticker: ticker,
+            type: type,
+            amount: amount,
+            price: price,
+            price_type: priceType
+        }, done);
     };
 
-    self.sendOrder = function (type, ticker, amount, price, doneSent, doneFilled) {
-        var order;
+    self.sendOrder = function (type, ticker, amount, price, doneFilled) {
+        var order, priceType;
+        var orderId = getNextOrderId();
+
+        doneFilled = once(doneFilled);
+
         if(["BUY", "SELL"].indexOf(type) == -1)
             throw "Undefined order type - "+type+" - allowed types are BUY or SELL";
 
@@ -325,12 +361,43 @@ var IBApi = function(config, app) {
             throw "Unsupported amount - must be positive number";
 
         if(price == "MKT")
-            order = ib.order.market(type, 1);
+            order = ib.order.market(type, amount);
         else
-            order = ib.order.limit('BUY', 1, 0.01)
+            order = ib.order.limit(type, amount, price);
 
-        console.log("SendOrder".yellow, "Sending order %s(%s) %sx %s", type, ticker, amount, price);
-        ib.placeOrder(getNextOrderId(), ib.contract.stock(ticker), order);
+        console.log(("SendOrder".yellow+ " Sending order(%d) %s(%s) %sx %s"), orderId, type, ticker, amount, price);
+        priceType = (price === "MKT") ? "MKT" : "LIMIT";
+        price = (price === "MKT") ? -1 : price;
+
+        self.logOrder(orderId, ticker, type, amount, price, priceType, null, function (err, res) {
+
+            if(err) {
+                console.error("There was and error while saving order info to DB", err, res);
+                return setTimeout(function(){
+                    doneFilled(err);
+                });
+            }
+
+            placedOrders[orderId] = {
+                ticker: ticker,
+                orderId: orderId,
+                type: type,
+                amount: amount,
+                price: price,
+                priceType: priceType,
+                doneFilled: doneFilled
+            };
+
+            placedOrders[id].timeoutId = setTimeout(function () {
+                placedOrders[id].doneFilled({
+                    error: "timeout",
+                    errorText: "There was triggered timeout for order ID "+orderId,
+                    orderId: orderId,
+                });
+            });
+
+            ib.placeOrder(orderId, ib.contract.stock(ticker), order);
+        });
     };
 
     /**
