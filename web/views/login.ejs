@@ -1,75 +1,50 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Sandy | Log in</title>
-    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
-    
-    <link href="adminlte/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <link href="fontawesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
-    <link href="adminlte/dist/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
-    <script type="text/javascript" src="/reload/reload.js"></script>
-  </head>
-  <body class="login-page">
-    <div class="login-box">
-      <div class="login-logo">
-        <a href="/"><b>Sandy</b> admin</a>
-      </div>
-      <div class="login-box-body">
-        <p class="login-box-msg">Sign in first</p>
-      
-        <form action="/" method="post" onSubmit="return login(event)">
-          <div class="form-group has-feedback">
-            <input name="username" type="text" class="form-control" placeholder="Email"/>
-            <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
-          </div>
-          <div class="form-group has-feedback">
-            <input name="password" type="password" class="form-control" placeholder="Password"/>
-            <span class="glyphicon glyphicon-lock form-control-feedback"></span>
-          </div>
-          <div class="row">
-            <div class="pull-left col-xs-8" style="margin-top: 5px;">
-              <p id="invalidCredentials" class="text-left text-danger" style="display: none"><b>Invalid credentials...</b></p>
-              <p id="apiError" class="text-left text-danger" style="display: none"><b>Some api error just occured...</b></p>
-            </div>
-            <div class="pull-right col-xs-4">
-              <button type="submit" class="btn btn-primary btn-block btn-flat">Sign In</button>
-            </div>
-          </div>
-        </form>
-      </div>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <script src="/reload/reload.js"></script>
+
+  <title>Sandy bot - login</title>
+
+  <link rel="icon" href="/images/icon.ico" type="image/x-icon" />
+
+  <link href="./styles/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- Static navbar -->
+    <img src="./images/icon.png" style="width: 200px; display: block; margin: 0px auto; margin-top:50px;margin-bottom:50px; " />
+    <div class="jumbotron" style="width: 500px; margin: 0px auto; ">
+
+      <h1 style="margin-top: 0px;">
+        Sandy bot
+      </h1>
+      <form role="form" method="post" action="/login">
+        <div class="form-group">
+          <label for="email">Name:</label>
+          <input type="email" class="form-control" name="name" id="loginName">
+        </div>
+        <div class="form-group">
+          <label for="pwd">Password:</label>
+          <input type="password" class="form-control" name="password">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+        <span style="color: red;"><%- (message ? "&nbsp;&nbsp;"+message : '') %></span>
+      </form>
     </div>
 
-    <script src="adminlte/plugins/jQuery/jQuery-2.1.3.min.js"></script>
-    <script src="adminlte/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-    <script src="adminlte/plugins/iCheck/icheck.min.js" type="text/javascript"></script>
-    <script>
-      function login(ev) {
-        ev.preventDefault();
-        $(".text-danger").hide();
+  </div> <!-- /container -->
 
-        var name = $("input[name=username]");
-        var pass = $("input[name=password]");
-
-        $.post('/login', {username: name.val(), password: pass.val()}, function(res) {
-          if(res && res.ok)
-            return window.location = '/app';
-
-          else if(res.error === 'ERR_WRONG_CREDENTIALS')
-            $("#invalidCredentials").fadeIn();
-          else
-            $("#apiError").fadeIn();
-          
-          pass.val('');
-        }, 'json').fail(function(res) {
-
-          $("#apiError").fadeIn();
-          pass.val('');
-        });
-
-        return false;
-      }
-
-    </script>
-  </body>
+  <script src="./vendor_js/jquery.min.js"></script>
+  <script>
+    $("#loginName").focus();
+  </script>
+</body>
 </html>

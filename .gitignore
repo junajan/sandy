@@ -21,6 +21,7 @@ npm-debug.log
 # Bower vendor files
 web/public/vendor
 config/env.json
+sessions
 
 
 .idea

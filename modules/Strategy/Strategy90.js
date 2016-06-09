@@ -231,29 +231,30 @@ var Strategy = function(app) {
 					// log.info(indicators);
 					log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2), true);
 
-					Broker.sendSellOrder(ticker, pos.amount, "MKT", function(err, res) {
-							if(err)
-								return log.error("Error while sending SELL order for "+ticker, res);
-							log.info("SELL ORDER for "+ticker+" was sent");
-						},
-						function(err, res) {
+					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
+						if(err) {
+							log.error("Error during sell order", err);
+							return one(err);
+						}
+						DB.update("positions", {
+							sell_import_id: config.importId,
+							requested_close_price: indicators.price,
+							close_price: res.price,
+							requested_close_date: self.getDBDate(config.date),
+							close_date: self.getDBDate(config.date)
+						}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
+							if(err) {
+								log.error("Error while saving sold positions to DB", err);
+								done(err);
+							}
 
-							config.currentState.current_capital += parseFloat(indicators.price * pos.amount - pos.open_price * pos.amount, 2);
-							config.currentState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
+							// decrement available resources
+							config.currentState.current_capital += parseFloat(res.price * res.amount - pos.open_price * pos.amount, 2);
+							config.currentState.unused_capital += parseFloat(res.price * res.amount, 2);
 							config.currentState.free_pieces += pos.pieces;
 							done(err, res);
 						});
-
-					DB.update("positions", {
-						sell_import_id: config.importId,
-						requested_close_price: indicators.price,
-						close_price: indicators.price,
-						requested_close_date: self.getDBDate(config.date),
-						close_date: self.getDBDate(config.date)
-					}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, res) {
-						// decrement available resources
 					});
-
 
 				}, done);
 			},
@@ -267,20 +268,31 @@ var Strategy = function(app) {
 						type = "SCALE: ";
 
 					log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2), true);
-					DB.insert("positions", {
-						requested_open_price: pos.requested_open_price,
-						buy_import_id: config.importId,
-						ticker: pos.ticker,
-						pieces: pos.pieces,
-						amount: pos.amount,
-						open_price: pos.requested_open_price,
-						open_date: self.getDBDate(config.date)
-					}, function(err, res) {
+					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
+						if(err) {
+							log.error("Error during sell order", err);
+							return done(err);
+						}
 
-						// decrement available resources
-						config.currentState.unused_capital -= pos.requested_open_price * pos.amount;
-						config.currentState.free_pieces -= pos.pieces;
-						done(err, res);
+						DB.insert("positions", {
+							requested_open_price: pos.requested_open_price,
+							buy_import_id: config.importId,
+							ticker: pos.ticker,
+							pieces: pos.pieces,
+							amount: res.amount,
+							open_price: res.price,
+							open_date: self.getDBDate(config.date)
+						}, function(err, resDb) {
+							if(err) {
+								log.error("Error while saving bought positions to DB", err);
+								done(err);
+							}
+
+							// decrement available resources
+							config.currentState.unused_capital -= res.price * res.amount;
+							config.currentState.free_pieces -= pos.pieces;
+							done(err, res);
+						});
 					});
 				}, done);
 			}

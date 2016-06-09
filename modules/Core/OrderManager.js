@@ -85,16 +85,16 @@ var OrderManager = function(app) {
         });
     };
 
-    self.sendOrder = function (type, ticker, amount, price, doneFilled) {
-        Broker.sendOrder(type, ticker, amount, price, doneFilled);
+    self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
+        Broker.sendOrder(type, ticker, amount, price, requestedPrice, doneFilled);
     };
 
-    self.sendSellOrder = function (ticker, amount, price, doneFilled) {
-        Broker.sendOrder("SELL", ticker, amount, price, doneFilled);
+    self.sendSellOrder = function (ticker, amount, price, requestedPrice, doneFilled) {
+        Broker.sendOrder("SELL", ticker, amount, price, requestedPrice, doneFilled);
     };
 
-    self.sendBuyOrder = function (ticker, amount, price, doneFilled) {
-        Broker.sendOrder("BUY", ticker, amount, price, doneFilled);
+    self.sendBuyOrder = function (ticker, amount, price, requestedPrice, doneFilled) {
+        Broker.sendOrder("BUY", ticker, amount, price, requestedPrice, doneFilled);
     };
 
     return this;

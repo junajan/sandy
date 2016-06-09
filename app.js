@@ -14,11 +14,12 @@ var config = require("./config");
 var server = require(config.dirWeb+'Server');
 
 var app = server.run(config);
-require("./config/app")(app);
-
-app.config = config
+app.config = config;
 app.DB = require(config.dirCore+'Mysql')(config.mysql);
 app.mailer = require(config.dirCore+'Mailer')(app);
+
+require("./config/app")(app);
+
 
 var Strategy = require(config.dirStrategy+'Strategy90')(app);
 var Backtest = require(config.dirCore+'Backtest')(Strategy);
@@ -31,7 +32,7 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
-var BACKTEST = false;
+var BACKTEST = true;
 var RUN_STRATEGY = true;
 // ==============================
 
@@ -42,7 +43,7 @@ if(BACKTEST) {
 		// from: "2005-01-01",
 		// from: "2007-01-01",
 		// from: "2015-01-01",
-		from: '2016-01-01',
+		from: '2017-01-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
@@ -77,8 +78,16 @@ if(BACKTEST) {
 
 		Strategy.process(res, function(err, res) {
 			console.timeEnd("Processing finished");
-			console.log("======== RESULT ========");
-			console.log(err, res);
+			console.log("======== PROCESS RESULT ========");
+			if(err) console.log("ERROR: ", err);
+			else {
+				console.log({
+					positions: res.postions,
+					closePositions: res.closePositions,
+					openPositions: res.openPositions,
+					state: res.newState
+				});
+			}
 		});
 	});
 

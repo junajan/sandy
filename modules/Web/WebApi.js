@@ -2,11 +2,11 @@ var WebApi = function(app) {
     var Auth = require('./Auth')(app);
     var self = this;
     var config = app.get('conf');
-    
+
     this.getApp = function(req, res, next) {
         res.render('app');
     };
-    
+
     this.getLogin = function(req, res, next) {
         if (req.isAuthenticated())
             return res.redirect('/app/');

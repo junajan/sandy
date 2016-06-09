@@ -8,31 +8,31 @@ module.exports = function(app) {
 
     var authRoutes = express.Router();
     var apiRoutes = express.Router();
-    
-    app.use(express.static(config.root + 'web/auth'));
-    
-    authRoutes.get('*', Web.getApp);
-    
-    apiRoutes.get('/equity', Api.getEquity);
-    apiRoutes.get('/watchlist', Api.getWatchlist);
-    apiRoutes.get('/statistics', Api.getConfig);
-    apiRoutes.get('/open-prices', Api.getOpenPrices);
-    apiRoutes.get('/holidays', Api.getHolidays);
-    apiRoutes.get('/orders', Api.getOrders);
-    apiRoutes.get('/log', Api.getLog);
 
+    var unauthStatic = express.static(config.root + 'web/public');
+    var authStatic = express.static(config.root + 'web/auth');
 
-    /**
-     * This will add static content provider for authenticated users
-     * - alias serve SPA app only to authorized users
-     */
-    // this.addPrivateStaticMiddleware = function(req, res, next) {
-    //     if(req.isAuthenticated()){
-    //         console.log(__dirname + '/../web/auth');
-    //         return express.static(__dirname + '/web/auth/')(req, res, next);
-    //     }
-    //     next();
-    // };
+    app.use(unauthStatic);
+    app.use(function(req, res, next) {
+        if (!req.isAuthorized()) {
+            return next();
+        }
+        authStatic(req, res, next);
+    });
+
+    authRoutes.get('/login', Web.isNotAuthorized, Web.getLogin);
+    authRoutes.post('/login', Web.isNotAuthorized, Web.doLogin);
+    authRoutes.get('/logout', Web.isAuthorized, Web.doLogout);
+    authRoutes.get('*', Web.isAuthorized, Web.getApp);
+
+    apiRoutes.get('/equity', Web.isApiAuthorized, Api.getEquity);
+    apiRoutes.get('/watchlist', Web.isApiAuthorized, Api.getWatchlist);
+    apiRoutes.get('/statistics', Web.isApiAuthorized, Api.getConfig);
+    apiRoutes.get('/open-prices', Web.isApiAuthorized, Api.getOpenPrices);
+    apiRoutes.get('/holidays', Web.isApiAuthorized, Api.getHolidays);
+    apiRoutes.get('/orders', Web.isApiAuthorized, Api.getOrders);
+    apiRoutes.get('/log', Web.isApiAuthorized, Api.getLog);
+
 
     /**
      * Add middleware serving app static content for authorízed users

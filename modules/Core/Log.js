@@ -50,7 +50,7 @@ var Log = function(app, conf) {
 			if(line.type == 'error')
 				l = '<span style="color: red">'+l+'</span>';
 			else if(line.type == 'warning')
-				l = '<span style="color: yello">'+l+'</span>';
+				l = '<span style="color: yellow">'+l+'</span>';
 
 			str += l + "<br />\n";
 		});
@@ -73,7 +73,7 @@ var Log = function(app, conf) {
 	this.error = function(text, bold) {
 		logger.error.call(logger, text);
 
-		self.addRecord(text, error, bold);
+		self.addRecord(text, bold);
 	};
 	
 	return this;

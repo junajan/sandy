@@ -17,12 +17,18 @@ var Mock = function(config, app) {
     var self = this;
     var streaming = false;
     var DB = app.DB;
+    var orderId = 1;
+
     Log = app.Log || LogMockup;
 
     // realtime data mockup URL
     var realtimeUrl = 'http://download.finance.yahoo.com/d/quotes.csv?f=sl1&s=';
 
     Log.info("Starting mockup API with config:", config);
+
+    var getNextOrderId = function() {
+        return orderId++;
+    };
 
     /**
      * Trasnform data from array to object
@@ -92,6 +98,21 @@ var Mock = function(config, app) {
 
     self.getOrders = function (done) {
         return [];
+    };
+
+    self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
+        // return doneFilled({
+        //     error: "timeouted"
+        // });
+        doneFilled(null, {
+            orderId: getNextOrderId(),
+            status: "Filled",
+            ticker: ticker,
+            type: type,
+            amount: amount,
+            price: requestedPrice,
+            priceType: (price === "MKT") ? "MKT" : "LIMIT"
+        });
     };
     
     return this;

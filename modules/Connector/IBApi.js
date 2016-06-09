@@ -44,7 +44,10 @@ var IBApi = function(config, app) {
         .on('error', function (err) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id])
                 console.log("ERROR Ticker:", streamingIdMap[arguments[1].id].ticker, err);
-            else
+            else if(err && err.code) {
+                console.error("ERROR: cannot connect to IB api.. exiting".red, err);
+                process.exit(1);
+            } else
                 console.log("ERROR: ".red, err);
         }).on('result', function (event, args) {
             if (!_.includes(['nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
@@ -177,7 +180,7 @@ var IBApi = function(config, app) {
         });
 
     var getNextOrderId = function () {
-        return ++orderId;
+        return orderId++;
     };
 
     /**
@@ -348,7 +351,7 @@ var IBApi = function(config, app) {
         }, done);
     };
 
-    self.sendOrder = function (type, ticker, amount, price, doneFilled) {
+    self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
         var order, priceType;
         var orderId = getNextOrderId();
 
