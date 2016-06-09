@@ -8,7 +8,7 @@ var Robot = function(app) {
 	var Openings = require("./Openings")(app);
 
 	var DELAY_PROCESSING = 1;
-	var DELAY_INIT = 10;
+	var DELAY_INIT = 4;
 
 	self.Strategy = null;
 	self.strategyInited = false;

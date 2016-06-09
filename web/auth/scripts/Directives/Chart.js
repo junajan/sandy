@@ -15,48 +15,57 @@ Sandy.directive('chart', [
 				var s2 = {name: 'Unused capital', data: [], id: "s2"};
 				var conf = {
 					chart: {
-			            zoomType: 'x'
-			        },
-			        title: {
-			            text: 'Equity & Capital usage',
-			            x: -20 //center
-			        },
-			        subtitle: {
-			            text: '-- sandy bot --',
-			            x: -20
-			        },
-			        xAxis: {
-			            type: 'datetime',
-			            dateTimeLabelFormats: {
-			                month: '%e. %b',
-			                year: '%b'
-			            },
-			            title: {
-			                text: 'Date'
-			            }
-			        },
-			        tooltip: {
-			        	shared: true,
-		       //          xDateFormat: '%Y-%m-%d',
-					    // backgroundColor: '#FCFFC5',
-					    // borderColor: 'black',
-					    // borderRadius: 10,
-					    // borderWidth: 3,
-			      //   	valueSuffix: '$'
+						zoomType: 'x',
+						resetZoomButton: {
+							position: {
+								align: 'left', // right by default
+								verticalAlign: 'top',
+								x: 10,
+								y: 10
+							},
+							relativeTo: 'chart'
+						}
 					},
-			        plotOptions: {
-			            line: {
-			                dataLabels: {
-			                    enabled: true
-			                },
-			                enableMouseTracking: false
-			            }
-			        },
-			        yAxis: {
-			            title: {
-			                text: 'Capital'
-			            }
-			        },
+					title: {
+						text: 'Equity history',
+						x: -20 //center
+					},
+
+					plotOptions: {
+						line: {
+							dataLabels: {
+								enabled: true
+							}
+						}
+					},
+					tooltip: {
+						xDateFormat: 'Date: %Y-%m-%d',
+						pointFormat: 'Equity: ${point.y}'
+					},
+					subtitle: {
+						text: '-- Sandy bot --',
+						x: -20
+					},
+					xAxis: {
+						type: 'datetime',
+						dateTimeLabelFormats: {
+							month: '%e. %b',
+							year: '%b'
+						},
+						title: {
+							text: 'Date'
+						}
+					},
+					yAxis: {
+						title: {
+							text: 'Capital'
+						},
+						labels: {
+							formatter: function () {
+								return '$'+this.value;
+							}
+						}
+					},
 			        series: [s1]
 			    };
 
