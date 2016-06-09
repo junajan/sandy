@@ -1,101 +1,106 @@
-"use strict";
-/**
- * This is Sandy!
- * Sandy is a Node.JS tool for backtesting and automatic online trading on stock markets
- */
-
 require('colors');
+var async = require("async");
 var moment = require("moment");
+var server = require('./modules/Server');
+var conf = require("./config/public")(server.app);
+var app = server.run(conf);
+app.set("db",require('./modules/Mysql')(conf.mysql));
+app.set("config", conf);
 
-// load configuration
-var config = require("./config");
+require('./routes')(app);
+var Mailer = require('./modules/Mailer')(app);
+app.mailer = Mailer;
 
-// load and start web server
-var server = require(config.dirWeb+'Server');
-
-var app = server.run(config);
-app.config = config;
-app.DB = require(config.dirCore+'Mysql')(config.mysql);
-app.mailer = require(config.dirCore+'Mailer')(app);
-
-require("./config/app")(app);
-
-
-var Strategy = require(config.dirStrategy+'Strategy90')(app);
-var Backtest = require(config.dirCore+'Backtest')(Strategy);
-var log = require('log4js').getLogger('App');
-
-require(config.dirWeb+'Routes')(app);
-
-
+var Strategy = require('./modules/Strategy')(app);
+var StrategyLeveraged = require('./modules/StrategyLeveraged')(app);
+var StrategySpy = require('./modules/StrategySpy')(app);
+var Scheduler = require('./modules/Scheduler');
+var HistYahoo = require('./modules/HistYahoo');
+// var tickers = "SPY,XLF,XLV,XLP,AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
-// var tickers = "SPXS,LABU,LABD,UPRO".split(",");
-// var tickers = "SPXS,UPRO".split(",");
-// ==============================
-var BACKTEST = false;
-var RUN_STRATEGY = false;
-// ==============================
+var Backtest = require('./modules/Backtest')(Strategy);
+// var tickers = "'"+tickers.join("','")+"'";
 
-if(BACKTEST) {
+// HistYahoo.cleanImport(app.get('db'), tickers, console.log);
 
-	var config = {
-		tickers: tickers,
-		// from: "2005-01-01",
-		// from: "2007-01-01",
-		// from: "2015-01-01",
-		from: '2015-01-01',
-		// to: '2016-01-01',
-		// to: '2015-10-15',
-		to: moment().format('YYYY-MM-DD'),
-		// to: "2015-09-11",
-		capital: 20000 * 3,
-		// monthlyAdd: 0,
-		mailLog: false,
-		processingDelay: false
-		// processingDelay: 10000
-	};
+// var DB = app.get('db');
 
-	Backtest.wipe(config, function() {
-		Backtest.run(config, function(){}, function(){});
-	});
+// console.time('LOADING END');
+// DB.getData('date, symbol, close', 'stock_history_full', 'symbol IN('+tickers+')', null, 'date', 'ASC', function(err, res) {
+// 	if(err) throw err;
 
-} else if(RUN_STRATEGY) {
+// 	console.log(res.length);
+// 	console.timeEnd('LOADING END');
+// });
 
-	var config = {
-		internalHistory: true,
-		date: moment(),
-		backtestOrders: true,
-		tickers: tickers
-	};
+// var config = {
+// 	// from: "2005-01-01",
+// 	// from: "2007-01-01",
+// 	from: "2015-12-10",
+// 	// from: '2014-12-01',
+// 	// to: '2015-01-01',
+// 	// to: '2015-10-15',
+// 	to: moment().format('YYYY-MM-DD'),
+// 	// to: "2015-09-11",
+// 	capital: 20000,
+// 	// monthlyAdd: 0,
+// 	mailLog: true
+// };
 
-	console.time("Initing finished");
-	Strategy.init(config, function(err, res) {
-		if(err) return log.error("Strategy init returned error:", err);
-		console.timeEnd("Initing finished");
+// Backtest.wipe(config, function() {
+// 	Backtest.run(config, function(){}, function(){});
+// });
 
-		log.info(("Running strategy at:"+ moment().format('LT')).green);
-		console.time("Processing finished");
 
-		Strategy.process(res, function(err, res) {
-			console.timeEnd("Processing finished");
-			console.log("======== PROCESS RESULT ========");
-			if(err) console.log("ERROR: ", err);
-			else {
-				console.log({
-					positions: res.postions,
-					closePositions: res.closePositions,
-					openPositions: res.openPositions,
-					state: res.newState
-				});
-			}
-		});
-	});
+var Robot = require("./modules/Robot")(app);
+// Strategy.initClear(config);
+Robot.setStrategy(Strategy);
+Robot.start(Strategy);
 
-} else {
+// // var IB = require('./modules/IBApi2')(app);
+// // IB.connect();
+// // IB.getTime();
+// // IB.disconnect();
 
-	var Robot = require(config.dirCore+"Robot")(app);
-	// Strategy.initClear(config);
-	Robot.setStrategy(Strategy);
-	Robot.start(Strategy);
-}
 
+
+// console.time("Full service");
+// console.time("Loading Data from DB");
+// Strategy.getHistoricalImport(info, function(err, res, data) {
+// 	info.data = data;
+	
+// 	console.timeEnd("Loading Data from DB");
+// 	console.time("Procesing strategy");
+// 	Strategy.process(info, function(err, res) {
+// 		// console.log(err, res);
+		
+// 		console.timeEnd("Procesing strategy");
+// 		console.timeEnd("Full service");
+// 	});
+// });
+
+
+
+// Strategy.getLastImport(function(err, importInfo, importData) {
+// 	console.log(err, importInfo, importData);
+// });
+
+// var Log = require("./modules/Log")(app, "MAIN");
+
+
+// var hist = require("./modules/HistYahoo");
+
+// hist.getActual(['SPY', 'MSFT', 'AAPL', 'XLV'], function(res) {
+// 	console.log(res);
+// });
+
+// var conf = {
+// 	from: "aaa@mmm.cz",
+// 	toSMS: "721235063@sms.cz.o2.com",
+// 	to: "mail@janjuna.cz",
+// };
+// 
+
+// var noty = require("./modules/Notify")(conf);
+
+// noty.mail("AHOJ", "CAU");
