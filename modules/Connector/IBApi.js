@@ -9,6 +9,7 @@ var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
 
+const ORDER_TIMEOUT = 10000;
 var LogMockup = {};
 ["fatal", "error", "info", "notice"].forEach(function (level) {
     // "["+moment().format("DD.MM.YYYY HH:II:SS")+"]
@@ -133,6 +134,7 @@ var IBApi = function(config, app) {
 
         }).on('orderStatus', function (id, status, filled, remaining, avgFillPrice, permId,
                                        parentId, lastFillPrice, clientId, whyHeld) {
+            var info;
             console.log(
                 '%s %s%d %s%s %s%d %s%d %s%d %s%d %s%d %s%d %s%d %s%s',
                 '[orderStatus]'.cyan,
@@ -152,9 +154,9 @@ var IBApi = function(config, app) {
                 return console.error("Order id %d was not found in placed orders".red, id);
             }
 
+            info = placedOrders[id];
 
             if(status === "Filled") {
-                var info = placedOrders[id];
 
                 info.doneFilled(null, {
                     orderId: id,
@@ -166,6 +168,13 @@ var IBApi = function(config, app) {
                     priceType: info.priceType,
                 });
                 clearTimeout(placedOrders[id].timeoutId);
+            } else if(status === "Cancelled") {
+
+                info.doneFilled({
+                    error: "cancelled",
+                    errorText: "There was triggered timeout for order ID "+id,
+                    orderId: id,
+                });
             }
 
         }).on('execDetails', function (reqId, contract, exec) {
@@ -340,14 +349,15 @@ var IBApi = function(config, app) {
         ib.reqOpenOrders();
     };
 
-    self.logOrder = function (orderId, ticker, type, amount, price, priceType, done) {
+    self.logOrder = function (orderId, ticker, type, amount, price, priceType, log, done) {
         DB.insert("api_log", {
             order_id: orderId,
             ticker: ticker,
             type: type,
             amount: amount,
             price: price,
-            price_type: priceType
+            price_type: priceType,
+            log: log
         }, done);
     };
 
@@ -373,7 +383,7 @@ var IBApi = function(config, app) {
         price = (price === "MKT") ? -1 : price;
 
         self.logOrder(orderId, ticker, type, amount, price, priceType, null, function (err, res) {
-
+            console.log(err, res);
             if(err) {
                 console.error("There was and error while saving order info to DB", err, res);
                 return setTimeout(function(){
@@ -391,13 +401,10 @@ var IBApi = function(config, app) {
                 doneFilled: doneFilled
             };
 
-            placedOrders[id].timeoutId = setTimeout(function () {
-                placedOrders[id].doneFilled({
-                    error: "timeout",
-                    errorText: "There was triggered timeout for order ID "+orderId,
-                    orderId: orderId,
-                });
-            });
+            placedOrders[orderId].timeoutId = setTimeout(function () {
+                console.error("OrderId("+orderId+") is taking too long to process - cancelling".red);
+                ib.cancelOrder(orderId);
+            }, ORDER_TIMEOUT);
 
             ib.placeOrder(orderId, ib.contract.stock(ticker), order);
         });

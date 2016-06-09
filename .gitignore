@@ -22,6 +22,7 @@ npm-debug.log
 web/public/vendor
 config/env.json
 sessions
+config/env.json
 
 
 .idea

@@ -245,12 +245,12 @@ var Strategy = function(app) {
 						}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
 							if(err) {
 								log.error("Error while saving sold positions to DB", err);
-								done(err);
+								return done(err);
 							}
 
 							// decrement available resources
-							config.currentState.current_capital += parseFloat(res.price * res.amount - pos.open_price * pos.amount, 2);
-							config.currentState.unused_capital += parseFloat(res.price * res.amount, 2);
+							config.currentState.current_capital += parseFloat(res.price * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
+							config.currentState.unused_capital += parseFloat(res.price * res.amount, 2); // add to unused_capital received money from SELL order
 							config.currentState.free_pieces += pos.pieces;
 							done(err, res);
 						});
@@ -285,12 +285,12 @@ var Strategy = function(app) {
 						}, function(err, resDb) {
 							if(err) {
 								log.error("Error while saving bought positions to DB", err);
-								done(err);
+								return done(err);
 							}
 
-							// decrement available resources
-							config.currentState.unused_capital -= res.price * res.amount;
-							config.currentState.free_pieces -= pos.pieces;
+							// lower available resources
+							config.currentState.unused_capital -= res.price * res.amount; // remove money spent on BUY order
+							config.currentState.free_pieces -= pos.pieces;	// remove spent pieces
 							done(err, res);
 						});
 					});

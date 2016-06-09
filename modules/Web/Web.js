@@ -43,7 +43,7 @@ var Web = function(app) {
         }
 
         res.render('login', {
-            message: 'Wrong credentials'
+            message: 'Wrong credentials..'
         });
     };
 

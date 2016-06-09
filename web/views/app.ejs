@@ -17,6 +17,7 @@
     <base href="/"></base>
     <link href="./styles/bootstrap.min.css" rel="stylesheet">
     <link href="./styles/navbar.css" rel="stylesheet">
+    <link href="./styles/common.css" rel="stylesheet">
 
   </head>
 
@@ -48,7 +49,7 @@
               <li class="log"><a href="log">Log</a></li>
               <li class="watchlist"><a href="watchlist">Watchlist</a></li>
               <li class="holidays"><a href="holidays">Holidays</a></li>
-              <li class="logout"><a href="/logout" onClick="window.location = this.href;">Logout</a></li>
+              <li class="logout"><a class="text-bold" href="/logout" onClick="window.location = this.href;">Logout</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
               <li><a href="">Capital: {{ statistics.current_capital | currency:'$' }}</a></li>

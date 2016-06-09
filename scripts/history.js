@@ -33,6 +33,11 @@ function downloadHistory(ticker, done) {
 			 from = moment(res.date).add(1, 'day').format('YYYY-MM-DD');
 
 		console.log(("Reading "+ticker+" history data from "+from +" to " + dateTo).yellow);
+
+		if(from == dateTo) {
+			console.log(">> skipping - no data to load");
+			return done(null);
+		}
 		ydl.historical({
 			symbol: ticker,
 			from: from,

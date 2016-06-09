@@ -32,8 +32,8 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
-var BACKTEST = true;
-var RUN_STRATEGY = true;
+var BACKTEST = false;
+var RUN_STRATEGY = false;
 // ==============================
 
 if(BACKTEST) {
@@ -43,12 +43,12 @@ if(BACKTEST) {
 		// from: "2005-01-01",
 		// from: "2007-01-01",
 		// from: "2015-01-01",
-		from: '2017-01-01',
+		from: '2015-01-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
 		// to: "2015-09-11",
-		capital: 25000 * 3,
+		capital: 20000 * 3,
 		// monthlyAdd: 0,
 		mailLog: false,
 		processingDelay: false
