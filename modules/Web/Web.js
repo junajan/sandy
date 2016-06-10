@@ -4,7 +4,7 @@ var Web = function(app) {
 
     app.use(function(req, res, next) {
         req.isAuthorized = function () {
-            return !! req.session.authorized;
+            return auth.disabled || !! req.session.authorized;
         };
         req.setAuthorized = function (auth, done) {
             req.session.authorized = auth;
