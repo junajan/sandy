@@ -10,7 +10,8 @@
     "history": "node scripts/history.js",
     "history-barchart": "node scripts/historyBarchart.js",
     "history-intraday": "node scripts/historyIntraday.js",
-    "start": "nodemon -e '.html,.js,.ejs,.css,.json' app.js"
+    "start-dev": "nodemon -e '.html,.js,.ejs,.css,.json' app.js"
+    "start": "forever start -a -l /var/log/sandy.log app.js"
   },
   "repository": {
     "type": "git",
