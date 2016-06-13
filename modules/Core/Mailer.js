@@ -16,12 +16,14 @@ var Mailer = function(app) {
 	this.sendDailyLog = function(log) {
 		if(!emailConf.dailyLog)
 			return false;
-		
+
+		log = log.replace(/^.*\[DEBUG\].*$/mg, "").trim().replace(/\n\n\n*/g, "\n");
+
 		var title = config.env+" sandy daily log";
 		var msg = '<b>Sandy bot - daily log for '+getFullDate(moment())+"</b>";
 
 		msg += '<br /><br />';
-		msg += stripAnsi(log);
+		msg += stripAnsi(log).replace(/^.*\[DEBUG\].*$/mg, "");
 
 		Log.info('Sending daily log by email');
 		self.send(title, msg, null, true);
@@ -37,7 +39,7 @@ var Mailer = function(app) {
 			from: emailConf.from, // sender address.  Must be the same as authenticated user if using Gmail.
 			to: email, // receiver
 			subject: title,
-			text: text,
+			text: text
 		};
 
 		if(isHtml) mailConfig.html = text;
