@@ -3,6 +3,7 @@ var http = require('http');
 var fs = require('fs');
 var reload = require('reload');
 var socketIO = require('socket.io');
+var stripAnsi = require("strip-ansi");
 
 module.exports = (function() {
     var self = this;
@@ -34,7 +35,8 @@ module.exports = (function() {
         var tail = require('child_process').spawn("tail", ["-f", "-n 200", conf.logFile]);
 
         tail.stdout.on("data", function (data) {
-            var newData = data.toString().trim().split('\n').reverse();
+            var newData = data.toString().trim();
+            newData = stripAnsi(newData).split('\n').reverse();
             io.emit('logEntry', newData);
 
             log = newData.concat(log);

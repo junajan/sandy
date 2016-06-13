@@ -1,3 +1,5 @@
+"use strict"
+
 var _ = require('lodash');
 var moment = require('moment');
 var async = require('async');
@@ -544,7 +546,7 @@ var Strategy = function(app) {
 			return done(null, config);
 		}
 
-		stocksToBuy = self.getStockForBuy(config);
+		var stocksToBuy = self.getStockForBuy(config);
 		for(var i in stocksToBuy) {
 			item = stocksToBuy[i];
 
@@ -763,8 +765,11 @@ var Strategy = function(app) {
 	};
 
 	this.stopStreamingPrices = function (config, done) {
-		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
+		if(config.internalHistory && !config.disabledLoadingActualsFromDb) {
+			// using internal history so no streaming
+		} else {
 			Broker.stopStreaming();
+		}
 		done(null, config);
 	};
 
