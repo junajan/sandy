@@ -93,7 +93,7 @@ var Robot = function(app) {
 		if(dayOfWeek == 6 || dayOfWeek == 7)
 			return Log.info("Today is weekday - strategy will continue on monday");
 		if(moment().hour() < scheduleMorningHour)
-			return Log.info("Strategy will be scheduled at", scheduleMorningHour);
+			return Log.info("Strategy will be scheduled at %dAM", scheduleMorningHour);
 
 		self.scheduleToday();
 	};

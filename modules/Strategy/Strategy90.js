@@ -542,7 +542,7 @@ var Strategy = function(app) {
 		
 		// jestlize nejsou dilky na prikupovani
 		if(!config.newState.free_pieces) {
-			Log.info("There are no more free pieces for buy stocks", true);
+			Log.warn("There are no more free pieces for buy stocks");
 			return done(null, config);
 		}
 
@@ -551,7 +551,7 @@ var Strategy = function(app) {
 			item = stocksToBuy[i];
 
 			if(!config.newState.free_pieces) {
-				Log.info("Ending buy selection loop - not enought free pieces", true);
+				Log.warn("Ending buy selection loop - not enought free pieces");
 				return done(null, config);
 			}
 
@@ -687,7 +687,7 @@ var Strategy = function(app) {
 
 	        	// test for close condition
 		        if(indicators.price > indicators.sma5 || isLast || config.sellAll) { // is openned and actual price > sma5
-	        		if(isLast) Log.info('Closing because %s has no more entries in DB'.yellow, ticker);
+	        		if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
 	        		// we will close this position
 	        		config.closePositions[ticker] = pos;
 	        		config.newState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
@@ -812,7 +812,7 @@ var Strategy = function(app) {
 		], function(err, res) {
 			if(err)
 				Log.error("Strategy finished with an error", err);
-			
+
 			self.sendMailLog(config, res, _.noop);
 			done(err, res);
 		});
