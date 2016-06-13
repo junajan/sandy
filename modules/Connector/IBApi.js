@@ -10,6 +10,15 @@ var YahooApi = require("./_yahoo");
 var once = require('once');
 
 const ORDER_TIMEOUT = 10000;
+
+const IB_CONNECTION_RESTORED = 2104;
+const IB_CONNECTION_IS_OK = 2106;
+
+var apiMessages = {};
+apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK."
+apiMessages[IB_CONNECTION_RESTORED] = "Connectivity between IB and Trader Workstation has been restored - data maintained."
+
+
 var LogMockup = {};
 ["fatal", "error", "info", "notice"].forEach(function (level) {
     // "["+moment().format("DD.MM.YYYY HH:II:SS")+"]
@@ -50,8 +59,13 @@ var IBApi = function(config, app) {
                     process.exit(1);
                 }, 1000);
             } else {
-                Log.error("ERROR: ".red, err.toString(), data);
-                Log.trace(err);
+
+                if(_.isObject(data) && data.code && apiMessages[data.code])
+                    Log.info(apiMessages[data.code]);
+                else
+                    Log.error(err.toString(), data);
+
+                Log.debug(err);
             }
 
         }).on('result', function (event, args) {
@@ -176,8 +190,9 @@ var IBApi = function(config, app) {
 
                 info.doneFilled({
                     error: "cancelled",
-                    errorText: "There was triggered timeout for order ID "+id,
+                    errorText: "There was triggered timeout for order ID "+id+" ticker "+info.ticker,
                     orderId: id,
+                    ticker: info.ticker,
                 });
             }
 
@@ -367,7 +382,7 @@ var IBApi = function(config, app) {
         else
             order = ib.order.limit(type, amount, price);
 
-        Log.debug(("SendOrder".yellow+ " Sending order(%d) %s(%s) %sx %s"), orderId, type, ticker, amount, price);
+        Log.debug(("SendOrder"+ " Sending order(%d) %s(%s) %sx %s"), orderId, type, ticker, amount, price);
         priceType = (price === "MKT") ? "MKT" : "LIMIT";
         price = (price === "MKT") ? -1 : price;
 
@@ -390,7 +405,7 @@ var IBApi = function(config, app) {
             };
 
             placedOrders[orderId].timeoutId = setTimeout(function () {
-                Log.error("OrderId("+orderId+") is taking too long to process - cancelling".red);
+                Log.error("OrderId("+orderId+") is taking too long to process - cancelling");
                 ib.cancelOrder(orderId);
             }, ORDER_TIMEOUT);
 

@@ -237,7 +237,7 @@ var Strategy = function(app) {
 
 					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
 						if(err) {
-							Log.error("Error during sell order", err);
+							Log.error("Error during sell order", err.errorText || err);
 							return one(err);
 						}
 						Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
@@ -275,7 +275,7 @@ var Strategy = function(app) {
 
 					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 						if(err) {
-							Log.error("Error during sell order", err);
+							Log.error("Error during sell order", (err.errorText || err));
 							return done(err);
 						}
 						Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ res.price+ " with rsi: "+ pos.rsi.toFixed(2));
@@ -808,9 +808,14 @@ var Strategy = function(app) {
 			self.filterBuyStocks,
 			self.sendOrders,
 			self.saveCurrentState,
-			self.saveNewEquity,
-			self.sendMailLog.bind(null, config)
-		], done);
+			self.saveNewEquity
+		], function(err, res) {
+			if(err)
+				Log.error("Strategy finished with an error", err);
+			
+			self.sendMailLog(config, res, _.noop);
+			done(err, res);
+		});
 	};
 
 	return this;
