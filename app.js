@@ -30,7 +30,7 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
 var BACKTEST = false;
-var RUN_STRATEGY = true;
+var RUN_STRATEGY = false;
 // ==============================
 
 if(BACKTEST) {
