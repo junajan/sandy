@@ -741,7 +741,7 @@ var Strategy = function(app) {
 	};
 
 	this.sendMailLog = function(config, res, done) {
-		var buffer = MemLog.getBuffer().join("\n");
+		var buffer = MemLog.getBuffer().join("\n<br />");
 		MemLog.flushBuffer();
 
 		app.mailer.sendDailyLog(buffer);
