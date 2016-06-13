@@ -1,11 +1,10 @@
-
 var Api = function(app) {
 	var self = this;
 	var config = app.config;
 	var DB = app.DB;
+	var Log = app.getLogger("WEB-API");
 
 	var Yahoo = require(config.dirLoader+'HistYahoo');
-
 
 	this.openPrices = {'MO': 123};
 
@@ -65,7 +64,7 @@ var Api = function(app) {
 				var out = {};
 
 				if(err)
-					console.error(err);
+					Log.trace("There was an error when requesting actual prices from Yahoo API", err);
 				else if(res)
 					res.map(function(d) {
 						out[d[0]] = d[1];

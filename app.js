@@ -14,16 +14,13 @@ var config = require("./config");
 var server = require(config.dirWeb+'Server');
 
 var app = server.run(config);
-app.config = config;
+require("./config/app")(app, config);
 app.DB = require(config.dirCore+'Mysql')(config.mysql);
 app.mailer = require(config.dirCore+'Mailer')(app);
 
-require("./config/app")(app);
-
-
 var Strategy = require(config.dirStrategy+'Strategy90')(app);
 var Backtest = require(config.dirCore+'Backtest')(Strategy);
-var log = require('log4js').getLogger('App');
+var Log = app.logger.getLogger("APP");
 
 require(config.dirWeb+'Routes')(app);
 
@@ -32,11 +29,12 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
-var BACKTEST = false;
+var BACKTEST = true;
 var RUN_STRATEGY = false;
 // ==============================
 
 if(BACKTEST) {
+	Log.info("Running Backtest");
 
 	var config = {
 		tickers: tickers,
@@ -60,6 +58,7 @@ if(BACKTEST) {
 	});
 
 } else if(RUN_STRATEGY) {
+	Log.info("Running strategy");
 
 	var config = {
 		internalHistory: true,
@@ -70,28 +69,20 @@ if(BACKTEST) {
 
 	console.time("Initing finished");
 	Strategy.init(config, function(err, res) {
-		if(err) return log.error("Strategy init returned error:", err);
+		if(err) return Log.error("Strategy init returned error:", err);
 		console.timeEnd("Initing finished");
 
-		log.info(("Running strategy at:"+ moment().format('LT')).green);
+		Log.info(("Running strategy at:"+ moment().format('LT')).green);
 		console.time("Processing finished");
 
 		Strategy.process(res, function(err, res) {
 			console.timeEnd("Processing finished");
-			console.log("======== PROCESS RESULT ========");
-			if(err) console.log("ERROR: ", err);
-			else {
-				console.log({
-					positions: res.postions,
-					closePositions: res.closePositions,
-					openPositions: res.openPositions,
-					state: res.newState
-				});
-			}
+			if(err) Log.error("Strategy process returned error:", err);
 		});
 	});
 
 } else {
+	Log.info("Running scheduler for automated trading");
 
 	var Robot = require(config.dirCore+"Robot")(app);
 	// Strategy.initClear(config);

@@ -1,9 +1,11 @@
 var moment = require("moment");
 var async = require("async");
+var stripAnsi = require("strip-ansi");
 var nodemailer = require('nodemailer');
 
 var Mailer = function(app) {
 	var self = this;
+	var Log = app.getLogger("MAILER");
 	var config = app.config;
 	var emailConf = config.email;
 
@@ -19,9 +21,9 @@ var Mailer = function(app) {
 		var msg = '<b>Sandy bot - daily log for '+getFullDate(moment())+"</b>";
 
 		msg += '<br /><br />';
-		msg += log;
+		msg += stripAnsi(log);
 
-		console.log('Sending daily log by email');
+		Log.info('Sending daily log by email');
 		self.send(title, msg, null, true);
 	};
 
@@ -52,7 +54,7 @@ var Mailer = function(app) {
 		var title = config.env+" sandy was stared";
 		var msg = 'Sandy bot was started at '+getFullDate(moment());
 
-		console.log('Sending welcome email');
+		Log.info('Sending welcome email');
 		self.send(title, msg);
 	};
 

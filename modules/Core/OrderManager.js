@@ -6,6 +6,7 @@ var OrderManager = function(app) {
     var self = this;
     var config = app.config;
     var DB = app.DB;
+    var Log = app.getLogger("ORDER-MGMT");
 
     var Broker = require(config.dirConnector+config.connector.driver)(config.connector.config, app);
 
@@ -20,7 +21,7 @@ var OrderManager = function(app) {
             data.push([ticker, info.price, info.origin, info.yahooPrice, JSON.stringify(info)]);
         });
 
-        console.log("Saving actual prices for "+ data.length+ " tickers");
+        Log.info("Saving actual prices for "+ data.length+ " tickers");
         DB.insertValues('stock_actual (symbol, price, origin, yahoo_price, data) ', data, function(err, res) {
             if(err) console.error(err);
             done(err, res);
@@ -63,25 +64,24 @@ var OrderManager = function(app) {
     self.printPositions = function () {
         self.getPositions(function (err, positions) {
             if(err)
-                return console.error("Opened Orders returned ERROR:".red, err);
-            console.log("Opened position:".yellow);
+                return Log.error("Opened Orders returned ERROR:".red, err);
+            Log.info("Opened position:".yellow);
             positions.forEach(function(item) {
-                console.log(JSON.stringify(item));
+                Log.info(JSON.stringify(item));
             });
-            if(!positions.length) console.log("-- empty --");
+            if(!positions.length) Log.info("-- empty --");
         });
     };
 
     self.printOrders = function () {
         self.getOrders(function (err, orders) {
             if(err)
-                return console.error("Positions returned ERROR:".red, err);
-            console.log("Opened orders:".yellow);
-            console.dir(orders);
+                return Log.error("Positions returned ERROR:".red, err);
+            Log.info("Opened orders:".yellow);
             orders.forEach(function(item) {
-                console.log(JSON.stringify(item));
+                Log.info(JSON.stringify(item));
             });
-            if(!orders.length) console.log("-- empty --");
+            if(!orders.length) Log.info("-- empty --");
         });
     };
 

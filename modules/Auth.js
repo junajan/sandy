@@ -41,8 +41,8 @@ var Auth = function(app) {
     };
 
     return this;
-}
+};
 
 module.exports = function(app) {
     return new Auth(app);
-}
+};

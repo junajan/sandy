@@ -1,6 +1,7 @@
 var Web = function(app) {
     var self = this;
     var config = app.config;
+    var Log = app.getLogger("WEB");
 
     app.use(function(req, res, next) {
         req.isAuthorized = function () {
@@ -42,6 +43,7 @@ var Web = function(app) {
             });
         }
 
+        Log.warn("Invalid credentials for user %s from IP %s", credentials.name, req.headers['x-forwarded-for'] || req.connection.remoteAddress);
         res.render('login', {
             message: 'Wrong credentials..'
         });

@@ -6,7 +6,7 @@ var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 
 
-module.exports = function(app) {
+module.exports = function(app, config) {
 	app.set('views', __dirname + '/../web/views');
 	app.set('view engine', 'ejs');
 	app.set('view options', {
@@ -19,7 +19,7 @@ module.exports = function(app) {
 		saveUninitialized: true,
 		resave: false,
 		store: new FileStore({
-			path: app.config.root+"/sessions",
+			path: config.root+"/sessions",
 			reapInterval: 800
 		}),
 		saveUninitialized: false,
@@ -27,6 +27,13 @@ module.exports = function(app) {
 	}));
 
 	app.use(bodyParser.urlencoded({extended:false}));
-	
+
+	app.config = config;
+	app.logger = config.logger;
+	app.memLogger = config.memLogger;
+	app.getLogger = function (type) {
+		return app.logger.getLogger(type);
+	};
+
 	return app;
 };
