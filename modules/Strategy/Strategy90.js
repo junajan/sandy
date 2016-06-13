@@ -230,13 +230,14 @@ var Strategy = function(app) {
 					var indicators = config.indicators[ticker];
 					// Log.info(pos);
 					// Log.info(indicators);
-					Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
 
 					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
 						if(err) {
 							Log.error("Error during sell order", err);
 							return one(err);
 						}
+						Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
+
 						DB.update("positions", {
 							sell_import_id: config.importId,
 							requested_close_price: indicators.price,
@@ -268,12 +269,12 @@ var Strategy = function(app) {
 					if(config.positionsAggregated[pos.ticker])
 						type = "SCALE: ";
 
-					Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
 					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 						if(err) {
 							Log.error("Error during sell order", err);
 							return done(err);
 						}
+						Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ res.price+ " with rsi: "+ pos.rsi.toFixed(2));
 
 						DB.insert("positions", {
 							requested_open_price: pos.requested_open_price,
