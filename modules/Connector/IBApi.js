@@ -41,17 +41,19 @@ var IBApi = function(config, app) {
     };
 
     var ib = new (ibApi)(config)
-        .on('error', function (err) {
-            console.log(err);
+        .on('error', function (err, data) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id])
-                Log.error("ERROR Ticker:", streamingIdMap[arguments[1].id].ticker, err);
+                Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err);
             else if(err && err.code == "ECONNREFUSED") {
                 Log.error("ERROR: cannot connect to IB api.. exiting".red, err);
                 setTimeout(function() {
                     process.exit(1);
                 }, 1000);
-            } else
-                Log.error("ERROR: ".red, err);
+            } else {
+                Log.error("ERROR: ".red, err.toString(), data);
+                Log.trace(err);
+            }
+
         }).on('result', function (event, args) {
             if (!_.includes(['nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
@@ -370,7 +372,6 @@ var IBApi = function(config, app) {
         price = (price === "MKT") ? -1 : price;
 
         self.logOrder(orderId, ticker, type, amount, price, priceType, null, function (err, res) {
-            Log.debug("Log order: ", err, res);
             if(err) {
                 Log.error("There was and error while saving order info to DB", err, res);
                 return setTimeout(function(){
