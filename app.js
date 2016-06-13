@@ -29,8 +29,8 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
-var BACKTEST = true;
-var RUN_STRATEGY = false;
+var BACKTEST = false;
+var RUN_STRATEGY = true;
 // ==============================
 
 if(BACKTEST) {
@@ -61,9 +61,11 @@ if(BACKTEST) {
 	Log.info("Running strategy");
 
 	var config = {
+		// internalHistorical: true,
 		internalHistory: true,
+		disabledLoadingActualsFromDb: true,
 		date: moment(),
-		backtestOrders: true,
+		// backtestOrders: true,
 		tickers: tickers
 	};
 
@@ -72,13 +74,16 @@ if(BACKTEST) {
 		if(err) return Log.error("Strategy init returned error:", err);
 		console.timeEnd("Initing finished");
 
-		Log.info(("Running strategy at:"+ moment().format('LT')).green);
-		console.time("Processing finished");
+		setTimeout(function(){
 
-		Strategy.process(res, function(err, res) {
-			console.timeEnd("Processing finished");
-			if(err) Log.error("Strategy process returned error:", err);
-		});
+			Log.info(("Running strategy at:"+ moment().format('LT')).green);
+			console.time("Processing finished");
+
+			Strategy.process(res, function(err, res) {
+				console.timeEnd("Processing finished");
+				if(err) Log.error("Strategy process returned error:", err);
+			});
+		}, 30000);
 	});
 
 } else {

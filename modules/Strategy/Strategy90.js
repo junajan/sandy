@@ -147,10 +147,10 @@ var Strategy = function(app) {
 
 		Log.info("Reading history data from %s to %s", dateFrom, dateTo);
 
-		if(config.internalHistory)
+		if(config.internalHistory || config.internalHistorical)
 			DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
-				
+
 				config.data = self.deserializeHistoricalData(res);
 				done(err, config);
 			});
@@ -230,7 +230,7 @@ var Strategy = function(app) {
 					var indicators = config.indicators[ticker];
 					// Log.info(pos);
 					// Log.info(indicators);
-					Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2), true);
+					Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((indicators.price - pos.open_price) * pos.amount).toFixed(2));
 
 					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
 						if(err) {
@@ -268,7 +268,7 @@ var Strategy = function(app) {
 					if(config.positionsAggregated[pos.ticker])
 						type = "SCALE: ";
 
-					Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2), true);
+					Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ pos.price+ " with rsi: "+ pos.rsi.toFixed(2));
 					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 						if(err) {
 							Log.error("Error during sell order", err);
@@ -403,7 +403,7 @@ var Strategy = function(app) {
 			done(err, config);
 		}
 		
-		if(config.internalHistory)
+		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
 			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
 		else
 			Broker.getMarketPriceBulk(config.tickers, processApiResult);
@@ -748,7 +748,7 @@ var Strategy = function(app) {
 	};
 
 	this.startStreamingPrices = function (config, done) {
-		if(config.internalHistory) {
+		if(config.internalHistory && !config.disabledLoadingActualsFromDb) {
 
 			done(null, config);
 		} else {
@@ -760,7 +760,7 @@ var Strategy = function(app) {
 	};
 
 	this.stopStreamingPrices = function (config, done) {
-		if(!config.internalHistory)
+		if(config.internalHistory && !config.disabledLoadingActualsFromDb)x
 			Broker.stopStreaming();
 		done(null, config);
 	};
@@ -793,6 +793,7 @@ var Strategy = function(app) {
 			self.getOpenPositions,
 			self.getActualPrices,
 			self.appendActualPrices,
+			self.stopStreamingPrices,
 			self.processIndicators,
 			self.saveIndicators,
 			self.filterSellStocks,
@@ -800,7 +801,6 @@ var Strategy = function(app) {
 			self.sendOrders,
 			self.saveCurrentState,
 			self.saveNewEquity,
-			self.stopStreamingPrices,
 			self.sendMailLog.bind(null, config)
 		], done);
 	};

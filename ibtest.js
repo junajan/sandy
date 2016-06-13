@@ -5,8 +5,20 @@ var _ = require('lodash');
 // load configuration
 var app = {};
 app.config = require("./config");
+app.logger = app.config.logger;
+
 app.DB = require(app.config.dirCore+'Mysql')(app.config.mysql);
 
+app.getLogger = function(type) {
+    return {
+        error: _.noop,
+        warn: _.noop,
+        debug: _.noop,
+        info: _.noop,
+        fatal: _.noop,
+        trace: _.noop
+    }
+}
 var Broker = require(app.config.dirCore+"OrderManager")(app);
 
 
@@ -15,29 +27,29 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "AAPL,CSCO,MSFT,INTC".split(",");
 console.log("Loading prices for", tickers.length, "tickers");
 setTimeout(function() {
-    // Broker.startStreaming(tickers, _.noop)
+    Broker.startStreaming(tickers, _.noop)
     // Broker.startStreaming(tickers, function () {
     //
     //
-    //     setTimeout(function() {
-    //         Broker.getMarketPriceBulk(tickers, function (err, prices) {
-    //             if(err) console.error("ERROR while loading prices", err);
-    //             Broker.stopStreaming();
-    //
-    //             console.log("=== Prices ===");
-    //             _.each(prices, function (info, ticker) {
-    //                 console.log(ticker,"|", info.price,"|",info.origin);
-    //             });
-    //         });
-    //     }, 10000);
+        setTimeout(function() {
+            Broker.getMarketPriceBulk(tickers, function (err, prices) {
+                if(err) console.error("ERROR while loading prices", err);
+                Broker.stopStreaming();
+
+                console.log("=== Prices ===");
+                _.each(prices, function (info, ticker) {
+                    console.log(ticker,"|", info.price,"|",info.origin);
+                });
+            });
+        }, 10000);
     //
     // });
 
     // Broker.sendSellOrder("AAPL", 2000, "MKT" , console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
-    Broker.sendSellOrder("ALL", 14, "MKT" , 123, function (err, res) {
-        console.log("======== RESULT ==========");
-        console.log(err, res);
-    });
+    // Broker.sendSellOrder("ALL", 14, "MKT" , 123, function (err, res) {
+    //     console.log("======== RESULT ==========");
+    //     console.log(err, res);
+    // });
     // Broker.printOrders();
 }, 1000);
 
