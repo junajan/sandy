@@ -6,9 +6,20 @@
 
 require('colors');
 var config = require("../config");
-
 var DB = require(config.dirCore+'Mysql')(config.mysql);
-var Openings = require(config.dirCore+'Openings')({config: config, DB: DB});
+
+var app = {
+	config: config,
+	DB: DB
+}
+
+app.logger = config.logger;
+app.memLogger = config.memLogger;
+app.getLogger = function (type) {
+	return app.logger.getLogger(type);
+};
+
+var Openings = require(config.dirCore+'Openings')(app);
 
 console.log('Loading openings');
 
