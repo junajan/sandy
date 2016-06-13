@@ -9,9 +9,21 @@ var async = require("async");
 var moment = require("moment");
 var config = require("../config");
 
+var app = {
+	config: config,
+	DB: DB
+}
+
+app.logger = config.logger;
+app.memLogger = config.memLogger;
+app.getLogger = function (type) {
+	return app.logger.getLogger(type);
+};
+
+
 var DB = require(config.dirCore+'Mysql')(config.mysql);
 var ydl = require(config.dirLoader+'HistYahoo');
-var Strategy = require(config.dirStrategy+'Strategy90')({config: config, DB: DB});
+var Strategy = require(config.dirStrategy+'Strategy90')(app);
 
 const RUN = true;
 const _TABLE = "stock_history_full";

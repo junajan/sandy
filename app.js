@@ -30,7 +30,7 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 // var tickers = "SPXS,UPRO".split(",");
 // ==============================
 var BACKTEST = false;
-var RUN_STRATEGY = false;
+var RUN_STRATEGY = true;
 // ==============================
 
 if(BACKTEST) {
@@ -83,7 +83,7 @@ if(BACKTEST) {
 				console.timeEnd("Processing finished");
 				if(err) Log.error("Strategy process returned error:", err);
 			});
-		}, 30000);
+		}, 10000);
 	});
 
 } else {
