@@ -13,7 +13,9 @@ var Strategy = function(app) {
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
 	var Yahoo = require(config.dirLoader+'./HistYahoo');
-	var Broker = require(config.dirCore+"OrderManager")(app);
+
+	if(!config.disabledOrders)
+		var Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
 	var _PRICE_COLUMN_NAME = 'close';
@@ -761,7 +763,7 @@ var Strategy = function(app) {
 	};
 
 	this.stopStreamingPrices = function (config, done) {
-		if(config.internalHistory && !config.disabledLoadingActualsFromDb)x
+		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
 			Broker.stopStreaming();
 		done(null, config);
 	};

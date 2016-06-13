@@ -14,6 +14,7 @@ var app = {
 	DB: DB
 }
 
+config.disabledOrders = true;
 app.logger = config.logger;
 app.memLogger = config.memLogger;
 app.getLogger = function (type) {
