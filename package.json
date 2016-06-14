@@ -35,7 +35,7 @@
     "ib": "^0.1.9",
     "lodash": "^3.3.1",
     "log4js": "^0.6.25",
-    "log4js-memory-appender": "^1.0.2",
+    "log4js-memory-appender": "^1.0.3",
     "moment": "^2.9.0",
     "mysql": "^2.5.5",
     "node-mysql": "^0.4.1",

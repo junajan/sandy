@@ -4,7 +4,7 @@ var modules = __dirname+"/../modules/";
 // var log4js = require('log4js');
 var config = require("./env");
 var log4js = require('log4js');
-var log4jsMemAppender = require(modules+"Core/Log4jsMemmoryAdapter");
+var log4jsMemAppender = require("log4js-memory-appender");
 var memLogger = log4jsMemAppender({ maxBufferSize : 100000 });
 
 log4js.loadAppender('file');
