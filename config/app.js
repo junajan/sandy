@@ -5,7 +5,6 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 
-
 module.exports = function(app, config) {
 	app.set('views', __dirname + '/../web/views');
 	app.set('view engine', 'ejs');
@@ -19,6 +18,7 @@ module.exports = function(app, config) {
 		saveUninitialized: true,
 		resave: false,
 		store: new FileStore({
+			logFn: _.noop,
 			path: config.root+"/sessions",
 			reapInterval: 800
 		}),

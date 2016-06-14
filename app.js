@@ -24,16 +24,11 @@ var Log = app.logger.getLogger("APP");
 
 require(config.dirWeb+'Routes')(app);
 
-
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
-// ==============================
-var BACKTEST = false;
-var RUN_STRATEGY = false;
-// ==============================
 
-if(BACKTEST) {
+if(config.runBacktest) {
 	Log.info("Running Backtest");
 
 	var config = {
@@ -41,13 +36,13 @@ if(BACKTEST) {
 		// from: "2005-01-01",
 		// from: "2007-01-01",
 		// from: "2015-01-01",
-		from: '2015-08-01',
+		from: '2016-05-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
 		// to: "2015-09-11",
 		// capital: 20000 * 3,
-		capital: 70000 * 3,
+		capital: 30000 * 3,
 		// monthlyAdd: 0,
 		mailLog: false,
 		processingDelay: false
@@ -58,7 +53,7 @@ if(BACKTEST) {
 		Backtest.run(config, function(){}, function(){});
 	});
 
-} else if(RUN_STRATEGY) {
+} else if(config.runStrategy) {
 	Log.info("Running strategy");
 
 	var config = {
@@ -87,12 +82,18 @@ if(BACKTEST) {
 		}, 10000);
 	});
 
-} else {
+} else if(config.runScheduler) {
+
 	Log.info("Running scheduler for automated trading");
 
 	var Robot = require(config.dirCore+"Robot")(app);
 	// Strategy.initClear(config);
 	Robot.setStrategy(Strategy);
 	Robot.start(Strategy);
+
+} else {
+
+	Log.info("Unspecified operation - set in config one of runScheduler/runBacktest/runStrategy to true");
+	process.exit(1);
 }
 

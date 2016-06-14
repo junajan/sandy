@@ -44,7 +44,7 @@
     "once": "^1.3.3",
     "reload": "^0.1.0",
     "request": "^2.53.0",
-    "session-file-store": "0.0.3",
+    "session-file-store": "0.2.0",
     "sha1": "^1.1.0",
     "socket.io": "^1.3.5",
     "strip-ansi": "^3.0.1",
