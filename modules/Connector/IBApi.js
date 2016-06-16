@@ -9,7 +9,7 @@ var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
 
-const ORDER_TIMEOUT = 10000;
+const ORDER_TIMEOUT = 30000;
 
 const IB_CONNECTION_RESTORED = 2104;
 const IB_CONNECTION_IS_OK = 2106;
