@@ -1,4 +1,8 @@
 #!/bin/sh
 
 cd /var/node/sandy
+
+echo "Loading Openings"
 npm run openings >> /var/log/sandy-openings.log
+
+echo "Script exited with $?"
