@@ -13,11 +13,22 @@ const ORDER_TIMEOUT = 10000;
 
 const IB_CONNECTION_RESTORED = 2104;
 const IB_CONNECTION_IS_OK = 2106;
+const IB_CONNECTION_LOST = 1100;
+const IB_CONNECTION_BROKEN = 2103;
+const IB_CONNECTION_RESTORED2 = 1102;
+const IB_CONNECTING = 2119;
+const IB_DATA_UPON_DEMAND = 2108;
 
 var apiMessages = {};
-apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK."
-apiMessages[IB_CONNECTION_RESTORED] = "Connectivity between IB and Trader Workstation has been restored - data maintained."
+apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK.";
+apiMessages[IB_CONNECTION_RESTORED] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
+apiMessages[IB_DATA_UPON_DEMAND] = "Market data farm connection is inactive but should be available upon demand.usfarm.us";
+apiMessages[IB_CONNECTING] = "Market data farm is connecting:usfarm.us";
+apiMessages[IB_CONNECTION_LOST] = "Connectivity between IB and Trader Workstation has been lost.";
+apiMessages[IB_CONNECTION_RESTORED2] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
+apiMessages[IB_CONNECTION_BROKEN] = "Market data farm connection is broken:usfarm";
 
+var apiInfos = [IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED2];
 
 var LogMockup = {};
 ["fatal", "error", "info", "notice"].forEach(function (level) {
@@ -52,8 +63,10 @@ var IBApi = function(config, app) {
     var ib = new (ibApi)(config)
         .on('error', function (err, data) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id])
+
                 Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err);
             else if(err && err.code == "ECONNREFUSED") {
+
                 Log.error("ERROR: cannot connect to IB api.. exiting".red, err);
                 setTimeout(function() {
                     process.exit(1);
@@ -61,11 +74,12 @@ var IBApi = function(config, app) {
             } else {
 
                 if(_.isObject(data) && data.code && apiMessages[data.code])
-                    Log.info(apiMessages[data.code]);
+                    if(apiInfos.indexOf(data.code) >= 0)
+                        Log.info(apiMessages[data.code], data);
+                    else
+                        Log.error(apiMessages[data.code], data);
                 else
                     Log.error(err.toString(), data);
-
-                Log.debug(err);
             }
 
         }).on('result', function (event, args) {
@@ -80,12 +94,6 @@ var IBApi = function(config, app) {
 
             if(_.isFunction(app.emit))
                 app.emit("ibReady");
-
-            // ib.placeOrder(getNextOrderId(), ib.contract.stock('AAPL'), ib.order.market('BUY', 100));
-            // ib.placeOrder(orderId + 1, ib.contract.stock('GOOG'), ib.order.limit('SELL', 1, 9999));
-            // ib.placeOrder(orderId + 2, ib.contract.stock('FB'), ib.order.limit('BUY', 1, 0.01));
-
-            // self.sendOrder("BUY", "AAPL", 50, "MKT", console.log.bind(null, "DONE SENT:"), console.log.bind(null, "DONE FILLED:"));
         }).on('tickEFP', sendToDebug.bind(this, "tickEFP"))
         .on('tickGeneric', sendToDebug.bind(this, "tickGeneric"))
         .on('tickOptionComputation', sendToDebug.bind(this, "tickOptionComputation"))
@@ -94,7 +102,7 @@ var IBApi = function(config, app) {
         .on('tickPrice', function (tickerId, tickType, price, canAutoExecute) {
 
             if(!streamingIdMap[tickerId]) {
-                Log.error("ERROR - something went really wrong - tickPrice event for unknown tickerId - ".red, arguments);
+                Log.warn("Something went really wrong - tickPrice event for unknown tickerId - ".red, arguments);
                 return false;
             }
 
@@ -197,12 +205,10 @@ var IBApi = function(config, app) {
             }
 
         }).on('execDetails', function (reqId, contract, exec) {
-            Log.info("ExecDetails".cyan, "reqId:;".bold, reqId, "contract:".bold, contract, "exec:".bold, exec );
+            Log.debug("ExecDetails".cyan, "reqId:;".bold, reqId, "contract:".bold, JSON.stringify(contract), "exec:".bold, JSON.stringify(exec));
 
             self.logOrder(exec.orderId, contract.symbol, exec.side, exec.shares, exec.price, "PROCESSED", JSON.stringify(arguments), function (err, res) {
                 if(err) log.error("There was an error while saving execDetails".red, arguments);
-
-
             })
         });
 
