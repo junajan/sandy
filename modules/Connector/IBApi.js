@@ -75,7 +75,7 @@ var IBApi = function(config, app) {
 
                 if(_.isObject(data) && data.code && apiMessages[data.code])
                     if(apiInfos.indexOf(data.code) >= 0)
-                        Log.info(apiMessages[data.code], data);
+                        Log.info(apiMessages[data.code]);
                     else
                         Log.error(apiMessages[data.code], data);
                 else
