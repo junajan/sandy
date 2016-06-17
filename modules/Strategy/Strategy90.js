@@ -240,12 +240,24 @@ var Strategy = function(app) {
 							Log.error("Error during sell order", err.errorText || err);
 							return one(err);
 						}
+
+						var finalPrice = res.price;
+						var orderFee = 0;
+						if(!config.feesDisabled && config.settings.fee_order_sell) {
+
+							finalPrice -= (config.settings.fee_order_sell / pos.amount);
+							orderFee = config.settings.fee_order_sell;
+						}
+
+
 						Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
 
 						DB.update("positions", {
 							sell_import_id: config.importId,
 							requested_close_price: indicators.price,
-							close_price: res.price,
+							close_price: finalPrice,
+							close_price_without_fee: res.price,
+							close_fee: orderFee,
 							requested_close_date: self.getDBDate(config.date),
 							close_date: self.getDBDate(config.date)
 						}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
@@ -278,7 +290,16 @@ var Strategy = function(app) {
 							Log.error("Error during sell order", (err.errorText || err));
 							return done(err);
 						}
-						Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ res.price+ " with rsi: "+ pos.rsi.toFixed(2));
+
+						var finalPrice = res.price;
+						var orderFee = 0;
+						if(!config.feesDisabled && config.settings.fee_order_buy) {
+
+							finalPrice += (config.settings.fee_order_buy / pos.amount);
+							orderFee = config.settings.fee_order_buy;
+						}
+
+						Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
 
 						DB.insert("positions", {
 							requested_open_price: pos.requested_open_price,
@@ -286,7 +307,9 @@ var Strategy = function(app) {
 							ticker: pos.ticker,
 							pieces: pos.pieces,
 							amount: res.amount,
-							open_price: res.price,
+							open_price: finalPrice,
+							open_fee: orderFee,
+							open_price_without_fee: res.price,
 							open_date: self.getDBDate(config.date)
 						}, function(err, resDb) {
 							if(err) {

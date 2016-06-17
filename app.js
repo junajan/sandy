@@ -74,6 +74,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 		capital: 20000 * 3,
 		// monthlyAdd: 0,
 		mailLog: false,
+		feesDisabled: true,
 		processingDelay: false
 		// processingDelay: 10000
 	};

@@ -55,6 +55,7 @@
             <ul class="nav navbar-nav navbar-right">
               <li><a href="">Capital: {{ statistics.current_capital | currency:'$' }}</a></li>
               <li><a href="">Free: {{ statistics.unused_capital | currency:'$' }}</a></li>
+              <li ng-if="apiTime"><a href="">Time: {{ apiTime }}</a></li>
             </ul>
           </div>
         </div>

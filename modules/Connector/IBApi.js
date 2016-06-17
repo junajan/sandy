@@ -11,6 +11,8 @@ var once = require('once');
 
 const ORDER_TIMEOUT = 30000;
 const HEARTHBEAT_INTERVAL = 60000;
+
+// IB API status codes
 const IB_CONNECTION_RESTORED = 2104;
 const IB_CONNECTION_IS_OK = 2106;
 const IB_CONNECTION_LOST = 1100;
@@ -93,6 +95,8 @@ var IBApi = function(config, app) {
             }
         }).on('currentTime', function (time) {
             Log.trace("Hearthbeat", time);
+            if(app.emit)
+                app.emit("API.time", time);
 
         }).once('nextValidId', function (id) {
 

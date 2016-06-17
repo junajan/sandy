@@ -1,6 +1,7 @@
 var express = require('express');
 var http = require('http');
 var fs = require('fs');
+var moment = require('moment');
 var reload = require('reload');
 var socketIO = require('socket.io');
 var stripAnsi = require("strip-ansi");
@@ -30,8 +31,12 @@ module.exports = (function() {
             socket.on('getLog', function(cb) {
                 cb(log);
             });
-        });
 
+            self.app.on("API.time", function(time) {
+                time = moment(time* 1000).format("HH:mm:ss");
+                socket.emit("API.time", time);
+            });
+        });
         var tail = require('child_process').spawn("tail", ["-f", "-n 200", conf.logFile]);
 
         tail.stdout.on("data", function (data) {
