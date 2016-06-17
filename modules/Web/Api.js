@@ -31,7 +31,7 @@ var Api = function(app) {
 		});
 	};
 
-	this.getConfig = function(req, res) {
+	this.getFullConfig = function(req, res) {
 		DB.getData('*', 'config', '1=1', null, "var", "ASC", function(err, data) {
 			res.json(data);
 		});
