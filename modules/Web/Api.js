@@ -31,6 +31,12 @@ var Api = function(app) {
 		});
 	};
 
+	this.getConfig = function(req, res) {
+		DB.getData('*', 'config', '1=1', null, "var", "ASC", function(err, data) {
+			res.json(data);
+		});
+	};
+
 	this.getOrders = function(req, res) {
 		var limit = parseInt(req.query.limit) || null;
 

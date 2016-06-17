@@ -41,6 +41,11 @@ var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
                 controller: "Orders",
                 title: "Orders"
             })
+            .when("/config", {
+                templateUrl: viewFolder+"Config.html",
+                controller: "Config",
+                title: "Config"
+            })
             .when("/holidays", {
                 templateUrl: viewFolder+"Holidays.html",
                 controller: "Holidays",
