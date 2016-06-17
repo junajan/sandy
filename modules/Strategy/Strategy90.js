@@ -267,8 +267,8 @@ var Strategy = function(app) {
 							}
 
 							// decrement available resources
-							config.currentState.current_capital += parseFloat(res.price * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
-							config.currentState.unused_capital += parseFloat(res.price * res.amount, 2); // add to unused_capital received money from SELL order
+							config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
+							config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
 							config.currentState.free_pieces += pos.pieces;
 							done(err, res);
 						});
@@ -318,7 +318,7 @@ var Strategy = function(app) {
 							}
 
 							// lower available resources
-							config.currentState.unused_capital -= res.price * res.amount; // remove money spent on BUY order
+							config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
 							config.currentState.free_pieces -= pos.pieces;	// remove spent pieces
 							done(err, res);
 						});
