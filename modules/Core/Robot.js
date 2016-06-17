@@ -1,5 +1,6 @@
 var scheduler = require("./Scheduler");
 var moment = require('moment');
+var _ = require('lodash');
 
 var Robot = function(app) {
 	var self = this;
@@ -34,7 +35,7 @@ var Robot = function(app) {
 		});
 	};
 
-	this.strategyProcess = function() {
+	this.strategyProcess = function(done) {
 		Log.info(("Running strategy at:"+ moment().format('LT')).green);
 		console.time("Processing finished");
 		if(!self.strategyInited) return Log.error('Strategy was not properly inited, exiting');
@@ -42,6 +43,8 @@ var Robot = function(app) {
 		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
 			if(err) Log.error("Strategy processing returned error:", err);
+
+			if(_.isFunction(done)) done(err, res);
 		});
 	};
 

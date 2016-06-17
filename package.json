@@ -12,7 +12,7 @@
     "history-intraday": "node scripts/historyIntraday.js",
     "start-dev": "nodemon -e '.html,.js,.ejs,.css,.json' app.js",
     "start": "forever start -a -l /var/log/sandy.log app.js",
-    "single-strategy": "NODE_ENV=RUN_STRATEGY node app.js"
+    "single-run": "NODE_ENV=RUN_STRATEGY node app.js"
   },
   "repository": {
     "type": "git",

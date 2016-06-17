@@ -39,7 +39,9 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 		Log.info("Waiting %dsec to run strategy", PROCESS_LOAD_DELAY / 1000);
 		setTimeout(function(){
 
-			Robot.strategyProcess();
+			Robot.strategyProcess(function() {
+				process.exit(0);
+			});
 		}, PROCESS_LOAD_DELAY);
 	});
 
