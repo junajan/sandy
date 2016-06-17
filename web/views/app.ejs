@@ -10,7 +10,7 @@
     <script src="/reload/reload.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
-    <title>Sandy bot</title>
+    <title>Sandy bot <%- (appEnv !== "PROD" ) ? "- "+appEnv : "" %></title>
 
     <link rel="icon" href="/images/icon.ico" type="image/x-icon" />
 
@@ -22,7 +22,7 @@
   </head>
 
   <body ng-app="sandy" ng-controller="Base">
-
+  <%- (appEnv !== "PROD" ) ? '<div class="devBanner">'+appEnv+'</div>' : "" %>
     <div class="container">
 
       <!-- Static navbar -->

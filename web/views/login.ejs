@@ -9,7 +9,7 @@
 
   <script src="/reload/reload.js"></script>
 
-  <title>Sandy - login</title>
+  <title>Sandy bot - login <%- (appEnv !== "PROD" ) ? "- "+appEnv : "" %></title>
 
   <link rel="icon" href="/images/icon.ico" type="image/x-icon" />
 
@@ -19,6 +19,7 @@
 
 <body>
   <div class="container">
+    <%- (appEnv !== "PROD" ) ? '<div class="devBanner">'+appEnv+'</div>' : "" %>
 
     <div style="height: 100px;"></div>
     <br />

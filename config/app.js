@@ -12,6 +12,9 @@ module.exports = function(app, config) {
 		layout: false
 	});
 
+	app.locals.appEnv = config.env;
+
+
 	app.use(cookieParser());
 	app.use(session({
 		secret: 'This was really big kind of stuff',
