@@ -32,28 +32,14 @@ const PROCESS_LOAD_DELAY = 60000;
 if(process.env.NODE_ENV === "RUN_STRATEGY") {
 	Log.info("Running strategy");
 
-	var config = {
-		date: moment(),
-		tickers: tickers
-	};
+	var Robot = require(config.dirCore+"Robot")(app);
+	Robot.setStrategy(Strategy);
 
-	console.time("Initing finished");
-	Strategy.init(config, function(err, res) {
-		if(err) return Log.error("Strategy init returned error:", err);
-		console.timeEnd("Initing finished");
-
+	Robot.strategyInit(function() {
 		Log.info("Waiting %dsec to run strategy", PROCESS_LOAD_DELAY / 1000);
 		setTimeout(function(){
 
-			Log.info(("Running strategy at:"+ moment().format('LT')).green);
-			console.time("Processing finished");
-
-			Strategy.process(res, function(err, res) {
-				console.timeEnd("Processing finished");
-				if(err) Log.error("Strategy process returned error:", err);
-				else Log.info("Strategy was successfull");
-				process.exit(0);
-			});
+			Robot.strategyProcess();
 		}, PROCESS_LOAD_DELAY);
 	});
 

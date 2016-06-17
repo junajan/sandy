@@ -21,7 +21,7 @@ var Robot = function(app) {
 		Log.info(("Initing strategy at: "+moment().format('LT')).green);
 		console.time("Initing finished");
 		self.strategyInited = false;
-		self.strategyConfig = {date: moment(), backtestOrders: true};
+		self.strategyConfig = {date: moment()};
 
 		self.Strategy.init(self.strategyConfig, function(err, res) {
 			if(err) return Log.error("Strategy init returned error:", err);
