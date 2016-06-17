@@ -10,7 +10,7 @@ var YahooApi = require("./_yahoo");
 var once = require('once');
 
 const ORDER_TIMEOUT = 30000;
-const HEARTHBEAT_INTERVAL = 60000;
+const HEARTHBEAT_INTERVAL = 1000;
 
 // IB API status codes
 const IB_CONNECTION_RESTORED = 2104;
