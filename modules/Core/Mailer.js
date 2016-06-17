@@ -17,7 +17,9 @@ var Mailer = function(app) {
 		if(!emailConf.dailyLog)
 			return false;
 
-		log = log.replace(/^.*\[DEBUG\].*$/mg, "").trim().replace(/\n\n\n*/g, "\n");
+		log = log.replace(/^.*\[DEBUG\].*$/mg, "");
+		log = log.replace(/^.*\[TRACE\].*$/mg, "");
+		log = log.trim().replace(/\n\n\n*/g, "\n");
 
 		var title = config.env+" sandy daily log";
 		var msg = '<b>Sandy bot - daily log for '+getFullDate(moment())+"</b>";
