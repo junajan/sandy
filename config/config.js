@@ -27,7 +27,7 @@ var appenders = [];
 
 if(config.log.console) {
     appenders.push({
-        "level": config.log.consoleLogLevel,
+        "level": process.env.LOG_LEVEL || config.log.consoleLogLevel,
         "type": "logLevelFilter",
         "appender": {
             "type": "console"
