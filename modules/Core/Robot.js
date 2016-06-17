@@ -41,7 +41,7 @@ var Robot = function(app) {
 
 		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
-			if(err) Log.error("Strategy processing returned error: ", err);
+			if(err) Log.error("Strategy processing returned error:", err);
 		});
 	};
 
@@ -54,7 +54,7 @@ var Robot = function(app) {
 		Openings.getTodaysClosingTime(moment().format('YYYY-MM-DD'), function(err, time) {
 			if(err) return Log.error("error when scheduling: ".red, err);
 
-			console.log("Todays closing time is: ", time);
+			console.log("Todays closing time is at:", time);
 			if(!time) return false;
 
 			var timeClose = moment(time, "HH:mm");
