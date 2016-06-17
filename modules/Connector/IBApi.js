@@ -10,7 +10,7 @@ var YahooApi = require("./_yahoo");
 var once = require('once');
 
 const ORDER_TIMEOUT = 30000;
-
+const HEARTHBEAT_INTERVAL = 60000;
 const IB_CONNECTION_RESTORED = 2104;
 const IB_CONNECTION_IS_OK = 2106;
 const IB_CONNECTION_LOST = 1100;
@@ -62,15 +62,19 @@ var IBApi = function(config, app) {
 
     var ib = new (ibApi)(config)
         .on('error', function (err, data) {
-            if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id])
+            if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id]) {
 
                 Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err);
-            else if(err && err.code == "ECONNREFUSED") {
+            } else if(err && err.code == "ECONNREFUSED") {
 
-                Log.error("ERROR: cannot connect to IB api.. exiting".red, err);
+                Log.error("ERROR: cannot connect to IB api ... exiting".red);
                 setTimeout(function() {
+                    console.log("EXITING");
                     process.exit(1);
                 }, 1000);
+            } else if(err.toString() === "Error: Cannot send data when disconnected.") {
+                Log.error("API is down ... exiting")
+                process.exit(1);
             } else {
 
                 if(_.isObject(data) && data.code && apiMessages[data.code])
@@ -83,10 +87,13 @@ var IBApi = function(config, app) {
             }
 
         }).on('result', function (event, args) {
-            if (!_.includes(['nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
+            if (!_.includes(['currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
                 Log.debug('Result: %s %s', (event + ':').yellow, JSON.stringify(args));
             }
+        }).on('currentTime', function (time) {
+            Log.trace("Hearthbeat", time);
+
         }).once('nextValidId', function (id) {
 
             Log.debug('First valid ID is'.yellow, id);
@@ -419,11 +426,17 @@ var IBApi = function(config, app) {
         });
     };
 
+    self.watchConnection = function() {
+        setInterval(function () {
+            ib.reqCurrentTime();
+        }, HEARTHBEAT_INTERVAL);
+    }
+
     /**
      * Connect to IB API
      */
     ib.connect();
-
+    self.watchConnection();
     return this;
 };
 

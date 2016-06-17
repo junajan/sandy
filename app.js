@@ -71,7 +71,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 		to: moment().format('YYYY-MM-DD'),
 		// to: "2015-09-11",
 		// capital: 20000 * 3,
-		capital: 30000 * 3,
+		capital: 20000 * 3,
 		// monthlyAdd: 0,
 		mailLog: false,
 		processingDelay: false
