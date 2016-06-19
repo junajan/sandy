@@ -52,10 +52,15 @@
               <li class="config"><a href="config">Config</a></li>
               <li class="logout"><a class="text-bold" href="/logout" onClick="window.location = this.href;">Logout</a></li>
             </ul>
-            <ul class="nav navbar-nav navbar-right">
-              <li><a href="">Capital: {{ statistics.current_capital | currency:'$' }}</a></li>
+            <ul class="nav navbar-nav navbar-right link-small">
+              <li><a href="">Cap: {{ statistics.current_capital | currency:'$' }}</a></li>
               <li><a href="">Free: {{ statistics.unused_capital | currency:'$' }}</a></li>
               <li ng-if="apiTime"><a href="">Time: {{ apiTime }}</a></li>
+              <li ng-if="state.api !== null && state.ib !== null">
+                <a title="{{stateTitle}}">API:
+                  <i class="api-state state-left" ng-class="{on: api.api, off: !api.api}"></i><i class="api-state state-right" ng-class="{on: api.ib, off: !api.ib}"></i>
+                </a>
+              </li>
             </ul>
           </div>
         </div>

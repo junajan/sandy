@@ -280,6 +280,10 @@ var Strategy = function(app) {
 				// =========== OPEN POSITION process
 				config.changedPositions += config.openPositions.length;
 
+				// if this is the last day of the backtest - don't open new positions
+				if(config.lastDay)
+					return done(null);
+
 				async.each(config.openPositions, function(pos, done) {
 					var type = "OPEN: ";
 					if(config.positionsAggregated[pos.ticker])

@@ -3,6 +3,7 @@ var request = require("request");
 var _ = require("lodash");
 var csv = require("fast-csv");
 
+const HEARTHBEAT_INTERVAL = 1000;
 
 var LogMockup = {};
 ["fatal", "error", "info", "notice", "debug"].forEach(function (level) {
@@ -19,6 +20,11 @@ var Mock = function(config, app) {
     var DB = app.DB;
     var orderId = 1;
 
+    app.apiConnection = {
+        ib: true,
+        api: true
+    };
+    
     Log = app.Log || LogMockup;
 
     // realtime data mockup URL
@@ -114,6 +120,17 @@ var Mock = function(config, app) {
             priceType: (price === "MKT") ? "MKT" : "LIMIT"
         });
     };
+
+    self.watchConnection = function() {
+        setInterval(function () {
+            app.emit("API.time", moment());
+
+            app.emit("API.connection", app.apiConnection);
+        }, HEARTHBEAT_INTERVAL);
+    };
+
+    app.emit("API.connection", app.apiConnection);
+    self.watchConnection();
     
     return this;
 };

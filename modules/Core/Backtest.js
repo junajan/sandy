@@ -169,9 +169,8 @@ var Backtest = function(Strategy) {
 		var testDay = moment(config.from);
 		var endDay = moment(config.to);
 		config.dontPersist = true;
-		config.backtest = true;
-		config.backtestOrders = true;
 		config.internalHistory = true;
+
 		console.time("============== Finished ==============");
 		
 		self.statsOnStartTest(config);
@@ -188,6 +187,7 @@ var Backtest = function(Strategy) {
 
 			if(testDay.format("YYYY-MM-DD") == config.to) {
 				console.log('Last day of backtests.. will close all remaining positions')
+				config.lastDay = true;
 				config.sellAll = true;
 			}
 

@@ -1,5 +1,17 @@
 'use strict';
 
+function getTitle(state) {
+    var t1 = "Connection with API is OFF";
+    var t2 = "Connection with IB is OFF";
+
+    if(state.api)
+        t1 = "Connection with API is ON";
+    if(state.ib)
+        t2 = "Connection with IB is ON";
+
+    return t1 +" | "+ t2;
+}
+
 var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
     .config([
         '$httpProvider', '$locationProvider', '$routeProvider',
@@ -64,8 +76,19 @@ var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
             $rootScope.inited = false;
             $rootScope.socket = io();
 
+            $rootScope.api = {
+                ib: null,
+                api: null
+            };
+            $rootScope.stateTitle = getTitle($rootScope.api);
+
             $rootScope.socket.on('API.time', function (time) {
                 $rootScope.apiTime = time;
+            });
+            $rootScope.socket.on('API.connection', function (state) {
+                console.log(state);
+                $rootScope.api = state;
+                $rootScope.stateTitle = getTitle($rootScope.api);
             });
         }
     ]);

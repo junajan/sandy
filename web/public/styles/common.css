@@ -14,3 +14,33 @@ body {
   font-size: 20px;
   color: yellow;
 }
+
+.api-state {
+  width: 7px;
+  height: 14px;
+  display: inline-block;
+  position: relative;
+  top: 2px;
+}
+
+.api-state.state-left {
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+}
+
+.api-state.state-right {
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.api-state.on {
+  background-color: green;
+}
+.api-state.off {
+  background-color: red;
+}
+
+.link-small li>a {
+  padding-left: 10px;
+  padding-right: 10px;
+}

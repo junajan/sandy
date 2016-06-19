@@ -50,17 +50,13 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 
 	var config = {
 		tickers: tickers,
-		// from: "2005-01-01",
-		// from: "2007-01-01",
 		// from: "2015-01-01",
-		from: '2016-05-01',
+		from: '2016-06-13',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
-		// to: "2015-09-11",
-		// capital: 20000 * 3,
 		capital: 20000 * 3,
-		// monthlyAdd: 0,
+		monthlyAdd: 0,
 		mailLog: false,
 		feesDisabled: false,
 		processingDelay: false
@@ -79,7 +75,6 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 		internalHistory: true,
 		disabledLoadingActualsFromDb: true,
 		date: moment(),
-		// backtestOrders: true,
 		tickers: tickers
 	};
 

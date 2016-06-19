@@ -36,6 +36,13 @@ module.exports = (function() {
                 time = moment(time* 1000).format("HH:mm:ss");
                 socket.emit("API.time", time);
             });
+            self.app.on("API.connection", function(state) {
+                console.log(state);
+                socket.emit("API.connection", state);
+            });
+
+
+            socket.emit("API.connection", self.app.apiConnection);
         });
         var tail = require('child_process').spawn("tail", ["-f", "-n 200", conf.logFile]);
 

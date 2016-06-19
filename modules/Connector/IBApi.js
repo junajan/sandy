@@ -14,12 +14,14 @@ const HEARTHBEAT_INTERVAL = 1000;
 
 // IB API status codes
 const IB_CONNECTION_RESTORED = 2104;
+const IB_CONNECTION_RESTORED2 = 1102;
 const IB_CONNECTION_IS_OK = 2106;
 const IB_CONNECTION_LOST = 1100;
 const IB_CONNECTION_BROKEN = 2103;
-const IB_CONNECTION_RESTORED2 = 1102;
+const IB_CONNECTION_BROKEN2 = 2110;
 const IB_CONNECTING = 2119;
 const IB_DATA_UPON_DEMAND = 2108;
+
 
 var apiMessages = {};
 apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK.";
@@ -29,6 +31,7 @@ apiMessages[IB_CONNECTING] = "Market data farm is connecting:usfarm.us";
 apiMessages[IB_CONNECTION_LOST] = "Connectivity between IB and Trader Workstation has been lost.";
 apiMessages[IB_CONNECTION_RESTORED2] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
 apiMessages[IB_CONNECTION_BROKEN] = "Market data farm connection is broken:usfarm";
+apiMessages[IB_CONNECTION_BROKEN2] = "Connectivity between Trader Workstation and server is broken. It will be restored automatically.";
 
 var apiInfos = [IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED2];
 
@@ -56,6 +59,11 @@ var IBApi = function(config, app) {
     var Log = app.getLogger("IB-API");
     var DB = app.DB;
 
+    app.apiConnection = {
+        api: false,
+        ib: false
+    };
+
     Log.info("Starting IB API with config:", config);
     
     var sendToDebug = function () {
@@ -79,13 +87,24 @@ var IBApi = function(config, app) {
                 process.exit(1);
             } else {
 
-                if(_.isObject(data) && data.code && apiMessages[data.code])
+                if(_.isObject(data) && data.code && apiMessages[data.code]) {
                     if(apiInfos.indexOf(data.code) >= 0)
                         Log.info(apiMessages[data.code]);
                     else
                         Log.error(apiMessages[data.code], data);
-                else
+
+
+                    if([IB_CONNECTION_RESTORED, IB_CONNECTION_RESTORED2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
+                        app.apiConnection.ib = true;
+                    } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {
+                        app.apiConnection.ib = false;
+                    }
+
+                    app.emit("API.connection", app.apiConnection);
+
+                } else {
                     Log.error(err.toString(), data);
+                }
             }
 
         }).on('result', function (event, args) {
@@ -97,14 +116,18 @@ var IBApi = function(config, app) {
             Log.trace("Hearthbeat", time);
             if(app.emit)
                 app.emit("API.time", time);
-
         }).once('nextValidId', function (id) {
 
             Log.debug('First valid ID is'.yellow, id);
             orderId = id;
 
-            if(_.isFunction(app.emit))
+            if(_.isFunction(app.emit)) {
+                app.apiConnection.api = true;
+                app.apiConnection.ib = true;
+
                 app.emit("ibReady");
+                app.emit("API.connection", app.apiConnection);
+            }
         }).on('tickEFP', sendToDebug.bind(this, "tickEFP"))
         .on('tickGeneric', sendToDebug.bind(this, "tickGeneric"))
         .on('tickOptionComputation', sendToDebug.bind(this, "tickOptionComputation"))
