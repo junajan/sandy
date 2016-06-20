@@ -37,7 +37,6 @@ module.exports = (function() {
                 socket.emit("API.time", time);
             });
             self.app.on("API.connection", function(state) {
-                console.log(state);
                 socket.emit("API.connection", state);
             });
 

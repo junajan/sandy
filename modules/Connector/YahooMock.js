@@ -123,7 +123,7 @@ var Mock = function(config, app) {
 
     self.watchConnection = function() {
         setInterval(function () {
-            app.emit("API.time", moment());
+            app.emit("API.time", moment().format("X"));
 
             app.emit("API.connection", app.apiConnection);
         }, HEARTHBEAT_INTERVAL);
