@@ -8,14 +8,16 @@ var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
+const throttle = require('throttle-function')
 
 const ORDER_TIMEOUT = 30000;
 const HEARTHBEAT_INTERVAL = 1000;
 
 // IB API status codes
-const IB_CONNECTION_RESTORED = 2104;
+// const IB_CONNECTION_RESTORED = 2104;
 const IB_CONNECTION_RESTORED2 = 1102;
 const IB_CONNECTION_IS_OK = 2106;
+const IB_CONNECTION_IS_OK2 = 2104;
 const IB_CONNECTION_LOST = 1100;
 const IB_CONNECTION_BROKEN = 2103;
 const IB_CONNECTION_BROKEN2 = 2110;
@@ -25,7 +27,7 @@ const IB_DATA_UPON_DEMAND = 2108;
 
 var apiMessages = {};
 apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK.";
-apiMessages[IB_CONNECTION_RESTORED] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
+apiMessages[IB_CONNECTION_IS_OK2] = "Market data farm connection is OK:usfarm.us";
 apiMessages[IB_DATA_UPON_DEMAND] = "Market data farm connection is inactive but should be available upon demand.usfarm.us";
 apiMessages[IB_CONNECTING] = "Market data farm is connecting:usfarm.us";
 apiMessages[IB_CONNECTION_LOST] = "Connectivity between IB and Trader Workstation has been lost.";
@@ -33,14 +35,7 @@ apiMessages[IB_CONNECTION_RESTORED2] = "Connectivity between IB and Trader Works
 apiMessages[IB_CONNECTION_BROKEN] = "Market data farm connection is broken:usfarm";
 apiMessages[IB_CONNECTION_BROKEN2] = "Connectivity between Trader Workstation and server is broken. It will be restored automatically.";
 
-var apiInfos = [IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED2];
-
-var LogMockup = {};
-["fatal", "error", "info", "notice"].forEach(function (level) {
-    // "["+moment().format("DD.MM.YYYY HH:II:SS")+"]
-    LogMockup[level] = console.log.bind(console, "MockupAPI("+level+"):");
-});
-
+var apiInfos = [IB_CONNECTION_IS_OK2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED2];
 
 var eventEmitter = new events();
 
@@ -61,15 +56,12 @@ var IBApi = function(config, app) {
 
     app.apiConnection = {
         api: false,
-        ib: false
+        ib: false,
+        marketData: false
     };
 
     Log.info("Starting IB API with config:", config);
     
-    var sendToDebug = function () {
-        Log.debug(arguments);
-    };
-
     var ib = new (ibApi)(config)
         .on('error', function (err, data) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id]) {
@@ -79,7 +71,7 @@ var IBApi = function(config, app) {
 
                 Log.error("ERROR: cannot connect to IB api ... exiting".red);
                 setTimeout(function() {
-                    console.log("EXITING");
+                    Log.error("EXITING");
                     process.exit(1);
                 }, 1000);
             } else if(err.toString() === "Error: Cannot send data when disconnected.") {
@@ -94,10 +86,16 @@ var IBApi = function(config, app) {
                         Log.error(apiMessages[data.code], data);
 
 
-                    if([IB_CONNECTION_RESTORED, IB_CONNECTION_RESTORED2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
+                    if(app.apiConnection.marketData === false && [IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED2].indexOf(data.code) >= 0) {
+                        eventEmitter.emit("refreshStreaming");
+                    }
+
+                    if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
                         app.apiConnection.ib = true;
+                        app.apiConnection.marketData = true;
                     } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {
                         app.apiConnection.ib = false;
+                        app.apiConnection.marketData = false;
                     }
 
                     app.emit("API.connection", app.apiConnection);
@@ -110,12 +108,12 @@ var IBApi = function(config, app) {
         }).on('result', function (event, args) {
             if (!_.includes(['currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
-                Log.debug('Result: %s %s', (event + ':').yellow, JSON.stringify(args));
+                Log.debug('API Result: %s %s', (event + ':').yellow, JSON.stringify(args));
             }
         }).on('currentTime', function (time) {
             Log.trace("Hearthbeat", time);
-            if(app.emit)
-                app.emit("API.time", time);
+            app.emit("API.time", time);
+
         }).once('nextValidId', function (id) {
 
             Log.debug('First valid ID is'.yellow, id);
@@ -125,15 +123,10 @@ var IBApi = function(config, app) {
                 app.apiConnection.api = true;
                 app.apiConnection.ib = true;
 
-                app.emit("ibReady");
+                app.emit("API.ready");
                 app.emit("API.connection", app.apiConnection);
             }
-        }).on('tickEFP', sendToDebug.bind(this, "tickEFP"))
-        .on('tickGeneric', sendToDebug.bind(this, "tickGeneric"))
-        .on('tickOptionComputation', sendToDebug.bind(this, "tickOptionComputation"))
-        // .on('tickSize', sendToDebug.bind(this, "tickSize"))
-        // .on('tickString', sendToDebug.bind(this, "tickString"))
-        .on('tickPrice', function (tickerId, tickType, price, canAutoExecute) {
+        }).on('tickPrice', function (tickerId, tickType, price, canAutoExecute) {
 
             if(!streamingIdMap[tickerId]) {
                 Log.warn("Something went really wrong - tickPrice event for unknown tickerId - ".red, arguments);
@@ -262,7 +255,7 @@ var IBApi = function(config, app) {
         return {ticker: ticker, market: market};
     };
 
-    var streamTicker = function(type, ticker, market) {
+    var streamTickerOrig = function(type, ticker, market) {
         var id = getNextOrderId();
         var data = serializeTicker(ticker, market || null);
 
@@ -274,6 +267,13 @@ var IBApi = function(config, app) {
 
         return id;
     };
+
+    const streamTicker = throttle(streamTickerOrig, {
+        // max 40 requests per second
+        window: 1,
+        limit: 40
+    })
+
 
     var pickBestPrices = function (tickers, streamingPrices) {
         var out = {};
@@ -342,6 +342,39 @@ var IBApi = function(config, app) {
 
         streamingPrices = {};
         streamingIdMap = {};
+    };
+
+    self.getStreamingTickers = function () {
+        var list = [];
+        _.forEach(streamingIdMap, function (item) {
+           list.push(item.ticker);
+        });
+
+        return list;
+    };
+
+    /**
+     * Refresh tickers data streaming
+     */
+    self.refreshStreaming = function() {
+        var tickers = self.getStreamingTickers();
+        if(!tickers.length)
+            return;
+
+        Log.info("Refreshing subscriptions to all tickers");
+        // self.stopStreaming();
+        //
+        // setTimeout(function() {
+        //     self.startStreaming(tickers, function () {
+        //         app.emit("API.pricesRefreshed");
+        //     });
+        // }, 5000);
+
+        streaming = true;
+
+        tickers.forEach(function(item){
+            streamTicker("stock", item);
+        });
     };
 
     /**
@@ -464,6 +497,8 @@ var IBApi = function(config, app) {
      */
     ib.connect();
     self.watchConnection();
+
+    eventEmitter.on("refreshStreaming", self.refreshStreaming);
     return this;
 };
 
