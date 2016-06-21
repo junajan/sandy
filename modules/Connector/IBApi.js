@@ -8,7 +8,7 @@ var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
-const throttle = require('throttle-function')
+const throttle = require('throttle-function');
 
 const ORDER_TIMEOUT = 30000;
 const HEARTHBEAT_INTERVAL = 1000;
@@ -24,6 +24,8 @@ const IB_CONNECTION_BROKEN2 = 2110;
 const IB_CONNECTING = 2119;
 const IB_DATA_UPON_DEMAND = 2108;
 
+const API_LIMIT_WINDOW = 1;
+const API_LIMIT_REQUESTS = 40;
 
 var apiMessages = {};
 apiMessages[IB_CONNECTION_IS_OK] = "Data farm connection is OK.";
@@ -108,7 +110,7 @@ var IBApi = function(config, app) {
         }).on('result', function (event, args) {
             if (!_.includes(['currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
-                Log.debug('API Result: %s %s', (event + ':').yellow, JSON.stringify(args));
+                Log.debug('API Result:'.yellow +' %s %s', (event + ':').yellow, JSON.stringify(args));
             }
         }).on('currentTime', function (time) {
             Log.trace("Hearthbeat", time);
@@ -270,10 +272,9 @@ var IBApi = function(config, app) {
 
     const streamTicker = throttle(streamTickerOrig, {
         // max 40 requests per second
-        window: 1,
-        limit: 40
-    })
-
+        window: API_LIMIT_WINDOW,
+        limit: API_LIMIT_REQUESTS
+    });
 
     var pickBestPrices = function (tickers, streamingPrices) {
         var out = {};
@@ -295,7 +296,6 @@ var IBApi = function(config, app) {
                 Log.warn(("WARNING For "+ticker.yellow+" using YahooAPI price "+ info.yahooPrice));
                 info.price = info.yahooPrice;
                 info.origin = "yahoo";
-
             }
         });
         return out;
@@ -347,7 +347,8 @@ var IBApi = function(config, app) {
     self.getStreamingTickers = function () {
         var list = [];
         _.forEach(streamingIdMap, function (item) {
-           list.push(item.ticker);
+            if(list.indexOf(item.ticker) < 0)
+                list.push(item.ticker);
         });
 
         return list;
@@ -362,13 +363,6 @@ var IBApi = function(config, app) {
             return;
 
         Log.info("Refreshing subscriptions to all tickers");
-        // self.stopStreaming();
-        //
-        // setTimeout(function() {
-        //     self.startStreaming(tickers, function () {
-        //         app.emit("API.pricesRefreshed");
-        //     });
-        // }, 5000);
 
         streaming = true;
 
@@ -498,7 +492,7 @@ var IBApi = function(config, app) {
     ib.connect();
     self.watchConnection();
 
-    eventEmitter.on("refreshStreaming", self.refreshStreaming);
+    // eventEmitter.on("refreshStreaming", self.refreshStreaming);
     return this;
 };
 
