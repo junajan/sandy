@@ -492,7 +492,7 @@ var IBApi = function(config, app) {
     ib.connect();
     self.watchConnection();
 
-    // eventEmitter.on("refreshStreaming", self.refreshStreaming);
+    eventEmitter.on("refreshStreaming", self.refreshStreaming);
     return this;
 };
 
