@@ -51,7 +51,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 	var config = {
 		tickers: tickers,
 		// from: "2015-01-01",
-		from: '2016-06-13',
+		from: '2014-01-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
@@ -92,7 +92,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 				console.timeEnd("Processing finished");
 				if(err) Log.error("Strategy process returned error:", err);
 			});
-		}, 10000);
+		}, 1000000);
 	});
 } else if(config.runScheduler) {
 

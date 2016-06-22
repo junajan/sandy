@@ -8,7 +8,8 @@ var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
-const throttle = require('throttle-function');
+// const throttle = require('throttle-function');
+const throttle = require('../throttledFunction');
 
 const ORDER_TIMEOUT = 30000;
 const HEARTHBEAT_INTERVAL = 1000;
@@ -87,7 +88,7 @@ var IBApi = function(config, app) {
                         Log.error(apiMessages[data.code], data);
 
 
-                    if(app.apiConnection.marketData === false && [IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
+                    if(app.apiConnection.marketData === false && [IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
                         eventEmitter.emit("refreshStreaming");
                     }
 
@@ -274,6 +275,9 @@ var IBApi = function(config, app) {
         window: API_LIMIT_WINDOW,
         limit: API_LIMIT_REQUESTS
     });
+    streamTicker.events.on("throttled.emptyQueue", function() {
+        console.log("==============".rainbow);
+    })
 
     var pickBestPrices = function (tickers, streamingPrices) {
         var out = {};

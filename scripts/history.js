@@ -8,11 +8,13 @@ require('colors');
 var async = require("async");
 var moment = require("moment");
 var config = require("../config");
+var DB = require(config.dirCore+'Mysql')(config.mysql);
+var ydl = require(config.dirLoader+'HistYahoo');
 
 var app = {
 	config: config,
 	DB: DB
-}
+};
 
 config.disabledOrders = true;
 app.logger = config.logger;
@@ -22,8 +24,6 @@ app.getLogger = function (type) {
 };
 
 
-var DB = require(config.dirCore+'Mysql')(config.mysql);
-var ydl = require(config.dirLoader+'HistYahoo');
 var Strategy = require(config.dirStrategy+'Strategy90')(app);
 
 const RUN = true;
@@ -67,8 +67,7 @@ function downloadHistory(ticker, done) {
 			saveData(ticker, Strategy.serializeHistoricalData(0, {abcd: res}), done);
 		});
 	});
-
-};
+}
 
 function saveData(ticker, data, done) {
 	var out = {};

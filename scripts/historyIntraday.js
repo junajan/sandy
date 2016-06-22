@@ -20,7 +20,7 @@ var dateTo = '2015-06-08';
 const _TABLE = "stock_intraday_history_full";
 
 // var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
-var tickers = ['SPY', 'UPRO','SPXS'];
+var tickers = ['SPY','UPRO','SPXS'];
 
 function getImportInitStart() {
 	return moment().subtract(45, 'day').format();
@@ -55,7 +55,7 @@ function downloadIntradayHistory(ticker, done) {
 					open: 	data.open[i],
 					high: 	data.high[i],
 					low: 	data.low[i],
-					close: 	data.close[i],
+					close: 	data.close[i]
 				};
 
 				console.log(row);
