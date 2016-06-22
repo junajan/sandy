@@ -44,3 +44,7 @@ body {
   padding-left: 10px;
   padding-right: 10px;
 }
+
+.word-wrap {
+  word-wrap: break-word;
+}

@@ -21,7 +21,7 @@ module.exports = (function() {
             reload(server, self.app, conf.livereloadTime || 2000);
 
         var log = [];
-        var maxLen = 200;
+        var maxLen = 500;
 
         var io = socketIO(server);
 
