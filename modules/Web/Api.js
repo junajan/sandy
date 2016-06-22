@@ -46,8 +46,6 @@ var Api = function(app) {
 	};
 
 	this.getHolidays = function(req, res) {
-		var limit = parseInt(req.query.limit) || null;
-
 		DB.getData('*', 'exchange_schedule', 'invalidated IS NULL and YEAR(date) = YEAR(NOW())', null, 'date', 'ASC', function(err, data) {
 			res.json(data);
 		});

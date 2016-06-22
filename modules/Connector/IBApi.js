@@ -14,8 +14,7 @@ const ORDER_TIMEOUT = 30000;
 const HEARTHBEAT_INTERVAL = 1000;
 
 // IB API status codes
-// const IB_CONNECTION_RESTORED = 2104;
-const IB_CONNECTION_RESTORED2 = 1102;
+const IB_CONNECTION_RESTORED = 1102;
 const IB_CONNECTION_IS_OK = 2106;
 const IB_CONNECTION_IS_OK2 = 2104;
 const IB_CONNECTION_LOST = 1100;
@@ -33,11 +32,11 @@ apiMessages[IB_CONNECTION_IS_OK2] = "Market data farm connection is OK:usfarm.us
 apiMessages[IB_DATA_UPON_DEMAND] = "Market data farm connection is inactive but should be available upon demand.usfarm.us";
 apiMessages[IB_CONNECTING] = "Market data farm is connecting:usfarm.us";
 apiMessages[IB_CONNECTION_LOST] = "Connectivity between IB and Trader Workstation has been lost.";
-apiMessages[IB_CONNECTION_RESTORED2] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
+apiMessages[IB_CONNECTION_RESTORED] = "Connectivity between IB and Trader Workstation has been restored - data maintained.";
 apiMessages[IB_CONNECTION_BROKEN] = "Market data farm connection is broken:usfarm";
 apiMessages[IB_CONNECTION_BROKEN2] = "Connectivity between Trader Workstation and server is broken. It will be restored automatically.";
 
-var apiInfos = [IB_CONNECTION_IS_OK2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED2];
+var apiInfos = [IB_CONNECTION_IS_OK2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND, IB_CONNECTING, IB_CONNECTION_RESTORED];
 
 var eventEmitter = new events();
 
@@ -88,11 +87,11 @@ var IBApi = function(config, app) {
                         Log.error(apiMessages[data.code], data);
 
 
-                    if(app.apiConnection.marketData === false && [IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED2].indexOf(data.code) >= 0) {
+                    if(app.apiConnection.marketData === false && [IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
                         eventEmitter.emit("refreshStreaming");
                     }
 
-                    if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED2, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
+                    if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
                         app.apiConnection.ib = true;
                         app.apiConnection.marketData = true;
                     } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {

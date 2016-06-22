@@ -70,10 +70,6 @@ var Web = function(app) {
             res.redirect("/");
     };
 
-    this.getError404 = function(req, res) {
-        return res.redirect('/');
-    };
-
     return this;
 };
 

@@ -38,7 +38,6 @@ module.exports = function(app) {
     /**
      * Add middleware serving app static content for authorízed users
      */
-
     app.use('/api', apiRoutes);
     app.use('/', authRoutes);
 }
