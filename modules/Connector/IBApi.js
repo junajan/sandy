@@ -275,9 +275,6 @@ var IBApi = function(config, app) {
         window: API_LIMIT_WINDOW,
         limit: API_LIMIT_REQUESTS
     });
-    streamTicker.events.on("throttled.emptyQueue", function() {
-        console.log("==============".rainbow);
-    })
 
     var pickBestPrices = function (tickers, streamingPrices) {
         var out = {};
@@ -325,22 +322,21 @@ var IBApi = function(config, app) {
             streamTicker("stock", item);
         });
 
-        setTimeout(function(){
+        streamTicker.events.once("throttled.emptyQueue", function() {
             done(null, null);
-        }, 1000);
+        });
     };
 
     /**
      * Stop tickers data streaming
      * @param done
      */
-    self.stopStreaming = function(done) {
+    self.stopStreaming = function() {
         Log.info("Cancelling subscriptions to all tickers");
         streaming = false;
 
         Object.keys(streamingIdMap).forEach(function(id) {
-            id = parseInt(id);
-            ib.cancelMktData(id);
+            ib.cancelMktData(parseInt(id));
         });
 
         streamingPrices = {};
@@ -365,12 +361,11 @@ var IBApi = function(config, app) {
         if(!tickers.length)
             return;
 
-        Log.info("Refreshing subscriptions to all tickers");
+        Log.info("Refreshing subscriptions for streaming of all tickers");
 
-        streaming = true;
-
-        tickers.forEach(function(item){
-            streamTicker("stock", item);
+        self.stopStreaming(_.noop);
+        self.startStreaming(tickers, function() {
+            Log.info("Subscription for tickers streaming refreshed.");
         });
     };
 
@@ -475,8 +470,12 @@ var IBApi = function(config, app) {
             };
 
             placedOrders[orderId].timeoutId = setTimeout(function () {
-                Log.error("OrderId("+orderId+") is taking too long to process - cancelling");
+                var err = new Error("OrderId("+orderId+") is taking too long to process - cancelling");
+                err.code = 500;
+
+                Log.error(err.toString());
                 ib.cancelOrder(orderId);
+                doneFilled(err);
             }, ORDER_TIMEOUT);
 
             ib.placeOrder(orderId, ib.contract.stock(ticker), order);

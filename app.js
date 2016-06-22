@@ -25,7 +25,7 @@ var Log = app.logger.getLogger("APP");
 require(config.dirWeb+'Routes')(app);
 
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
-const PROCESS_LOAD_DELAY = 60000;
+const PROCESS_LOAD_DELAY = 120000;
 // var tickers = "SPXS,LABU,LABD,UPRO".split(",");
 // var tickers = "SPXS,UPRO".split(",");
 
@@ -92,7 +92,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 				console.timeEnd("Processing finished");
 				if(err) Log.error("Strategy process returned error:", err);
 			});
-		}, 1000000);
+		}, PROCESS_LOAD_DELAY);
 	});
 } else if(config.runScheduler) {
 

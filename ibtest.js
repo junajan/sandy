@@ -23,21 +23,21 @@ app.on("API.ready", function () {
 
     // var tickers = "AAPL,CSCO,MSFT,INTC".split(",");
     console.log("Loading prices for", tickers.length, "tickers");
-    Broker.startStreaming(tickers, function () {});
+    Broker.startStreaming(tickers, function () {
+        console.log("Streaming started.");
+    });
 
-    // setTimeout(function() {
-    //     Broker.getMarketPriceBulk(tickers, function (err, prices) {
-    //         if(err) console.error("ERROR while loading prices", err);
-    //         Broker.stopStreaming();
-    //
-    //         console.log("=== Prices ===");
-    //         _.each(prices, function (info, ticker) {
-    //             console.log(ticker,"|", info.price,"|",info.origin);
-    //         });
-    //     });
-    // }, 10000000);
-    //
-    // });
+    setTimeout(function() {
+        Broker.getMarketPriceBulk(tickers, function (err, prices) {
+            if(err) console.error("ERROR while loading prices", err);
+            Broker.stopStreaming();
+
+            console.log("=== Prices ===");
+            _.each(prices, function (info, ticker) {
+                console.log(ticker,"|", info.price,"|",info.origin);
+            });
+        });
+    }, 120000);
 
     // Broker.sendSellOrder("AAPL", 2000, "MKT" , console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
     // Broker.sendSellOrder("ALL", 14, "MKT" , 123, function (err, res) {

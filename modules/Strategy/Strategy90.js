@@ -237,8 +237,8 @@ var Strategy = function(app) {
 
 					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
 						if(err) {
-							Log.error("Error during sell order", err.errorText || err);
-							return one(err);
+							Log.error("Error during sell order", err.errorText || err.toString());
+							return done(err.toString());
 						}
 
 						var finalPrice = res.price;
@@ -248,7 +248,6 @@ var Strategy = function(app) {
 							finalPrice -= (config.settings.fee_order_sell / pos.amount);
 							orderFee = config.settings.fee_order_sell;
 						}
-
 
 						Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
 
@@ -273,7 +272,6 @@ var Strategy = function(app) {
 							done(err, res);
 						});
 					});
-
 				}, done);
 			},
 			function(done) {
@@ -291,8 +289,8 @@ var Strategy = function(app) {
 
 					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 						if(err) {
-							Log.error("Error during sell order", (err.errorText || err));
-							return done(err);
+							Log.error("Error during sell order", (err.errorText || err.toString()));
+							return done(err.toString());
 						}
 
 						var finalPrice = res.price;
@@ -329,7 +327,7 @@ var Strategy = function(app) {
 					});
 				}, done);
 			}
-		], function(err, res) {
+		], function(err) {
 			done(err, config);
 		});
 	};
