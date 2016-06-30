@@ -26,20 +26,20 @@ app.on("API.ready", function () {
     Broker.startStreaming(tickers, function () {
         console.log("Streaming started.");
     });
+    //
+    // setTimeout(function() {
+    //     Broker.getMarketPriceBulk(tickers, function (err, prices) {
+    //         if(err) console.error("ERROR while loading prices", err);
+    //         Broker.stopStreaming();
+    //
+    //         console.log("=== Prices ===");
+    //         _.each(prices, function (info, ticker) {
+    //             console.log(ticker,"|", info.price,"|",info.origin);
+    //         });
+    //     });
+    // }, 120000);
 
-    setTimeout(function() {
-        Broker.getMarketPriceBulk(tickers, function (err, prices) {
-            if(err) console.error("ERROR while loading prices", err);
-            Broker.stopStreaming();
-
-            console.log("=== Prices ===");
-            _.each(prices, function (info, ticker) {
-                console.log(ticker,"|", info.price,"|",info.origin);
-            });
-        });
-    }, 120000);
-
-    // Broker.sendSellOrder("AAPL", 2000, "MKT" , console.log.bind(null, "BUY SENT"), console.log.bind(null, "BUY DONE"));
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , 123, console.log.bind(null, "BUY SENT"));
     // Broker.sendSellOrder("ALL", 14, "MKT" , 123, function (err, res) {
     //     console.log("======== RESULT ==========");
     //     console.log(err, res);

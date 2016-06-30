@@ -479,6 +479,7 @@ var IBApi = function(config, app) {
             }, ORDER_TIMEOUT);
 
             ib.placeOrder(orderId, ib.contract.stock(ticker), order);
+            // ib.placeOrder(orderId, ib.contract.cfd(ticker), order);
         });
     };
 
