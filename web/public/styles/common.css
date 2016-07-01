@@ -1,5 +1,6 @@
 body {
   background-color: #305777;
+  min-width: 600px;
 }
 
 
@@ -47,4 +48,15 @@ body {
 
 .word-wrap {
   word-wrap: break-word;
+}
+
+table {
+  width: 100%;
+}
+
+@media screen and (max-width: 700px) {
+  table.orders tr th:first-child,
+  table.orders tr td:first-child{
+    display: none;
+  }
 }
