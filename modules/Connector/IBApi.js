@@ -478,8 +478,7 @@ var IBApi = function(config, app) {
                 doneFilled(err);
             }, ORDER_TIMEOUT);
 
-            ib.placeOrder(orderId, ib.contract.stock(ticker), order);
-            // ib.placeOrder(orderId, ib.contract.cfd(ticker), order);
+            ib.placeOrder(orderId, ib.contract.cfd(ticker), order);
         });
     };
 
@@ -487,7 +486,7 @@ var IBApi = function(config, app) {
         setInterval(function () {
             ib.reqCurrentTime();
         }, HEARTHBEAT_INTERVAL);
-    }
+    };
 
     /**
      * Connect to IB API
