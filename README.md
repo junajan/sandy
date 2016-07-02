@@ -1,11 +1,11 @@
 # Sandy #
 
-The automatic trading bot on steroids..
+An automatic trading bot on steroids..
 
 ### What is this repository for? ###
 
 This project is a simple node.js tool for backtesting and trading various strategies on stock market..
-(Currently in development stage)
+(Currently in production stage)
 
 ### Consists of ###
 
