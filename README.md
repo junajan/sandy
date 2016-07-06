@@ -1,22 +1,22 @@
 # Sandy #
 
-The automatic trading bot on steroids..
+An automatic trading bot on steroids..
 
 ### What is this repository for? ###
 
 This project is a simple node.js tool for backtesting and trading various strategies on stock market..
-(Currently in development stage)
+(Currently in production stage)
 
 ### Consists of ###
 
-* Various strategies mainly based on Larry Connors approach
+* Various strategies based on Larry Connors and Grahams approaches
 * Backtesting tools for written strategies
 * Scheduler for starting strategies at given time
 * Cool admin dashboard
 * Logger
-* Broker connection for paper/live trading (pretty soon)
-* Robustness testing (in far future)
-* API serving data for dashboard app (farer future)
+* Broker connection for paper/live trading
+* API serving data for dashboard app
+* Robustness testing (in the future)
 
 
 ### Contacts ###
