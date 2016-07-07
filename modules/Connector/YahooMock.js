@@ -84,6 +84,7 @@ var Mock = function(config, app) {
     self.stopStreaming = function(done) {
         Log.debug("Stop streaming");
         streaming = false;
+        done(null, null);
     };
 
     /**

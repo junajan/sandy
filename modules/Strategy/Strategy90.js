@@ -792,10 +792,12 @@ var Strategy = function(app) {
 	this.stopStreamingPrices = function (config, done) {
 		if(config.internalHistory && !config.disabledLoadingActualsFromDb) {
 			// using internal history so no streaming
+			done(null, config);
 		} else {
-			Broker.stopStreaming();
+			Broker.stopStreaming(function () {
+				done(null, config);
+			});
 		}
-		done(null, config);
 	};
 
 	this.init = function(config, done) {

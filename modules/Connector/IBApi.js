@@ -56,6 +56,7 @@ var IBApi = function(config, app) {
     var Log = app.getLogger("IB-API");
     var DB = app.DB;
 
+    var connectionIssueReported = false;
     app.apiConnection = {
         api: false,
         ib: false,
@@ -84,9 +85,19 @@ var IBApi = function(config, app) {
                 if(_.isObject(data) && data.code && apiMessages[data.code]) {
                     if(apiInfos.indexOf(data.code) >= 0)
                         Log.info(apiMessages[data.code]);
-                    else
-                        Log.error(apiMessages[data.code], data);
+                    else {
 
+                        if(data.code === IB_CONNECTION_LOST && connectionIssueReported) {
+                            // connection error but it was already reported => send only to debug
+                            Log.debug(apiMessages[data.code], data);
+                        } else {
+                            Log.error(apiMessages[data.code], data);
+                        }
+
+                        if(data.code === IB_CONNECTION_LOST) {
+                            connectionIssueReported = true;
+                        }
+                    }
 
                     if(app.apiConnection.marketData === false && [IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
                         eventEmitter.emit("refreshStreaming");
@@ -95,6 +106,7 @@ var IBApi = function(config, app) {
                     if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
                         app.apiConnection.ib = true;
                         app.apiConnection.marketData = true;
+                        connectionIssueReported = false;
                     } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {
                         app.apiConnection.ib = false;
                         app.apiConnection.marketData = false;
@@ -331,7 +343,7 @@ var IBApi = function(config, app) {
      * Stop tickers data streaming
      * @param done
      */
-    self.stopStreaming = function() {
+    self.stopStreaming = function(done) {
         Log.info("Cancelling subscriptions to all tickers");
         streaming = false;
 
@@ -341,6 +353,10 @@ var IBApi = function(config, app) {
 
         streamingPrices = {};
         streamingIdMap = {};
+
+        setTimeout(function () {
+            done(null, null);
+        }, 1000);
     };
 
     self.getStreamingTickers = function () {
