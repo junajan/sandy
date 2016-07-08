@@ -2,19 +2,19 @@
 /**
  * @description Alternative forEach for all those browsers like IE8 and below
  * @param {function} function to apply to each element
- * @param {scope} scope 
+ * @param {scope} scope
  */
 if ( !Array.prototype.forEach ) {
-  Array.prototype.forEach = function(fn, scope) 
-  {
-    for(var i = 0, len = this.length; i < len; ++i) 
+    Array.prototype.forEach = function(fn, scope)
     {
-      if (i in this) 
-      {
-        fn.call(scope, this[i], i, this);
-      }
-    }
-  };
+        for(var i = 0, len = this.length; i < len; ++i)
+        {
+            if (i in this)
+            {
+                fn.call(scope, this[i], i, this);
+            }
+        }
+    };
 }
 
 /**
@@ -25,25 +25,25 @@ if ( !Array.prototype.forEach ) {
  */
 diffVectors = function (series1, series2)
 {
-  var size = max([series1.length, series2.length])
-  var result = [];
-  var s1Size = series1.length;
-  var s2Size = series2.length;
-  for (var i = 0; i < size; i++)
-  {
-    var itemS1 = 0;
-    var itemS2 = 0;
-    if (s1Size > i)
+    var size = max([series1.length, series2.length])
+    var result = [];
+    var s1Size = series1.length;
+    var s2Size = series2.length;
+    for (var i = 0; i < size; i++)
     {
-      itemS1 = series1[i];
+        var itemS1 = 0;
+        var itemS2 = 0;
+        if (s1Size > i)
+        {
+            itemS1 = series1[i];
+        }
+        if (s2Size > i)
+        {
+            itemS2 = series2[i];
+        }
+        result.push (itemS1 - itemS2);
     }
-    if (s2Size > i)
-    {
-      itemS2 = series2[i];
-    }
-    result.push (itemS1 - itemS2);
-  }
-  return result;
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -53,14 +53,14 @@ diffVectors = function (series1, series2)
  * @param {array} serie values array
  * @return {array} values array ^ 2
  */
-powVector = function (serie) 
+powVector = function (serie)
 {
-  var result = [];
-  pow = function (x) { 
-    result.push (Math.pow(x, 2)); 
-  };
-  serie.forEach (pow);
-  return result;
+    var result = [];
+    pow = function (x) {
+        result.push (Math.pow(x, 2));
+    };
+    serie.forEach (pow);
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -72,10 +72,10 @@ powVector = function (serie)
  */
 sumVector = function (vector)
 {
-  var result = 0;
-  sum = function (x) { result += x; }
-  vector.forEach (sum);
-  return result;
+    var result = 0;
+    sum = function (x) { result += x; }
+    vector.forEach (sum);
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -87,11 +87,11 @@ sumVector = function (vector)
  */
 avgVector = function (vector)
 {
-  var result = sumVector (vector);
-  if (!vector.length)
-    return 0;
-  else
-    return result / vector.length;
+    var result = sumVector (vector);
+    if (!vector.length)
+        return 0;
+    else
+        return result / vector.length;
 }
 
 ////////////////////////////////////////////////////////
@@ -103,12 +103,12 @@ avgVector = function (vector)
  */
 absVector = function (vector)
 {
-  var result = [];
-  vector.forEach (function ab(x) 
-  {
-    result.push(Math.abs(x));
-  });
-  return result;
+    var result = [];
+    vector.forEach (function ab(x)
+    {
+        result.push(Math.abs(x));
+    });
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -121,12 +121,12 @@ absVector = function (vector)
  */
 divVector = function (v1, v2)
 {
-  var result = [];
-  for (var i = 0; i < v1.length; i++)
-  {
-    result.push (v1[i] / v2[i]);
-  }
-  return result;
+    var result = [];
+    for (var i = 0; i < v1.length; i++)
+    {
+        result.push (v1[i] / v2[i]);
+    }
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -141,19 +141,19 @@ divVector = function (v1, v2)
  */
 combineVectors = function (serie1, serie2, fun)
 {
-  if (serie1.length != serie2.length || serie1.length + serie2.length < 2)
-  {
-    return [-1];
-  }
-  else
-  {
-    var result = [];
-    for (var i = 0; i < serie1.length; i++)
+    if (serie1.length != serie2.length || serie1.length + serie2.length < 2)
     {
-      result.push (fun(serie1[i], serie2[i]));
+        return [-1];
     }
-    return result;
-  }
+    else
+    {
+        var result = [];
+        for (var i = 0; i < serie1.length; i++)
+        {
+            result.push (fun(serie1[i], serie2[i]));
+        }
+        return result;
+    }
 }
 
 /**
@@ -162,13 +162,13 @@ combineVectors = function (serie1, serie2, fun)
  * @returns {value} the max element in the series
  */
 max = function (values) {
-  var ret = Number.MIN_VALUE
-  for (var i = 0; i < values.length; i++) {
-    if (values[i] > ret) {
-      ret = values[i];
+    var ret = Number.MIN_VALUE
+    for (var i = 0; i < values.length; i++) {
+        if (values[i] > ret) {
+            ret = values[i];
+        }
     }
-  }
-  return ret;
+    return ret;
 }
 
 //////////////////////////////////////////////////////////
@@ -179,13 +179,13 @@ max = function (values) {
  * @returns {value} min value in the series
  */
 min = function (values) {
-  var ret = Number.MAX_VALUE
-  for (var i = 0; i < values.length; i++) {
-    if (values[i] < ret) {
-      ret = values[i];
+    var ret = Number.MAX_VALUE
+    for (var i = 0; i < values.length; i++) {
+        if (values[i] < ret) {
+            ret = values[i];
+        }
     }
-  }
-  return ret;
+    return ret;
 }
 
 //////////////////////////////////////////////////////////
@@ -196,14 +196,14 @@ min = function (values) {
  * @return {value} mean of the series
  */
 mean = function (values) {
-  var mean = 0;
-  if (values.length == 0)
-    return mean;
-  for (var i = 0; i < values.length; i++)
-  {
-    mean += values[i];
-  }
-  return mean/values.length;
+    var mean = 0;
+    if (values.length == 0)
+        return mean;
+    for (var i = 0; i < values.length; i++)
+    {
+        mean += values[i];
+    }
+    return mean/values.length;
 }
 
 //////////////////////////////////////////////////////////
@@ -214,12 +214,12 @@ mean = function (values) {
  * @return {value} standard deviation of the series values.
  */
 sd = function (values) {
-  var meanVal = mean(values);
-  var sqrSum = 0;
-  for (var i = 0; i < values.length; i++) {
-    sqrSum += Math.pow(values[i]-meanVal, 2);
-  }
-  return Math.sqrt (sqrSum/values.length);
+    var meanVal = mean(values);
+    var sqrSum = 0;
+    for (var i = 0; i < values.length; i++) {
+        sqrSum += Math.pow(values[i]-meanVal, 2);
+    }
+    return Math.sqrt (sqrSum/values.length);
 }
 
 /**
@@ -230,13 +230,13 @@ sd = function (values) {
  * @return {array} values returned by the given function in each chunck
  */
 windowOp = function (values, value, fun) {
-  var result = new Array();
-  for (var i = value; i <= values.length; i++)
-  {
-    var windowVal = fun (values.slice(i-value, i));
-    result.push (windowVal);
-  }
-  return result;
+    var result = new Array();
+    for (var i = value; i <= values.length; i++)
+    {
+        var windowVal = fun (values.slice(i-value, i));
+        result.push (windowVal);
+    }
+    return result;
 }
 
 /**
@@ -247,7 +247,7 @@ windowOp = function (values, value, fun) {
  */
 mse = function (series1, series2)
 {
-  return avgVector (powVector (diffVectors(series1, series2)));
+    return avgVector (powVector (diffVectors(series1, series2)));
 }
 
 ////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ mse = function (series1, series2)
  */
 rmse = function (series1, series2)
 {
-  return Math.sqrt (mse(series1, series2));
+    return Math.sqrt (mse(series1, series2));
 }
 
 ////////////////////////////////////////////////////////
@@ -273,7 +273,7 @@ rmse = function (series1, series2)
  */
 mae = function (series1, series2)
 {
-  return avgVector(absVector(diffVectors(series1, series2)));
+    return avgVector(absVector(diffVectors(series1, series2)));
 }
 
 /*
@@ -282,50 +282,50 @@ mae = function (series1, series2)
  *         - the upper values (upperBand),
  *         - central moving average values (ma),
  *         - lower band values (lowerBand).
- *         
+ *
  * Params: list - values
  *         n - size of the sample window
  *         k - height of the band (sd multiplier)
  * Usual values are n = 20 and k = 2 (i.e. the base
- * moving average is calculated on the previous 20 
+ * moving average is calculated on the previous 20
  * elems for a elem and upper and lower bands are
  * located +2*sd and -2*sd from the central moving average.
  */
 bollinger = function (list, n, k) {
-  var movingAvg = ma (list, n);
-  var movingSd = windowOp (list, n, sd);
-  var upperBand = new Array();
-  var lowerBand = new Array();
-  var movingAvgElem = 0;
-  var movingSdElem = 0;
-  for (var index = 0; index < movingSd.length; index++) {
-    movingAvgElem = movingAvg[index];
-    movingSdElem = movingSd[index] * k;
-    upperBand.push (movingAvgElem + movingSdElem);
-    lowerBand.push (movingAvgElem - movingSdElem);
-  }
-  return {
-      upperBand: upperBand,
-      ma: movingAvg,
-      lowerBand: lowerBand
-  };
+    var movingAvg = ma (list, n);
+    var movingSd = windowOp (list, n, sd);
+    var upperBand = new Array();
+    var lowerBand = new Array();
+    var movingAvgElem = 0;
+    var movingSdElem = 0;
+    for (var index = 0; index < movingSd.length; index++) {
+        movingAvgElem = movingAvg[index];
+        movingSdElem = movingSd[index] * k;
+        upperBand.push (movingAvgElem + movingSdElem);
+        lowerBand.push (movingAvgElem - movingSdElem);
+    }
+    return {
+        upperBand: upperBand,
+        ma: movingAvg,
+        lowerBand: lowerBand
+    };
 }
 
 /*
- * Moving Average: 
+ * Moving Average:
  * also known as simple moving average, rolling average, moving mean
  * and a million of similar combinations
  */
 ma = function (values, order) {
 
-  // Sums the content of a window
-  sumWindow = function (serie) {
-    var sum = 0;
-    for (var init = 0; init < serie.length; init++)
-      sum += serie[init];
-    return (sum/serie.length);
-  }
-  return windowOp (values, order, sumWindow);
+    // Sums the content of a window
+    sumWindow = function (serie) {
+        var sum = 0;
+        for (var init = 0; init < serie.length; init++)
+            sum += serie[init];
+        return (sum/serie.length);
+    }
+    return windowOp (values, order, sumWindow);
 }
 
 ///////////////////////////////////////////////////////
@@ -333,44 +333,44 @@ ma = function (values, order) {
 /**
  * Exponential moving average
  */
-ema = function (serie, period) 
+ema = function (serie, period)
 {
-  var result = new Array();
-  for (var i = 0; i < period-1; i++)
-  {
-    result.push(0);
-  }
-  var k = (2/(period+1));
-  var initSlice = serie.slice (0, period);
-  var previousDay = avgVector (initSlice);
-  result.push (previousDay);
-  var emaSlice = serie.slice (period);
-  emaSlice.forEach (function getEma(i)
-  {
-    previousDay = i * k + previousDay * (1-k)
+    var result = new Array();
+    for (var i = 0; i < period-1; i++)
+    {
+        result.push(0);
+    }
+    var k = (2/(period+1));
+    var initSlice = serie.slice (0, period);
+    var previousDay = avgVector (initSlice);
     result.push (previousDay);
-  });
-  return result;
+    var emaSlice = serie.slice (period);
+    emaSlice.forEach (function getEma(i)
+    {
+        previousDay = i * k + previousDay * (1-k)
+        result.push (previousDay);
+    });
+    return result;
 }
 
 ///////////////////////////////////////////////////////
 
 /**
  * Weighted moving average.
- * The order of the mean (the number of elements to sum) 
+ * The order of the mean (the number of elements to sum)
  * is based on the weight's length.
  * The sum of weights should be 1.
  */
 wma = function (series, weights)
 {
-  // Sums the content of a window
-  sumWindow = function (serie) {
-    var sum = 0;
-    for (var init = 0; init < serie.length; init++)
-      sum = sum + (serie[init] * weights[init]);
-    return (sum/serie.length);
-  }
-  return windowOp (series, weights.length, sumWindow);
+    // Sums the content of a window
+    sumWindow = function (serie) {
+        var sum = 0;
+        for (var init = 0; init < serie.length; init++)
+            sum = sum + (serie[init] * weights[init]);
+        return (sum/serie.length);
+    }
+    return windowOp (series, weights.length, sumWindow);
 }
 
 ///////////////////////////////////////////////////////
@@ -384,29 +384,29 @@ wma = function (series, weights)
  */
 obv = function (closeList, volumeList)
 {
-  var result = [];
-  var prevObv = volumeList[0];
-  result.push (prevObv);
-  for (var i = 1; i < closeList.length; i++)
-  {
-    if (closeList[i] > closeList[i-1])
+    var result = [];
+    var prevObv = volumeList[0];
+    result.push (prevObv);
+    for (var i = 1; i < closeList.length; i++)
     {
-      // bullish
-      result.push (prevObv + volumeList[i]);
-      prevObv += volumeList[i];
+        if (closeList[i] > closeList[i-1])
+        {
+            // bullish
+            result.push (prevObv + volumeList[i]);
+            prevObv += volumeList[i];
+        }
+        else if (closeList[i] < closeList[i-1])
+        {
+            // bearish
+            result.push (prevObv - volumeList[i]);
+            prevObv -= volumeList[i];
+        }
+        else
+        {
+            result.push (prevObv);
+        }
     }
-    else if (closeList[i] < closeList[i-1])
-    {
-      // bearish
-      result.push (prevObv - volumeList[i]);
-      prevObv -= volumeList[i];
-    }
-    else 
-    {
-      result.push (prevObv);
-    }
-  }
-  return result;
+    return result;
 }
 /**
  * @description Returns the VPT (Volume-price Trend)
@@ -416,16 +416,16 @@ obv = function (closeList, volumeList)
  */
 vpt = function (closeList, volumeList)
 {
-  var result = [];
-  var vpt = volumeList[0]
-  result.push (vpt);
-  for (var i = 1; i < closeList.length; i++)
-  {
-    var newVpt = vpt + volumeList[i] * ((closeList[i] - closeList[i-1])/closeList[i-1])
-    result.push (newVpt);
-    vpt = newVpt;
-  }
-  return result;
+    var result = [];
+    var vpt = volumeList[0]
+    result.push (vpt);
+    for (var i = 1; i < closeList.length; i++)
+    {
+        var newVpt = vpt + volumeList[i] * ((closeList[i] - closeList[i-1])/closeList[i-1])
+        result.push (newVpt);
+        vpt = newVpt;
+    }
+    return result;
 }
 
 /**
@@ -438,46 +438,46 @@ vpt = function (closeList, volumeList)
  */
 mfi = function (highPrices, lowPrices, closePrices, volumes)
 {
-  var typicalMoney = [];
-  var moneyFlow = [];
-  for (var i = 0; i < highPrices.length; i++)
-  {
-    var tpMoney = (highPrices[i] + lowPrices[i] + closePrices[i]) / 3;
-    typicalMoney.push(tpMoney);
-    moneyFlow.push (tpMoney * volumes[i]);
-  }
-
-  var posMoneyFlow = [];
-  var negMoneyFlow = [];
-  for (var i = 0; i < typicalMoney.length-1; i++)
-  {
-    if (typicalMoney[i] <= typicalMoney[i+1])
+    var typicalMoney = [];
+    var moneyFlow = [];
+    for (var i = 0; i < highPrices.length; i++)
     {
-      posMoneyFlow.push (moneyFlow[i+1]);
-      negMoneyFlow.push(0);
+        var tpMoney = (highPrices[i] + lowPrices[i] + closePrices[i]) / 3;
+        typicalMoney.push(tpMoney);
+        moneyFlow.push (tpMoney * volumes[i]);
     }
-    else if (typicalMoney[i] > typicalMoney[i+1])
-    {
-      posMoneyFlow.push (0);
-      negMoneyFlow.push (moneyFlow[i+1]);
-    }
-    else // typical money unchanged implies day is discharged
-    {
-    	posMoneyFlow.push(0);
-    	negMoneyFlow.push(0);
-    }
-  }
 
-  var sumPosFlow = windowOp (posMoneyFlow, 14, sumVector);
-  var sumNegFlow = windowOp (negMoneyFlow, 14, sumVector);
-  var moneyRatio = divVector (sumPosFlow, sumNegFlow);
+    var posMoneyFlow = [];
+    var negMoneyFlow = [];
+    for (var i = 0; i < typicalMoney.length-1; i++)
+    {
+        if (typicalMoney[i] <= typicalMoney[i+1])
+        {
+            posMoneyFlow.push (moneyFlow[i+1]);
+            negMoneyFlow.push(0);
+        }
+        else if (typicalMoney[i] > typicalMoney[i+1])
+        {
+            posMoneyFlow.push (0);
+            negMoneyFlow.push (moneyFlow[i+1]);
+        }
+        else // typical money unchanged implies day is discharged
+        {
+            posMoneyFlow.push(0);
+            negMoneyFlow.push(0);
+        }
+    }
 
-  var mfi = [];
-  moneyRatio.forEach (function (value)
-  {
-    mfi.push (100 - (100/(1+value)));
-  });
-  return mfi;
+    var sumPosFlow = windowOp (posMoneyFlow, 14, sumVector);
+    var sumNegFlow = windowOp (negMoneyFlow, 14, sumVector);
+    var moneyRatio = divVector (sumPosFlow, sumNegFlow);
+
+    var mfi = [];
+    moneyRatio.forEach (function (value)
+    {
+        mfi.push (100 - (100/(1+value)));
+    });
+    return mfi;
 }
 
 ////////////////////////////////////////////
@@ -490,25 +490,25 @@ mfi = function (highPrices, lowPrices, closePrices, volumes)
  */
 macd = function (closeValues)
 {
-  slow = 26;
-  fast = 12;
-  signal = 9;
-  slowEMA = ema (closeValues, slow);
-  fastEMA = ema (closeValues, fast);
-  macdLine = combineVectors (slowEMA, fastEMA, function (slow,fast) {
-    if (slow == 0)
+    slow = 26;
+    fast = 12;
+    signal = 9;
+    slowEMA = ema (closeValues, slow);
+    fastEMA = ema (closeValues, fast);
+    macdLine = combineVectors (slowEMA, fastEMA, function (slow,fast) {
+        if (slow == 0)
+        {
+            return 0; // avoid div by 0
+        };
+        return (100 * ((fast/slow) - 1));
+    });
+    signalLine = ema (macdLine.slice(25), signal); // avoid first 25 (padding)
+    for (var i = 0; i < 25; i++)
     {
-      return 0; // avoid div by 0
-    };
-    return (100 * ((fast/slow) - 1));
-  });
-  signalLine = ema (macdLine.slice(25), signal); // avoid first 25 (padding)
-  for (var i = 0; i < 25; i++)
-  {
-    signalLine.unshift(0); // append again 25 zeros
-  }
-  histLine = diffVectors(macdLine, signalLine);
-  return { macd: macdLine, signal:signalLine, hist: histLine };
+        signalLine.unshift(0); // append again 25 zeros
+    }
+    histLine = diffVectors(macdLine, signalLine);
+    return { macd: macdLine, signal:signalLine, hist: histLine };
 }
 
 ////////////////////////////////////////////
@@ -516,19 +516,19 @@ macd = function (closeValues)
 /**
  * @description Returns the Momentum
  * @param {array} closePrices list of closing prices
- * @param {value} order order of the momentum 
+ * @param {value} order order of the momentum
  * @returns {array} list containing the momentum series
- * @example 
- * var m = momemtum ([12,34,23, 81], 1) 
+ * @example
+ * var m = momemtum ([12,34,23, 81], 1)
  * console.log(m)  // [22, -11, 58]
  */
 momentum = function(closePrices, order)
 {
-  momentumN = function (chunk)
-  {
-    return chunk[chunk.length-1] - chunk[0]
-  };
-  return windowOp (closePrices, order+1, momentumN);
+    momentumN = function (chunk)
+    {
+        return chunk[chunk.length-1] - chunk[0]
+    };
+    return windowOp (closePrices, order+1, momentumN);
 }
 
 ////////////////////////////////////////////
@@ -538,17 +538,17 @@ momentum = function(closePrices, order)
  * @param {array} closePrices list of closing prices
  * @param {value} order order of the ROC
  * @returns {array} list containing the ROC series
- * @example 
- * var roc = roc ([12, 11, 15, 10], 1) 
+ * @example
+ * var roc = roc ([12, 11, 15, 10], 1)
  * console.log(roc)  // [-0.09, 0.36, -0.33]
  */
 roc = function(closePrices, order)
 {
-  rocN = function (chunk)
-  {
-    return (chunk[chunk.length-1] - chunk[0]) / chunk[0];
-  };
-  return windowOp (closePrices, order+1, rocN);
+    rocN = function (chunk)
+    {
+        return (chunk[chunk.length-1] - chunk[0]) / chunk[0];
+    };
+    return windowOp (closePrices, order+1, rocN);
 }
 
 
@@ -558,53 +558,53 @@ roc = function(closePrices, order)
  * @param {array} closePrices list of closing prices
  * @param {value} order RSI order (typically 14)
  * @returns {array} list containing the RSI for each period
- * @example 
- * var rsi = rsi ([45.34, 44, ..., 42,9, 45.23], 14) 
+ * @example
+ * var rsi = rsi ([45.34, 44, ..., 42,9, 45.23], 14)
  * console.log(rsi)  // [70.53, 66.32, ..., 56.05]
  */
 exports.rsi = function (closePrices, order)
 {
-  if (closePrices.length < order+1)
-  {
-    return [-1]; // not enough params
-  }
-  gains = [];
-  losses = [];
-  for (var i = 0; i < closePrices.length; i++)
-  {
-    diff = closePrices[i+1] - closePrices[i];
-    if (diff > 0) 
+    if (closePrices.length < order+1)
     {
-      gains.push(diff);
-      losses.push(0);
+        return [-1]; // not enough params
     }
-    else if (diff < 0)
+    gains = [];
+    losses = [];
+    for (var i = 0; i < closePrices.length; i++)
     {
-      gains.push(0);
-      losses.push(Math.abs(diff));
+        diff = closePrices[i+1] - closePrices[i];
+        if (diff > 0)
+        {
+            gains.push(diff);
+            losses.push(0);
+        }
+        else if (diff < 0)
+        {
+            gains.push(0);
+            losses.push(Math.abs(diff));
+        }
+        else
+        {
+            gains.push(0);
+            losses.push(0);
+        }
     }
-    else
+    result = [];
+    avgGain = avgVector (gains.slice(0, order));
+    avgLoss = avgVector (losses.slice (0, order));
+    firstRS = avgGain / avgLoss;
+    result.push (100 - (100 / (1 + firstRS)));
+    for (var i = order; i < closePrices.length-1; i++)
     {
-      gains.push(0);
-      losses.push(0);
+        partialCurrentGain = ((avgGain * (order-1)) + gains[i]) / order;
+        partialCurrentLoss = ((avgLoss * (order-1)) + losses[i]) / order;
+        smoothedRS = partialCurrentGain / partialCurrentLoss;
+        rsi = 100 - (100 / (1 + smoothedRS))
+        result.push(rsi);
+        avgGain = partialCurrentGain;
+        avgLoss = partialCurrentLoss;
     }
-  }
-  result = [];
-  avgGain = avgVector (gains.slice(0, order));
-  avgLoss = avgVector (losses.slice (0, order));
-  firstRS = avgGain / avgLoss;
-  result.push (100 - (100 / (1 + firstRS)));
-  for (var i = order; i < closePrices.length-1; i++)
-  {
-    partialCurrentGain = ((avgGain * (order-1)) + gains[i]) / order;
-    partialCurrentLoss = ((avgLoss * (order-1)) + losses[i]) / order;
-    smoothedRS = partialCurrentGain / partialCurrentLoss;
-    rsi = 100 - (100 / (1 + smoothedRS))
-    result.push(rsi);
-    avgGain = partialCurrentGain;
-    avgLoss = partialCurrentLoss;
-  }
-  return result;
+    return result;
 }
 /**
  * Returns the Floor pivot level, three support levels (s1,s2 and s3)
@@ -626,20 +626,20 @@ exports.rsi = function (closePrices, order)
  *         - s1: support first level
  */
 floorPivots = function (highList, lowList, closeList) {
-  var result = new Array();
-  for (var i = 0; i < highList.length; i++)
-  {
-    pivotLevel = (highList[i] + lowList[i] + closeList[i]) / 3;
-    r1 = 2 * pivotLevel - lowList[i];
-    r2 = pivotLevel + highList[i] - lowList[i];
-    r3 = r1 + highList[i] - lowList[i];
-    s1 = 2 * pivotLevel - highList[i];
-    s2 = pivotLevel - highList[i] + lowList[i];
-    s3 = s1 - highList[i] + lowList[i];
-    elem = {r3:r3, r2:r2, r1:r1, pl: pivotLevel, s1:s1, s2:s2, s3:s3};
-    result.push(elem);
-  }
-  return result;
+    var result = new Array();
+    for (var i = 0; i < highList.length; i++)
+    {
+        pivotLevel = (highList[i] + lowList[i] + closeList[i]) / 3;
+        r1 = 2 * pivotLevel - lowList[i];
+        r2 = pivotLevel + highList[i] - lowList[i];
+        r3 = r1 + highList[i] - lowList[i];
+        s1 = 2 * pivotLevel - highList[i];
+        s2 = pivotLevel - highList[i] + lowList[i];
+        s3 = s1 - highList[i] + lowList[i];
+        elem = {r3:r3, r2:r2, r1:r1, pl: pivotLevel, s1:s1, s2:s2, s3:s3};
+        result.push(elem);
+    }
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -658,28 +658,28 @@ floorPivots = function (highList, lowList, closeList) {
  *         - high: predicted high value.
  */
 tomDemarksPoints = function (highList, lowList, openList, closeList) {
-  var result = new Array();
-  for (var i = 0; i < highList.length; i++)
-  {
-    var x = 0;
-    if (closeList[i] < openList[i])
+    var result = new Array();
+    for (var i = 0; i < highList.length; i++)
     {
-      x = highList[i] + (2 * (lowList[i]) + closeList[i]);
+        var x = 0;
+        if (closeList[i] < openList[i])
+        {
+            x = highList[i] + (2 * (lowList[i]) + closeList[i]);
+        }
+        if (closeList[i] > openList[i])
+        {
+            x = (2 * highList[i]) +  lowList[i] + closeList[i];
+        }
+        if (closeList[i] == openList[i])
+        {
+            x = highList[i] + lowList[i] + (2 * closeList[i]);
+        }
+        newHigh = (x/2) - lowList[i];
+        newLow = (x/2) - highList[i];
+        elem = {low: newLow, high: newHigh};
+        result.push(elem);
     }
-    if (closeList[i] > openList[i])
-    {
-      x = (2 * highList[i]) +  lowList[i] + closeList[i];
-    }
-    if (closeList[i] == openList[i])
-    {
-      x = highList[i] + lowList[i] + (2 * closeList[i]);
-    }
-    newHigh = (x/2) - lowList[i];
-    newLow = (x/2) - highList[i];
-    elem = {low: newLow, high: newHigh};
-    result.push(elem);
-  }
-  return result;
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -701,20 +701,20 @@ tomDemarksPoints = function (highList, lowList, openList, closeList) {
  *         - s2: predicted secondary support (s2).
  */
 woodiesPoints = function (highList, lowList, closeList) {
-  var result = new Array();
-  for (var i = 0; i < highList.length; i++)
-  {
-    var x = 0;
-    var pivot = (highList[i] + lowList[i] + 2 * closeList[i]) / 4;
-    var r1 = (2 * pivot) - lowList[i];
-    var r2 = pivot + highList[i] - lowList[i];
-    var s1 = (2 * pivot) - highList[i];
-    var s2 = pivot - highList[i] + lowList[i]; 
-    elem = {pivot: pivot, r1: r1, 
+    var result = new Array();
+    for (var i = 0; i < highList.length; i++)
+    {
+        var x = 0;
+        var pivot = (highList[i] + lowList[i] + 2 * closeList[i]) / 4;
+        var r1 = (2 * pivot) - lowList[i];
+        var r2 = pivot + highList[i] - lowList[i];
+        var s1 = (2 * pivot) - highList[i];
+        var s2 = pivot - highList[i] + lowList[i];
+        elem = {pivot: pivot, r1: r1,
             s1: s1, s2: s2, r2: r2};
-    result.push(elem);
-  }
-  return result;
+        result.push(elem);
+    }
+    return result;
 }
 
 ////////////////////////////////////////////////////////
@@ -739,23 +739,23 @@ woodiesPoints = function (highList, lowList, closeList) {
  *         - r4: predicted r4 resistance.
  */
 camarillaPoints = function (highList, lowList, closeList) {
-  var result = new Array();
-  for (var i = 0; i < highList.length; i++)
-  {
-    var diff = highList[i] - lowList[i];
-    var r4 = (diff * 1.1) / 2 + closeList[i];
-    var r3 = (diff *1.1) / 4 + closeList[i];
-    var r2 = (diff * 1.1) / 6 + closeList[i];
-    var r1 = (diff * 1.1) / 12 + closeList[i];
-    var s1 = closeList[i] - (diff * 1.1 / 12);
-    var s2 = closeList[i] - (diff *1.1 /6);
-    var s3 = closeList[i] - (diff * 1.1 / 4);
-    var s4 = closeList[i] - (diff *1.1 / 2);
-    elem = {r4: r4, r3: r3, r2: r2, r1: r1, s1: s1, s2: s2, s3: s3,
+    var result = new Array();
+    for (var i = 0; i < highList.length; i++)
+    {
+        var diff = highList[i] - lowList[i];
+        var r4 = (diff * 1.1) / 2 + closeList[i];
+        var r3 = (diff *1.1) / 4 + closeList[i];
+        var r2 = (diff * 1.1) / 6 + closeList[i];
+        var r1 = (diff * 1.1) / 12 + closeList[i];
+        var s1 = closeList[i] - (diff * 1.1 / 12);
+        var s2 = closeList[i] - (diff *1.1 /6);
+        var s3 = closeList[i] - (diff * 1.1 / 4);
+        var s4 = closeList[i] - (diff *1.1 / 2);
+        elem = {r4: r4, r3: r3, r2: r2, r1: r1, s1: s1, s2: s2, s3: s3,
             s4: s4};
-    result.push(elem);
-  }
-  return result;
+        result.push(elem);
+    }
+    return result;
 }
 
 
@@ -763,35 +763,35 @@ camarillaPoints = function (highList, lowList, closeList) {
 
 fibonacciRetrs = function (lowList, highList, trend)
 {
-  var result = new Array();
-  var retracements = [1, 0.618, 0.5, 0.382, 0.236, 0];
-  if (trend == 'DOWNTREND') 
-  {
-    for (var i = 0; i < highList.length; i++)
+    var result = new Array();
+    var retracements = [1, 0.618, 0.5, 0.382, 0.236, 0];
+    if (trend == 'DOWNTREND')
     {
-      var diff = highList[i] - lowList[i];
-      var elem = new Array();
-      for (var r = 0; r < retracements.length; r++)
-      {
-        var level = highList[i] - diff * retracements[r];
-        elem.push(level);
-      }
-      result.push(elem);
+        for (var i = 0; i < highList.length; i++)
+        {
+            var diff = highList[i] - lowList[i];
+            var elem = new Array();
+            for (var r = 0; r < retracements.length; r++)
+            {
+                var level = highList[i] - diff * retracements[r];
+                elem.push(level);
+            }
+            result.push(elem);
+        }
     }
-  }
-  else  // UPTREND
-  {
-    for (var i = 0; i < lowList.length; i++)
+    else  // UPTREND
     {
-      var diff = highList[i] - lowList[i];
-      var elem = new Array();
-      for (var r = 0; r < retracements.length; r++)
-      {
-        var level = lowList[i] + diff * retracements[r];
-        elem.push (level);
-      }
-      result.push(elem);
+        for (var i = 0; i < lowList.length; i++)
+        {
+            var diff = highList[i] - lowList[i];
+            var elem = new Array();
+            for (var r = 0; r < retracements.length; r++)
+            {
+                var level = lowList[i] + diff * retracements[r];
+                elem.push (level);
+            }
+            result.push(elem);
+        }
     }
-  }
-  return result;
+    return result;
 }
