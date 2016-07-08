@@ -19,7 +19,7 @@ var Strategy = function(app) {
 	var Tickers = require(config.dirLoader+'./Tickers');
 
 	// settings
-	var _PRICE_COLUMN_NAME = 'close';
+	var _PRICE_COLUMN_NAME = 'adjClose';
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 
@@ -170,12 +170,14 @@ var Strategy = function(app) {
 
 		var state = config.currentState;
 
-		// dont save when there are no changes in positions
-		if(!config.changedPositions)
+		if(!config.positionsAggregated["SPY"] || !config.actual["SPY"])
 			return done(null, config);
 
+
+		var capital = state.unused_capital + config.positionsAggregated["SPY"].amount *  config.actual["SPY"][_PRICE_COLUMN_NAME];
+
 		DB.insert("equity_history", {
-			capital: state.current_capital,
+			capital: capital,
 			free_pieces: 0,
 			unused_capital: state.unused_capital,
 			import_id: config.importId,
@@ -240,8 +242,8 @@ var Strategy = function(app) {
 							}
 
 							// decrement available resources
-							config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
-							config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
+							// config.currentState.current_capital = parseFloat(finalPrice * res.amount) + config.currentState.unused_capital;
+							// config.currentState.unused_capital = config.currentState.current_capital;
 							done(err, res);
 						});
 					});
