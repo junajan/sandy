@@ -184,6 +184,7 @@ var Strategy = function(app) {
 		Log.info('Saving config to DB');
 
 		self.printState(config, config.currentState);
+		config.newState = config.currentState;
 		self.saveConfig(config.currentState, function(err, res){done(err, config)});
 	};
 

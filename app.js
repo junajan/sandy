@@ -22,17 +22,19 @@ var Strategy = require(config.dirStrategy+'Strategy90')(app);
 var Backtest = require(config.dirCore+'Backtest')(Strategy);
 var Log = app.logger.getLogger("APP");
 
+var Robot;
+
 require(config.dirWeb+'Routes')(app);
 
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
+// tickers = "SPY".split(",");
+
 const PROCESS_LOAD_DELAY = 120000;
-// var tickers = "SPXS,LABU,LABD,UPRO".split(",");
-// var tickers = "SPXS,UPRO".split(",");
 
 if(process.env.NODE_ENV === "RUN_STRATEGY") {
 	Log.info("Running strategy");
 
-	var Robot = require(config.dirCore+"Robot")(app);
+	Robot = require(config.dirCore+"Robot")(app);
 	Robot.setStrategy(Strategy);
 
 	Robot.strategyInit(function() {
@@ -48,14 +50,14 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 } else if(config.runBacktest) {
 	Log.info("Running Backtest");
 
-	var config = {
+	config = {
 		tickers: tickers,
 		// from: "2015-01-01",
-		from: '2014-01-01',
+		from: '2016-01-21',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
-		capital: 20000 * 3,
+		capital: 20000 * 2,
 		monthlyAdd: 0,
 		mailLog: false,
 		feesDisabled: false,
@@ -70,7 +72,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 } else if(config.runStrategy) {
 	Log.info("Running strategy");
 
-	var config = {
+	config = {
 		// internalHistorical: true,
 		internalHistory: true,
 		disabledLoadingActualsFromDb: true,
@@ -98,7 +100,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 
 	Log.info("Running scheduler for automated trading");
 
-	var Robot = require(config.dirCore+"Robot")(app);
+	Robot = require(config.dirCore+"Robot")(app);
 	Robot.setStrategy(Strategy);
 	Robot.start(Strategy);
 

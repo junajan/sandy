@@ -29,22 +29,22 @@ var Backtest = function(Strategy) {
 		if(isEnd) {
 			self.statsOnEndMonth(info, statsLastMonth);
 			self.statsOnEndYear(info, statsLastYear);
-
 			return;
-		}
+		} else {
 
-		if(statsLastMonth !== testDay.format('MM.YYYY')) {
-			self.statsOnEndMonth(info, statsLastMonth);
+			if(statsLastMonth !== testDay.format('MM.YYYY')) {
+				self.statsOnEndMonth(info, statsLastMonth);
 
-			statsLastMonth = testDay.format('MM.YYYY');
-			self.statsOnStartMonth(info, statsLastMonth);
-		}
+				statsLastMonth = testDay.format('MM.YYYY');
+				self.statsOnStartMonth(info, statsLastMonth);
+			}
 
-		if(statsLastYear !== testDay.format('YYYY')) {
-			self.statsOnEndYear(info, statsLastYear);
+			if(statsLastYear !== testDay.format('YYYY')) {
+				self.statsOnEndYear(info, statsLastYear);
 
-			statsLastYear = testDay.format('YYYY');
-			self.statsOnStartYear(info, statsLastYear);
+				statsLastYear = testDay.format('YYYY');
+				self.statsOnStartYear(info, statsLastYear);
+			}
 		}
 
 		var openCount = info.openPositions.length;
@@ -84,7 +84,6 @@ var Backtest = function(Strategy) {
 
 	this.statsOnEndYear = function(info, year) {
 		if(!year) return;
-		
 		stats.years[year]['dateEnd'] = info.date.format('DD.MM.YYYY');
 		stats.years[year]['endCapital'] = info.newState.current_capital;
 		stats.years[year]['profit'] = info.newState.current_capital - stats.years[year].startCapital;
@@ -142,11 +141,11 @@ var Backtest = function(Strategy) {
 	};
 
 	this.statsOnEndTest = function(info) {
-		self.statsOnEndDay(info, true);
+		// self.statsOnEndDay(info, true);
 
-		console.log("=================== TEST END ===================".yellow);
-		self.printStats(stats);
-		console.log("=================== TEST END ===================".yellow);
+		// console.log("=================== TEST END ===================".yellow);
+		// self.printStats(stats);
+		// console.log("=================== TEST END ===================".yellow);
 	};
 
 	this.statsOnStartTest = function(info) {
@@ -160,6 +159,17 @@ var Backtest = function(Strategy) {
 		return date.day() == 6 || date.day() == 0;
 	};
 	this.wipe = Strategy.initClear;
+
+	this.isLastDay = function (testDate, lastDate) {
+		var nextDay = testDate.clone().add(1, "day");
+
+		if(testDate.format("YYYY-MM-DD") == lastDate)
+			return true;
+		else if(nextDay.format("YYYY-MM-DD") == lastDate && self.isWeekend(nextDay))
+			return true;
+
+		return false;
+	};
 
 	this.run = function(config, dayCallback, finishCallback) {
 		if(!self.testConfig(config))
@@ -181,12 +191,12 @@ var Backtest = function(Strategy) {
 			if(self.isWeekend(testDay)) {
 				console.log("Skipping - weekend");
 				return done(null);
-			};
+			}
 
 			config.date = testDay;
 
-			if(testDay.format("YYYY-MM-DD") == config.to) {
-				console.log('Last day of backtests.. will close all remaining positions')
+			if(self.isLastDay(testDay, config.to)) {
+				console.log('Last day of backtests.. will close all remaining positions');
 				config.lastDay = true;
 				config.sellAll = true;
 			}
@@ -209,7 +219,7 @@ var Backtest = function(Strategy) {
 
 							Strategy.process(config, function(err, res) {
 
-								self.statsOnEndDay(config);
+								self.statsOnEndDay(config, config.lastDay);
 
 								dayCallback && dayCallback();
 								console.timeEnd("============== Date End ==============");

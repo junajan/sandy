@@ -161,8 +161,26 @@ var Strategy = function(app) {
 	this.saveCurrentState = function(config, done) {
 		Log.info('Saving config to DB');
 
+		var unclosedCapital = 0;
+		var skipUnclosed = false;
+		for (var ticker in config.positionsAggregated) {
+			var item = config.positionsAggregated[ticker];
+			var actual = config.actual[ticker];
+
+			if(!actual)
+				skipUnclosed = true;
+
+			if(config.closePositions[ticker] || !actual) continue;
+
+			unclosedCapital += item.amount * actual[_PRICE_COLUMN_NAME];
+		}
+
+		if(!skipUnclosed)
+			config.currentState.current_capital = config.currentState.unused_capital + unclosedCapital;
+
+		config.newState = config.currentState;
 		self.printState(config, config.currentState);
-		self.saveConfig(config.currentState, function(err, res){done(err, config)});
+		self.saveConfig(config.currentState, function(err){done(err, config)});
 	};
 
 	this.saveNewEquity = function(config, done) {
@@ -170,19 +188,13 @@ var Strategy = function(app) {
 
 		var state = config.currentState;
 
-		if(!config.positionsAggregated["SPY"] || !config.actual["SPY"])
-			return done(null, config);
-
-
-		var capital = state.unused_capital + config.positionsAggregated["SPY"].amount *  config.actual["SPY"][_PRICE_COLUMN_NAME];
-
 		DB.insert("equity_history", {
-			capital: capital,
+			capital: state.current_capital,
 			free_pieces: 0,
 			unused_capital: state.unused_capital,
 			import_id: config.importId,
 			date: self.getDBDate(config.date)
-		}, function(err, res) {done(err, config)});
+		}, function(err) {done(err, config)});
 	};
 
 	this.getDBDate = function(d) {
@@ -196,10 +208,6 @@ var Strategy = function(app) {
 	this.sendOrders = function(config, done) {
 		Log.info('Sending orders');
 
-		config.currentState = {
-			current_capital: parseFloat(config.settings.current_capital, 2),
-			unused_capital: parseFloat(config.settings.unused_capital, 2)
-		};
 		config.changedPositions = 0;
 		self.printState(config, config.currentState);
 
@@ -242,8 +250,8 @@ var Strategy = function(app) {
 							}
 
 							// decrement available resources
-							// config.currentState.current_capital = parseFloat(finalPrice * res.amount) + config.currentState.unused_capital;
-							// config.currentState.unused_capital = config.currentState.current_capital;
+							config.currentState.current_capital = parseFloat(finalPrice * res.amount) + config.currentState.unused_capital;
+							config.currentState.unused_capital = config.currentState.current_capital;
 							done(err, res);
 						});
 					});
@@ -294,8 +302,8 @@ var Strategy = function(app) {
 								return done(err);
 							}
 
-							// lower available resources
-							config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
+							config.currentState.unused_capital = config.currentState.unused_capital - finalPrice * pos.amount;
+
 							done(err, res);
 						});
 					});
@@ -340,14 +348,7 @@ var Strategy = function(app) {
 			config.indicators[ticker] = {
 				ticker: ticker,
 				price: config.actual[ticker][_PRICE_COLUMN_NAME]
-				// sma5: Indicators.sma(_smaExitLen, data),
-				// sma200: Indicators.sma(_smaEntryLen, data),
-				// rsi: Indicators.rsiWilders(_rsiLen, data),
-				// 	// Vypočítej mi prosím RSI2 tickeru SPY k 1.8.2014, ukaž mi, jak Ti to vyšlo „přesně (ověřeno na freestockcharts)“ a pak se můžeme pohnout dál.
-				// 	//Má vyjít 0.80.
-				// 	// RSI2 = 0,807851951
- 				// 	// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
-			}
+			};
 		}
 
 		done(null, config);
@@ -418,7 +419,6 @@ var Strategy = function(app) {
 			config.settings = {};
 			for(var i in res)
 				config.settings[res[i]['var']] = res[i].val;
-
 			done(err, config);
 		});
 	};
@@ -505,6 +505,10 @@ var Strategy = function(app) {
 		var ticker = config.tickers[0];
         config.openPositions = [];
 
+		if(config.lastDay) {
+			return done(null, config);
+		}
+
 		if(!config.actual[ticker]) {
 			Log.warn("Cannot find current price for ticker %s", ticker);
 			return done(null, config);
@@ -521,15 +525,38 @@ var Strategy = function(app) {
 				ticker: ticker,
 				pieces: 1,
 				requested_open_price: tickerPrice,
-				amount: self.getAmountByCapital(config.newState.unused_capital, tickerPrice),
+				amount: self.getAmountByCapital(config.currentState.unused_capital, tickerPrice),
 				price: tickerPrice
 			};
 
 			config.openPositions.push(newPos);
-			config.newState.unused_capital -= parseFloat(newPos.price * newPos.amount, 2);
 
 		}
 		done(null, config);
+	};
+
+	this.filterSellStocks = function(config, done) {
+		Log.info('Filtering stocks for sell condition');
+		config.closePositions = {};
+		var ticker = config.tickers[0];
+
+		if(!config.actual[ticker] || ! Object.keys(config.positions).length) {
+			return done(null, config);
+		}
+
+		var pos = config.positionsAggregated[ticker];
+
+		self.isLastPriceEntry(ticker, config, function(isLast) {
+			// test for close condition
+			if(isLast || config.lastDay) {
+				if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
+
+				// we will close this position
+				config.closePositions[ticker] = pos;
+			}
+
+			done(null, config);
+		});
 	};
 
 	this.getPositionSummary = function(positions) {
@@ -554,43 +581,12 @@ var Strategy = function(app) {
 		return out;
 	};
 
-	this.filterSellStocks = function(config, done) {
-        Log.info('Filtering stocks for sell condition');
-
-        config.closePositions = {};
-        config.newState = {
+	this.getCurrentState = function (config, done) {
+		config.currentState = {
 			current_capital: parseFloat(config.settings.current_capital, 2),
 			unused_capital: parseFloat(config.settings.unused_capital, 2)
-        };
-
-
-		var ticker = config.tickers[0];
-
-		// Pokud nejsou zadne otevrene pozice
-		if(!config.actual[ticker] || ! Object.keys(config.positions).length) {
-			return done(null, config);
-		}
-		var tickerInfo = config.actual[ticker];
-		var tickerPrice = tickerInfo[_PRICE_COLUMN_NAME];
-
-		async.each(Object.keys(config.positionsAggregated), function(ticker, done) {
-			var pos = config.positionsAggregated[ticker];
-
-			self.isLastPriceEntry(ticker, config, function(isLast) {
-
-	        	// test for close condition
-		        if(isLast) { // is openned and actual price > sma5
-	        		if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
-	        		// we will close this position
-	        		config.closePositions[ticker] = pos;
-	        		config.newState.unused_capital += parseFloat(tickerPrice * pos.amount, 2);
-		        }
-
-		        done(null);
-			});
-		}, function(err, res) {
-			done(null, config);
-		});
+		};
+		done(null, config);
 	};
 
 	this.increaseCapital = function(config, inc, done) {
@@ -642,20 +638,8 @@ var Strategy = function(app) {
 	this.init = function(config, done) {
 		console.time("Initing strategy");
 
-		// return done(null, config);
 		async.waterfall([
 			self.createImportId.bind(null, config),
-		// 	function(config, done) {
-		// 		async.parallel({
-		// 			clear: self.clearPreviousData.bind(null, config),
-		// 			tickers: self.queryTickers.bind(null, config)
-		// 		},done);
-		// 	},
-		// 	self.processTickers.bind(null, config),
-		// 	self.downloadHistory,
-		// 	self.saveData,
-		// 	self.markImportAsFinished,
-		// 	self.startStreamingPrices,
 		], done);
 	};
 
@@ -663,12 +647,10 @@ var Strategy = function(app) {
 
 		async.waterfall([
 			self.getConfig.bind(null, config),
+			self.getCurrentState,
 			self.getOpenPositions,
 			self.getActualPrices,
-			// self.appendActualPrices,
-			// self.stopStreamingPrices,
 			self.processIndicators,
-			// self.saveIndicators,
 			self.filterSellStocks,
 			self.filterBuyStocks,
 			self.sendOrders,
