@@ -141,11 +141,11 @@ var Backtest = function(Strategy) {
 	};
 
 	this.statsOnEndTest = function(info) {
-		// self.statsOnEndDay(info, true);
+		self.statsOnEndDay(info, true);
 
-		// console.log("=================== TEST END ===================".yellow);
-		// self.printStats(stats);
-		// console.log("=================== TEST END ===================".yellow);
+		console.log("=================== TEST END ===================".yellow);
+		self.printStats(stats);
+		console.log("=================== TEST END ===================".yellow);
 	};
 
 	this.statsOnStartTest = function(info) {
