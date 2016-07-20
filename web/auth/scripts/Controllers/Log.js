@@ -2,7 +2,7 @@ Sandy.controller ( "Log", [
     '$scope', '$timeout',
     function ($scope, $timeout) {
         $scope.data = [];
-        var maxLen = 50;
+        var maxLen = 300;
         var socket = $scope.socket;
 
         function updateLog(d) {
