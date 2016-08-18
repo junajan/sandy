@@ -1,0 +1,7 @@
+# TODO add mysql DB link
+sandy:
+  build: .
+  ports:
+    - "3000:3000"
+  links:
+    - db
