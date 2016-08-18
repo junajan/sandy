@@ -1,6 +1,6 @@
 Sandy.controller ( "Dashboard", [
-    '$scope', 'Equity', 'Orders', '$timeout',
-    function ($scope, Equity, Orders, $timeout) {
+    '$scope', 'Equity', 'Orders', '$timeout', '$rootScope',
+    function ($scope, Equity, Orders, $timeout, $rootScope) {
     	$scope.equity = [];
 
     	$scope.load = function() {
@@ -11,8 +11,9 @@ Sandy.controller ( "Dashboard", [
 				$scope.load && $timeout($scope.load, 2000);
 	    	});
 
-	    	Orders.query({limit: 15}, function(res) {
-				$scope.orders = res;
+	    	Orders.query({limit: 20}, function(res) {
+					$scope.orders = res;
+					$rootScope.countActualProfitLoss(res)
 	    	});
     	};
 

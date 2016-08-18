@@ -14,7 +14,6 @@ Sandy.controller ( "Base", [
 
 		$scope.loadOpenPrices = function() {
 			Orders.getOpenPrices({}, function(res) {
-				console.log(res);
 				$rootScope.openTickersPrices = res;
 				$timeout($scope.loadOpenPrices, 2000);
 			});
@@ -29,6 +28,26 @@ Sandy.controller ( "Base", [
 			});
 		};
 
+		$rootScope.countActualProfitLoss = function (orders) {
+			$rootScope.actualProfitLoss = 0;
+			var count = 0;
+
+			if(!$rootScope.openTickersPrices)
+				return false;
+
+			var openPrices = $rootScope.openTickersPrices;
+			for(var i in orders) {
+				var order = orders[i];
+				if(order.close_date)
+					break;
+
+				if(!openPrices[order.ticker])
+					return false;
+
+				count += (openPrices[order.ticker] - order.open_price) * order.amount;
+			}
+			$rootScope.actualProfitLoss = count
+		};
 
 		$scope.readStatistics();
 		$scope.loadOpenPrices();

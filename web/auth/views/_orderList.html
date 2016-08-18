@@ -8,7 +8,12 @@
 			<th>O. Price</th>
 			<th>Close date</th>
 			<th>C. Price</th>
-			<th>Profit/Loss</th>
+			<th>
+				Profit/Loss
+				<span ng-if="actualProfitLoss">
+					{{actualProfitLoss | currency:'$'}}
+				</span>
+			</th>
 		</tr>
 	</thead>
 	<tbody>

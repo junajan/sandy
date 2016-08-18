@@ -86,7 +86,6 @@ var Sandy = angular.module("sandy", ['ngRoute', 'ngResource'])
                 $rootScope.apiTime = time;
             });
             $rootScope.socket.on('API.connection', function (state) {
-                console.log(state);
                 $rootScope.api = state;
                 $rootScope.stateTitle = getTitle($rootScope.api);
             });
