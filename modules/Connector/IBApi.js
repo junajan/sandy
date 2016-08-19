@@ -11,7 +11,7 @@ var once = require('once');
 // const throttle = require('throttle-function');
 const throttle = require('../throttledFunction');
 
-const ORDER_TIMEOUT = 30000;
+const ORDER_TIMEOUT = 50000;
 const HEARTHBEAT_INTERVAL = 1000;
 
 // IB API status codes
@@ -463,7 +463,7 @@ var IBApi = function(config, app) {
         else
             order = ib.order.limit(type, amount, price);
 
-        Log.debug(("SendOrder"+ " Sending order(%d) %s(%s) %sx %s"), orderId, type, ticker, amount, price);
+        Log.info(("SendOrder"+ " Sending order(%d) %s(%s) %sx %s"), orderId, type, ticker, amount, price);
         priceType = (price === "MKT") ? "MKT" : "LIMIT";
         price = (price === "MKT") ? -1 : price;
 
