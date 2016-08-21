@@ -30,7 +30,7 @@ const RUN = true;
 const _TABLE = "stock_history_full";
 
 var dateFrom = '1990-01-01';
-var dateTo = moment().format('YYYY-MM-DD');
+var dateTo = moment();
 
 var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
 tickers = tickers.concat(['UPRO','SPXS', 'SPY', "LABU", "LABD"]);
@@ -48,21 +48,25 @@ function downloadHistory(ticker, done) {
 
 	DB.get('date', _TABLE, 'symbol=?', ticker, 'date', 'DESC', function(err, res) {
 		if(err) throw err;
-
+		var to = dateTo.format('YYYY-MM-DD');
 		var from = dateFrom;
 		if(res)
-			 from = moment(res.date).add(1, 'day').format('YYYY-MM-DD');
+			 from = moment(res.date).add(1, 'day');
 
-		console.log(("Reading "+ticker+" history data from "+from +" to " + dateTo).yellow);
+		if(!moment(to).isAfter(from))
+			return done(null, 0);
+
+		from = from.format('YYYY-MM-DD')
+		console.log(("Reading "+ticker+" history data from "+from +" to " + to).yellow);
 
 		if(from == dateTo) {
 			console.log(">> skipping - no data to load");
-			return done(null);
+			return done(null, 'No days to import');
 		}
 		ydl.historical({
 			symbol: ticker,
 			from: from,
-			to: dateTo
+			to: to
 		}, function(err, res) {
 			if(err)
 				throw err;
@@ -93,7 +97,9 @@ function saveData(ticker, data, done) {
 if(RUN) {
 
 	async.mapLimit(tickers, 2, downloadHistory, function(err, res) {
-		console.log(err, res);
+		if(err)
+			console.error('Error:', err);
+		console.log('Result:', JSON.stringify(res));
 		process.exit(0);
 	});
 }

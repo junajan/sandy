@@ -214,119 +214,143 @@ var Strategy = function(app) {
 		return d.format(_dateFormat);
 	};
 
+	this.closePositions = function(config, done) {
+		// =========== CLOSE POSITION process
+		config.changedPositions += Object.keys(config.closePositions).length;
+
+		async.each(Object.keys(config.closePositions), function(ticker, done) {
+			var pos = config.closePositions[ticker];
+			var indicators = config.indicators[ticker];
+
+			Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
+
+				if(err && err.codeName === 'timeout') {
+					Log.error("Timeout during sell order", err.errorText || err.toString());
+
+					// this will disable new open/scale orders
+					config.disableOrders = true;
+					return done(null, err);
+
+				} else if(err) {
+					Log.error("Error during sell order", err.errorText || err.toString());
+					return done(err.toString());
+				}
+
+				var finalPrice = res.price;
+				var orderFee = 0;
+				if(!config.feesDisabled && config.settings.fee_order_sell) {
+
+					finalPrice -= (config.settings.fee_order_sell / pos.amount);
+					orderFee = config.settings.fee_order_sell;
+				}
+
+				Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
+
+				DB.update("positions", {
+					sell_import_id: config.importId,
+					requested_close_price: indicators.price,
+					close_price: finalPrice,
+					close_price_without_fee: res.price,
+					close_fee: orderFee,
+					requested_close_date: self.getDBDate(config.date),
+					close_date: self.getDBDate(config.date)
+				}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
+					if(err) {
+						Log.error("Error while saving sold positions to DB", err);
+						return done(err);
+					}
+
+					// decrement available resources
+					config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
+					config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
+					config.currentState.free_pieces += pos.pieces;
+					done(err, res);
+				});
+			});
+		}, done);
+	};
+
+	this.openPositions = function(config, done) {
+
+		if(config.disableOrders) {
+			Log.error('There was a problem when closing orders - open/scale orders were disabled'.red);
+			return done(null, 1)
+		}
+
+		// =========== OPEN POSITION process
+		config.changedPositions += config.openPositions.length;
+
+		// if this is the last day of the backtest - don't open new positions
+		if(config.lastDay)
+			return done(null);
+
+		async.each(config.openPositions, function(pos, done) {
+			var type = "OPEN: ";
+			if(config.positionsAggregated[pos.ticker])
+				type = "SCALE: ";
+
+			Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
+				if(err && err.codeName == 'timeout') {
+					Log.error("Timeout during buy order", (err.errorText || err.toString()));
+					return done(null, err);
+				} else if(err) {
+					Log.error("Error during buy order", (err.errorText || err.toString()));
+					return done(err.toString());
+				}
+
+				var finalPrice = res.price;
+				var orderFee = 0;
+				if(!config.feesDisabled && config.settings.fee_order_buy) {
+
+					finalPrice += (config.settings.fee_order_buy / pos.amount);
+					orderFee = config.settings.fee_order_buy;
+				}
+
+				Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
+
+				DB.insert("positions", {
+					requested_open_price: pos.requested_open_price,
+					buy_import_id: config.importId,
+					ticker: pos.ticker,
+					pieces: pos.pieces,
+					amount: res.amount,
+					open_price: finalPrice,
+					open_fee: orderFee,
+					open_price_without_fee: res.price,
+					open_date: self.getDBDate(config.date)
+				}, function(err, resDb) {
+					if(err) {
+						Log.error("Error while saving bought positions to DB", err);
+						return done(err);
+					}
+
+					// lower available resources
+					config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
+					config.currentState.free_pieces -= pos.pieces;	// remove spent pieces
+					done(err, res);
+				});
+			});
+		}, done);
+	};
+
 	this.sendOrders = function(config, done) {
+		var self = this;
 		Log.info('Sending orders');
 
 		config.currentState = {
 			current_capital: parseFloat(config.settings.current_capital, 2),
 			unused_capital: parseFloat(config.settings.unused_capital, 2),
-			free_pieces: parseInt(config.settings.free_pieces),
+			free_pieces: parseInt(config.settings.free_pieces)
 		};
 		config.changedPositions = 0;
 		self.printState(config, config.currentState);
 
 		async.series([
 			function(done) {
-				// =========== CLOSE POSITION process
-				config.changedPositions += Object.keys(config.closePositions).length;
-
-				async.each(Object.keys(config.closePositions), function(ticker, done) {
-					var pos = config.closePositions[ticker];
-					var indicators = config.indicators[ticker];
-					// Log.info(pos);
-					// Log.info(indicators);
-
-					Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
-						if(err) {
-							Log.error("Error during sell order", err.errorText || err.toString());
-							return done(err.toString());
-						}
-
-						var finalPrice = res.price;
-						var orderFee = 0;
-						if(!config.feesDisabled && config.settings.fee_order_sell) {
-
-							finalPrice -= (config.settings.fee_order_sell / pos.amount);
-							orderFee = config.settings.fee_order_sell;
-						}
-
-						Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
-
-						DB.update("positions", {
-							sell_import_id: config.importId,
-							requested_close_price: indicators.price,
-							close_price: finalPrice,
-							close_price_without_fee: res.price,
-							close_fee: orderFee,
-							requested_close_date: self.getDBDate(config.date),
-							close_date: self.getDBDate(config.date)
-						}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
-							if(err) {
-								Log.error("Error while saving sold positions to DB", err);
-								return done(err);
-							}
-
-							// decrement available resources
-							config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
-							config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
-							config.currentState.free_pieces += pos.pieces;
-							done(err, res);
-						});
-					});
-				}, done);
+				self.closePositions(config, done);
 			},
 			function(done) {
-				// =========== OPEN POSITION process
-				config.changedPositions += config.openPositions.length;
-
-				// if this is the last day of the backtest - don't open new positions
-				if(config.lastDay)
-					return done(null);
-
-				async.each(config.openPositions, function(pos, done) {
-					var type = "OPEN: ";
-					if(config.positionsAggregated[pos.ticker])
-						type = "SCALE: ";
-
-					Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
-						if(err) {
-							Log.error("Error during sell order", (err.errorText || err.toString()));
-							return done(err.toString());
-						}
-
-						var finalPrice = res.price;
-						var orderFee = 0;
-						if(!config.feesDisabled && config.settings.fee_order_buy) {
-
-							finalPrice += (config.settings.fee_order_buy / pos.amount);
-							orderFee = config.settings.fee_order_buy;
-						}
-
-						Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
-
-						DB.insert("positions", {
-							requested_open_price: pos.requested_open_price,
-							buy_import_id: config.importId,
-							ticker: pos.ticker,
-							pieces: pos.pieces,
-							amount: res.amount,
-							open_price: finalPrice,
-							open_fee: orderFee,
-							open_price_without_fee: res.price,
-							open_date: self.getDBDate(config.date)
-						}, function(err, resDb) {
-							if(err) {
-								Log.error("Error while saving bought positions to DB", err);
-								return done(err);
-							}
-
-							// lower available resources
-							config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
-							config.currentState.free_pieces -= pos.pieces;	// remove spent pieces
-							done(err, res);
-						});
-					});
-				}, done);
+				self.openPositions(config, done);
 			}
 		], function(err) {
 			done(err, config);
@@ -372,9 +396,10 @@ var Strategy = function(app) {
 					//Má vyjít 0.80.
 					// RSI2 = 0,807851951
  					// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
-			}
+			};
 
 			if(config.indicators[ticker].rsi === false) {
+				Log.error('There was a problem when processing indicators for ticker '+ticker);
 				delete config.data[ticker];
 				delete config.indicators[ticker];
 			}
@@ -449,6 +474,7 @@ var Strategy = function(app) {
 			for(var i in res)
 				config.settings[res[i]['var']] = res[i].val;
 
+			config.disableOrders = false;
 			done(err, config);
 		});
 	};

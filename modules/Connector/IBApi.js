@@ -11,8 +11,8 @@ var once = require('once');
 // const throttle = require('throttle-function');
 const throttle = require('../throttledFunction');
 
-const ORDER_TIMEOUT = 50000;
-const HEARTHBEAT_INTERVAL = 1000;
+const ORDER_TIMEOUT = 60000;
+const HEARTBEAT_INTERVAL = 1000;
 
 // IB API status codes
 const IB_CONNECTION_RESTORED = 1102;
@@ -488,6 +488,7 @@ var IBApi = function(config, app) {
             placedOrders[orderId].timeoutId = setTimeout(function () {
                 var err = new Error("OrderId("+orderId+") is taking too long to process - cancelling");
                 err.code = 500;
+                err.codeName = 'timeout';
 
                 Log.error(err.toString());
                 ib.cancelOrder(orderId);
@@ -501,7 +502,7 @@ var IBApi = function(config, app) {
     self.watchConnection = function() {
         setInterval(function () {
             ib.reqCurrentTime();
-        }, HEARTHBEAT_INTERVAL);
+        }, HEARTBEAT_INTERVAL);
     };
 
     /**
