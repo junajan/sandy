@@ -334,7 +334,6 @@ var Strategy = function(app) {
 	};
 
 	this.sendOrders = function(config, done) {
-		var self = this;
 		Log.info('Sending orders');
 
 		config.currentState = {

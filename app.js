@@ -53,7 +53,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 	config = {
 		tickers: tickers,
 		// from: "2015-01-01",
-		from: '2016-06-01',
+		from: '2016-01-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),
