@@ -4,7 +4,7 @@ An automatic trading bot on steroids..
 
 ### What is this repository for? ###
 
-This project is a simple node.js tool for backtesting and trading various strategies on stock market..
+This project is a simple node.js tool for backtesting and trading various strategies on stock market.
 (Currently in production stage)
 
 ### Consists of ###
@@ -21,3 +21,7 @@ This project is a simple node.js tool for backtesting and trading various strate
 
 ### Contacts ###
 Web: http://janjuna.cz | Mail: mail@janjuna.cz
+
+### Disclaimer ###
+One important thing at the end. This system is not finished. It lacks a lot of important features and thus it should not be used unless you know exactly what you are doing.
+If you decide to use this program in any possible way you should keep in your mind that it can generate profits but also big loses and it comes with ABSOLUTELY NO WARRANTY.
