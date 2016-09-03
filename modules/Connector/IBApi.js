@@ -143,7 +143,7 @@ var IBApi = function(config, app) {
         }).on('tickPrice', function (tickerId, tickType, price, canAutoExecute) {
 
             if(!streamingIdMap[tickerId]) {
-                Log.warn("Something went really wrong - tickPrice event for unknown tickerId - ".red, arguments);
+                Log.debug("Something went really wrong - tickPrice event for unknown tickerId - ".red, arguments);
                 return false;
             }
 
