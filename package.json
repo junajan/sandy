@@ -11,7 +11,7 @@
     "history-barchart": "node scripts/historyBarchart.js",
     "history-intraday": "node scripts/historyIntraday.js",
     "start-dev": "nodemon -e '.html,.js,.ejs,.css,.json' app.js",
-    "start": "forever start -a -l /var/log/sandy.log app.js",
+    "start": "forever start -m 20 -a -l /var/log/sandy.log app.js",
     "single-run": "NODE_ENV=RUN_STRATEGY node app.js"
   },
   "repository": {
