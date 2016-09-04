@@ -291,9 +291,9 @@ var Strategy = function(app) {
 			return done(null);
 
 		async.each(config.openPositions, function(pos, done) {
-			var type = "OPEN: ";
+			var type = "OPEN";
 			if(config.positionsAggregated[pos.ticker])
-				type = "SCALE: ";
+				type = "SCALE";
 
 			Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 				if(err && err.codeName == 'timeout') {
@@ -312,7 +312,7 @@ var Strategy = function(app) {
 					orderFee = config.settings.fee_order_buy;
 				}
 
-				Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
+				Log.info((type+': ').green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
 
 				DB.insert("positions", {
 					requested_open_price: pos.requested_open_price,
@@ -324,7 +324,7 @@ var Strategy = function(app) {
 					open_fee: orderFee,
 					open_price_without_fee: res.price,
 					open_date: self.getDBDate(config.date)
-				}, function(err, resDb) {
+				}, function(err) {
 					if(err) {
 						Log.error("Error while saving bought positions to DB", err);
 						return done(err);
@@ -833,7 +833,7 @@ var Strategy = function(app) {
 		].join(';');
 
 		text += ";"+config.log.orders.map(function(order) {
-			return order.type+order.amount+order.ticker;
+			return order.type+order.amount+"x"+order.ticker;
 		}).join(";");
 
 		app.mailer.sendDailySmsLog(text);
