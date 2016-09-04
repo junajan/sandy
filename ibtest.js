@@ -21,11 +21,13 @@ var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,B
 
 app.on("API.ready", function () {
 
+    IB
+    
     // var tickers = "AAPL,CSCO,MSFT,INTC".split(",");
-    console.log("Loading prices for", tickers.length, "tickers");
-    Broker.startStreaming(tickers, function () {
-        console.log("Streaming started.");
-    });
+    // console.log("Loading prices for", tickers.length, "tickers");
+    // Broker.startStreaming(tickers, function () {
+    //     console.log("Streaming started.");
+    // });
     //
     // setTimeout(function() {
     //     Broker.getMarketPriceBulk(tickers, function (err, prices) {
@@ -48,5 +50,6 @@ app.on("API.ready", function () {
 
 });
 
-
-var Broker = require(app.config.dirCore+"OrderManager")(app);
+var config = app.config;
+var IB = require(config.dirConnector+config.connector.driver)(config.connector.config, app);
+// var Broker = require(app.config.dirCore+"OrderManager")(app);

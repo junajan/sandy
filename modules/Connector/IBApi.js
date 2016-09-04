@@ -80,45 +80,50 @@ var IBApi = function(config, app) {
             } else if(err.toString() === "Error: Cannot send data when disconnected.") {
                 Log.error("API is down ... exiting")
                 process.exit(1);
-            } else {
+            } else if(_.isObject(data) && data.code && apiMessages[data.code]) {
+                if(apiInfos.indexOf(data.code) >= 0)
+                    Log.info(apiMessages[data.code]);
+                else {
 
-                if(_.isObject(data) && data.code && apiMessages[data.code]) {
-                    if(apiInfos.indexOf(data.code) >= 0)
-                        Log.info(apiMessages[data.code]);
-                    else {
-
-                        if(data.code === IB_CONNECTION_LOST && connectionIssueReported) {
-                            // connection error but it was already reported => send only to debug
-                            Log.debug(apiMessages[data.code], data);
-                        } else {
-                            Log.error(apiMessages[data.code], data);
-                        }
-
-                        if(data.code === IB_CONNECTION_LOST) {
-                            connectionIssueReported = true;
-                        }
+                    if(data.code === IB_CONNECTION_LOST && connectionIssueReported) {
+                        // connection error but it was already reported => send only to debug
+                        Log.debug(apiMessages[data.code], data);
+                    } else {
+                        Log.error(apiMessages[data.code], data);
                     }
 
-                    if(app.apiConnection.marketData === false && [IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
-                        eventEmitter.emit("refreshStreaming");
+                    if(data.code === IB_CONNECTION_LOST) {
+                        connectionIssueReported = true;
                     }
-
-                    if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
-                        app.apiConnection.ib = true;
-                        app.apiConnection.marketData = true;
-                        connectionIssueReported = false;
-                    } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {
-                        app.apiConnection.ib = false;
-                        app.apiConnection.marketData = false;
-                    }
-
-                    app.emit("API.connection", app.apiConnection);
-
-                } else {
-                    Log.error(err.toString(), data);
                 }
-            }
 
+                if(app.apiConnection.marketData === false && [IB_CONNECTION_RESTORED].indexOf(data.code) >= 0) {
+                    eventEmitter.emit("refreshStreaming");
+                }
+
+                if([IB_CONNECTION_IS_OK2, IB_CONNECTION_RESTORED, IB_CONNECTION_IS_OK, IB_DATA_UPON_DEMAND].indexOf(data.code) >= 0) {
+                    app.apiConnection.ib = true;
+                    app.apiConnection.marketData = true;
+                    connectionIssueReported = false;
+                } else if([IB_CONNECTION_LOST, IB_CONNECTION_BROKEN, IB_CONNECTING, IB_CONNECTION_BROKEN2].indexOf(data.code) >= 0) {
+                    app.apiConnection.ib = false;
+                    app.apiConnection.marketData = false;
+                }
+
+                app.emit("API.connection", app.apiConnection);
+
+            } else if(data.code === 103) { // Duplicate order Id
+                var orderInfo = placedOrders[data.id];
+
+                if(orderInfo)
+                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id);
+                else {
+                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id+' for order', orderInfo);
+                    self.resendOrder(data.id);
+                }
+            } else {
+                Log.error(err.toString(), data);
+            }
         }).on('result', function (event, args) {
             if (!_.includes(['currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
@@ -232,7 +237,7 @@ var IBApi = function(config, app) {
                     type: info.type,
                     amount: filled,
                     price: avgFillPrice,
-                    priceType: info.priceType,
+                    priceType: info.priceType
                 });
                 clearTimeout(placedOrders[id].timeoutId);
             } else if(status === "Cancelled") {
@@ -241,12 +246,12 @@ var IBApi = function(config, app) {
                     error: "cancelled",
                     errorText: "There was triggered timeout for order ID "+id+" ticker "+info.ticker,
                     orderId: id,
-                    ticker: info.ticker,
+                    ticker: info.ticker
                 });
             }
 
         }).on('execDetails', function (reqId, contract, exec) {
-            Log.debug("ExecDetails".cyan, "reqId:;".bold, reqId, "contract:".bold, JSON.stringify(contract), "exec:".bold, JSON.stringify(exec));
+            Log.debug("ExecDetails".cyan, "reqId:".bold, reqId, "contract:".bold, JSON.stringify(contract), "exec:".bold, JSON.stringify(exec));
 
             self.logOrder(exec.orderId, contract.symbol, exec.side, exec.shares, exec.price, "PROCESSED", JSON.stringify(arguments), function (err, res) {
                 if(err) log.error("There was an error while saving execDetails".red, arguments);
@@ -499,6 +504,16 @@ var IBApi = function(config, app) {
         });
     };
 
+    self.resendOrder = function (orderId) {
+        var info = placedOrders[orderId];
+        delete placedOrders[orderId];
+
+        Log.warn('Resend %s %dx %s order with id %d', info.type, info.amount, info.ticker, orderId);
+
+        clearTimeout(info.timeoutId);
+        self.sendOrder(info.type, info.ticker, info.amount, info.price, null, info.doneFilled);
+    };
+
     self.watchConnection = function() {
         setInterval(function () {
             ib.reqCurrentTime();
@@ -516,6 +531,6 @@ var IBApi = function(config, app) {
 };
 
 var i = null;
-module.exports = function(config, log) {
-    return (i ? i : i = new IBApi(config, log));
+module.exports = function(config, app) {
+    return (i ? i : i = new IBApi(config, app));
 };
