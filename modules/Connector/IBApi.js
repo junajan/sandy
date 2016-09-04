@@ -69,7 +69,7 @@ var IBApi = function(config, app) {
         .on('error', function (err, data) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id]) {
 
-                Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err);
+                Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err.toString());
             } else if(err && err.code == "ECONNREFUSED") {
 
                 Log.error("ERROR: cannot connect to IB api ... exiting".red);
