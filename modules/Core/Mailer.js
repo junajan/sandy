@@ -8,6 +8,7 @@ var Mailer = function(app) {
 	var Log = app.getLogger("MAILER");
 	var config = app.config;
 	var emailConf = config.email;
+	var smsConf = config.sms;
 
 	function getFullDate(d) {
 		return d.format("YYYY-MM-DD HH:mm:ss");
@@ -52,6 +53,26 @@ var Mailer = function(app) {
 			   console.error(err);
 			}
 		});
+	};
+
+	this.sendDailySmsLog = function (text) {
+		if(!smsConf.enabled)
+			return false;
+		// max text len 48 characters
+		var text = text;
+		var email = smsConf.to;
+		var title = smsConf.subject;
+
+		var transport = nodemailer.createTransport();
+		var mailConfig = {  //email options
+			from: smsConf.from,
+			to: email,
+			subject: title,
+			text: text
+		};
+
+
+		transport.sendMail(mailConfig);
 	};
 
 	this.sendStartMessage = function() {
