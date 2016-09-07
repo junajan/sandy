@@ -260,6 +260,12 @@ var Strategy = function(app) {
 						return done(err);
 					}
 
+					config.log.orders.push({
+						type: "C",
+						ticker: pos.ticker,
+						amount: pos.amount
+					});
+
 					// decrement available resources
 					config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
 					config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
@@ -285,9 +291,9 @@ var Strategy = function(app) {
 			return done(null);
 
 		async.each(config.openPositions, function(pos, done) {
-			var type = "OPEN: ";
+			var type = "OPEN";
 			if(config.positionsAggregated[pos.ticker])
-				type = "SCALE: ";
+				type = "SCALE";
 
 			Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
 				if(err && err.codeName == 'timeout') {
@@ -306,7 +312,7 @@ var Strategy = function(app) {
 					orderFee = config.settings.fee_order_buy;
 				}
 
-				Log.info(type.green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
+				Log.info((type+': ').green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
 
 				DB.insert("positions", {
 					requested_open_price: pos.requested_open_price,
@@ -318,11 +324,17 @@ var Strategy = function(app) {
 					open_fee: orderFee,
 					open_price_without_fee: res.price,
 					open_date: self.getDBDate(config.date)
-				}, function(err, resDb) {
+				}, function(err) {
 					if(err) {
 						Log.error("Error while saving bought positions to DB", err);
 						return done(err);
 					}
+
+					config.log.orders.push({
+						type: type == "OPEN" ? "O" : "S",
+						ticker: pos.ticker,
+						amount: pos.amount
+					});
 
 					// lower available resources
 					config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
@@ -341,6 +353,14 @@ var Strategy = function(app) {
 			unused_capital: parseFloat(config.settings.unused_capital, 2),
 			free_pieces: parseInt(config.settings.free_pieces)
 		};
+
+		config.log = {
+			orders: [],
+			capitalStart: config.currentState.current_capital,
+			capitalEnd: 0,
+			capitalDiff: 0
+		};
+
 		config.changedPositions = 0;
 		self.printState(config, config.currentState);
 
@@ -352,6 +372,9 @@ var Strategy = function(app) {
 				self.openPositions(config, done);
 			}
 		], function(err) {
+
+			config.log.capitalEnd = config.currentState.current_capital;
+			config.log.capitalDiff = (config.log.capitalEnd - config.log.capitalStart).toFixed(2);
 			done(err, config);
 		});
 	};
@@ -803,6 +826,19 @@ var Strategy = function(app) {
 		return done(null, res);
 	};
 
+	this.sendSmsLog = function(err, config) {
+		var text = [
+			err ? 'NOK' : 'OK',
+			config.log.capitalDiff,
+		].join(';');
+
+		text += ";"+config.log.orders.map(function(order) {
+			return order.type+order.amount+"x"+order.ticker;
+		}).join(";");
+
+		app.mailer.sendDailySmsLog(text);
+	};
+
 	this.startStreamingPrices = function (config, done) {
 		if(config.internalHistory && !config.disabledLoadingActualsFromDb) {
 
@@ -867,6 +903,7 @@ var Strategy = function(app) {
 				Log.error("Strategy finished with an error", err);
 
 			self.sendMailLog(config, res, _.noop);
+			self.sendSmsLog(err, config);
 			done(err, res);
 		});
 	};
