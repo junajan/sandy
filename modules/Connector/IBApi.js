@@ -115,11 +115,14 @@ var IBApi = function(config, app) {
             } else if(data.code === 103) { // Duplicate order Id
                 var orderInfo = placedOrders[data.id];
 
-                if(orderInfo)
-                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id);
-                else {
-                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id+' for order', orderInfo);
+                if(orderInfo) {
+
+                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id+' for order %s %dx %s for %s',
+                      orderInfo.type, orderInfo.amount, orderInfo.ticker, orderInfo.priceType);
+
                     self.resendOrder(data.id);
+                } else {
+                    Log.error('ERROR('+data.code+'): Duplicate order ID '+data.id);
                 }
             } else {
                 Log.error(err.toString(), data);
@@ -511,7 +514,7 @@ var IBApi = function(config, app) {
         Log.warn('Resend %s %dx %s order with id %d', info.type, info.amount, info.ticker, orderId);
 
         clearTimeout(info.timeoutId);
-        self.sendOrder(info.type, info.ticker, info.amount, info.price, null, info.doneFilled);
+        self.sendOrder(info.type, info.ticker, info.amount, info.priceType == 'MKT' ? 'MKT' : info.price, null, info.doneFilled);
     };
 
     self.watchConnection = function() {
