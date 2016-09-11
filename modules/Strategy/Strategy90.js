@@ -828,8 +828,9 @@ var Strategy = function(app) {
 
 	this.sendSmsLog = function(err, config) {
 		var text = [
+			config.date.format("D.M"),
 			err ? 'NOK' : 'OK',
-			config.log.capitalDiff,
+			config.log.capitalDiff
 		].join(';');
 
 		text += ";"+config.log.orders.map(function(order) {

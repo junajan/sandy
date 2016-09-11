@@ -2,6 +2,7 @@ var moment = require("moment");
 var async = require("async");
 var stripAnsi = require("strip-ansi");
 var nodemailer = require('nodemailer');
+var smtpTransport = require('nodemailer-smtp-transport');
 
 var Mailer = function(app) {
 	var self = this;
@@ -58,19 +59,33 @@ var Mailer = function(app) {
 	this.sendDailySmsLog = function (text) {
 		if(!smsConf.enabled)
 			return false;
+
+		Log.info('Sending SMS notice');
+
 		// max text len 48 characters
 		var text = text;
 		var email = smsConf.to;
 		var title = smsConf.subject;
+		var opts = undefined;
 
-		var transport = nodemailer.createTransport();
+		if(smsConf.gmail) {
+			opts = smtpTransport({
+				service: 'gmail',
+				auth: {
+					user: smsConf.gmail.user,
+					pass: smsConf.gmail.pass
+				}
+			})
+		}
+
+		var transport = nodemailer.createTransport(opts);
+
 		var mailConfig = {  //email options
 			from: smsConf.from,
 			to: email,
 			subject: title,
 			text: text
 		};
-
 
 		transport.sendMail(mailConfig);
 	};
