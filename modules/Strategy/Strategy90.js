@@ -669,7 +669,7 @@ var Strategy = function(app) {
 				newScalePosition = true;
 
 
-			Log.info("Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
+			Log.info("BuyFilter::Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
 
 			// jestlize akcii uz drzime, naskaluj ji
 			if(config.positionsAggregated[item.ticker]) {

@@ -162,7 +162,7 @@ var IBApi = function(config, app) {
             streamingPrices[ticker].lastdate = new Date();
 
             // "ASK", "BID",
-            if(price > 0 && [ "LAST", "CLOSE"].indexOf(tickType) >= 0) {
+            if(price > 0 && [ "LAST"].indexOf(tickType) >= 0) {
 
                 streamingPrices[ticker].lastPriceType = tickType;
                 streamingPrices[ticker].lastPrice = price;
