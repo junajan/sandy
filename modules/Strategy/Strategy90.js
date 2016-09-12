@@ -573,6 +573,8 @@ var Strategy = function(app) {
 	};
 
 	this.getStockForBuy = function(config) {
+		Log.info('Filtering stocks for buy condition');
+
 		var stocks = [];
 		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
 		if(config.sellAll)
@@ -593,6 +595,11 @@ var Strategy = function(app) {
 		stocks.sort(function(a, b) {
 			return (a.rsi > b.rsi) ? 1 : -1;
 		});
+
+		stocks.forEach(function(item) {
+			Log.info("BuyFilter::Ticker: "+ item.ticker+ " | RSI: " + item.rsi.toFixed(2) + " | Price: " + item.price + " | Sma200: "+ item.sma200.toFixed(2) + " | Sma5: "+ item.sma5.toFixed(2));
+		});
+
 		return stocks;
 	};
 
@@ -605,7 +612,6 @@ var Strategy = function(app) {
 	};
 
 	this.filterBuyStocks = function(config, done) {
-		Log.info('Filtering stocks for buy condition');
 
 		var item;
 		var newScalePosition = false;
@@ -621,6 +627,10 @@ var Strategy = function(app) {
 		}
 
 		var stocksToBuy = self.getStockForBuy(config);
+
+		if(stocksToBuy.length)
+			Log.info('Selecting stock to buy');
+
 		for(var i in stocksToBuy) {
 			item = stocksToBuy[i];
 
@@ -669,7 +679,7 @@ var Strategy = function(app) {
 				newScalePosition = true;
 
 
-			Log.info("BuyFilter::Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
+			Log.info("Ticker: "+ item.ticker+ " RSI: " + item.rsi.toFixed(2) + " Price: " + item.price + " Sma200: "+ item.sma200.toFixed(2) + " Sma5: "+ item.sma5.toFixed(2));
 
 			// jestlize akcii uz drzime, naskaluj ji
 			if(config.positionsAggregated[item.ticker]) {
