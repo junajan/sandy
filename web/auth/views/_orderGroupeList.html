@@ -38,7 +38,7 @@
 					{{(item.close_price_total - item.open_price_total) | currency:'$' }}
 				</span>
 				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
-					{{(openTickersPrices[item.ticker] - item.open_price_total) * item.amount  | currency:'$' }}
+					{{(openTickersPrices[item.ticker] - item.open_price_total)  | currency:'$' }}
 				</span>
 			</td>
 		</tr>
