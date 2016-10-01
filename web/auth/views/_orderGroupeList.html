@@ -1,0 +1,46 @@
+<table class="orders watchlist table table-striped">
+	<thead>
+		<tr>
+			<th>Ticker</th>
+			<th width="150">Amnt (scale)</th>
+			<th>Open date</th>
+			<th>O. Price</th>
+			<th>Close date</th>
+			<th>C. Price</th>
+			<th>
+				Profit/Loss
+				<span ng-if="actualProfitLoss">
+					{{actualProfitLoss | currency:'$'}}
+				</span>
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr ng-repeat="item in orders">
+			<td><b><a href='//finance.yahoo.com/echarts?s={{item.ticker}}' target="_blank">{{item.ticker}}</a></b></td>
+			<td>{{item.amount}} ({{item.scale}})</td>
+			<td>{{item.open_date_min | date}}</td>
+			<td>{{item.open_price_total | currency:'$'}} ({{ item.open_price_total / item.amount | currency:'$'}})</td>
+			<td>
+				<span ng-if="item.close_date">{{item.close_date | date}}</span>
+			</td>
+			<td>
+				<span ng-if="item.close_date">
+					{{item.close_price_total | currency:'$'}} ({{ item.close_price_total / item.amount | currency:'$'}})
+				</span>
+				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
+					{{ openTickersPrices[item.ticker] * item.amount | currency:'$' }}
+					({{ openTickersPrices[item.ticker] | currency:'$' }})
+				</span>
+			</td>
+			<td class="profit_loss" ng-class="{red: item.close_price_total <= item.open_price_total}">
+				<span ng-if="item.close_date">
+					{{(item.close_price_total - item.open_price_total) | currency:'$' }}
+				</span>
+				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
+					{{(openTickersPrices[item.ticker] - item.open_price_total) * item.amount  | currency:'$' }}
+				</span>
+			</td>
+		</tr>
+	</tbody>
+</table>

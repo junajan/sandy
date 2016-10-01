@@ -24,6 +24,7 @@ var Log = app.logger.getLogger("APP");
 
 var Robot;
 
+console.warn('File app.js is deprecated and will be removed soon - one of backets,robot,singleRun files should be used'.yellow);
 require(config.dirWeb+'Routes')(app);
 
 var tickers = "AAPL,ABBV,ABT,ACN,AIG,ALL,AMGN,AMZN,APA,APC,AXP,BA,BAC,BAX,BIIB,BK,BMY,BRK-B,C,CAT,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DIS,DOW,DVN,EBAY,EMC,EMR,EXC,F,FB,FCX,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NKE,NOV,NSC,ORCL,OXY,PEP,PFE,PG,PM,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
@@ -53,7 +54,7 @@ if(process.env.NODE_ENV === "RUN_STRATEGY") {
 	config = {
 		tickers: tickers,
 		// from: "2015-01-01",
-		from: '2016-01-01',
+		from: '2016-08-01',
 		// to: '2016-01-01',
 		// to: '2015-10-15',
 		to: moment().format('YYYY-MM-DD'),

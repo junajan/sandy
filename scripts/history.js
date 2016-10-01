@@ -29,20 +29,20 @@ var Strategy = require(config.dirStrategy+'Strategy90')(app);
 const RUN = true;
 const _TABLE = "stock_history_full";
 
-var dateFrom = '1990-01-01';
+var dateFrom = moment('1990-01-01');
 var dateTo = moment();
 
-var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
-tickers = tickers.concat(['UPRO','SPXS', 'SPY', "LABU", "LABD"]);
-tickers = tickers.concat(['VXX', 'VIX', 'XIV']);
-tickers = tickers.concat(['VXX', 'VIX', 'XIV']);
-tickers = tickers.concat(["XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLU", "XLB", "XLK"]);
-tickers = tickers.concat(["MDY", "FEZ", "EPP", "EEM", "ILF", "TLT", "SHY"]);
-tickers = tickers.concat(["MDY", "ZIV", "EDV", "SHY"]);
-tickers = tickers.concat(["MDY", "IEV", "EEM", "ILF", "EPP", "EDV", "SHY"]);
-tickers = tickers.concat(["AGG", "EFA", "IWM", "SPY", "ZIV", "SSO", "EDV"]);
-tickers = tickers.concat(["TSLA"]);
-
+// var tickers = ['ABT','ACN','AIG','ALL','AMGN','AMZN','APA','APC','AXP','BA','BAC','BAX','BIIB','BK','BMY','BRK-B','C','CAT','CL','CMCSA','COF','COP','COST','CSCO','CVS','CVX','DD','DIS','DOW','DVN','EBAY','EMC','EMR','EXC','F','FB','FCX','FDX','FOXA','GD','GE','GILD','GM','GOOG','GS','HAL','HD','HON','HPQ','IBM','JNJ','JPM','KO','LLY','LMT','LOW','MA','INTC','MCD','MDLZ','MDT','MET','MMM','MO','MON','MRK','MS','MSFT','NKE','NOV','NSC','ORCL','OXY','PEP','PFE','PG','PM','QCOM','RTN','SBUX','SLB','SO','SPG','T','TGT','TWX','TXN','UNH','UNP','UPS','USB','UTX','V','VZ','WFC','WMT','XOM','WBA','AAPL','ABBV'];
+// tickers = tickers.concat(['UPRO','SPXS', 'SPY', "LABU", "LABD"]);
+// tickers = tickers.concat(['VXX', 'VIX', 'XIV']);
+// tickers = tickers.concat(['VXX', 'VIX', 'XIV']);
+// tickers = tickers.concat(["XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLU", "XLB", "XLK"]);
+// tickers = tickers.concat(["MDY", "FEZ", "EPP", "EEM", "ILF", "TLT", "SHY"]);
+// tickers = tickers.concat(["MDY", "ZIV", "EDV", "SHY"]);
+// tickers = tickers.concat(["MDY", "IEV", "EEM", "ILF", "EPP", "EDV", "SHY"]);
+// tickers = tickers.concat(["AGG", "EFA", "IWM", "SPY", "ZIV", "SSO", "EDV"]);
+// tickers = tickers.concat(["TSLA"]);
+var tickers = "AAPL,ABBV,ABT,ACN,AGN,AIG,ALL,AMGN,AMZN,AXP,BA,BAC,BIIB,BK,BLK,BMY,BRK-B,C,CAT,CELG,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DHR,DIS,DOW,DUK,EBAY,EMR,EXC,F,FB,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KHC,KMI,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NEE,NKE,ORCL,OXY,PCLN,PEP,PFE,PG,PM,PYPL,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TSLA,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 
 function downloadHistory(ticker, done) {
 

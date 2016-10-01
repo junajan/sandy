@@ -2,7 +2,7 @@
   "name": "sandy",
   "version": "1.0.0",
   "description": "Stock market automated trading system",
-  "main": "app.js",
+  "main": "robot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "openings": "node scripts/openings.js",
@@ -11,10 +11,10 @@
     "history-barchart": "node scripts/historyBarchart.js",
     "history-intraday": "node scripts/historyIntraday.js",
     "start-dev": "nodemon -e '.html,.js,.ejs,.css,.json' app.js",
-    "start": "forever start -m 20 -a -l /var/log/sandy.log --uid 'sandy' app.js",
+    "start": "forever start -m 20 -a -l /var/log/sandy.log --uid 'sandy' robot.js",
     "restart": "forever restart sandy",
     "stop": "forever stop sandy",
-    "single-run": "NODE_ENV=RUN_STRATEGY node app.js"
+    "single-run": "node singleRun.js"
   },
   "repository": {
     "type": "git",

@@ -1,12 +1,15 @@
 Sandy.controller ( "Orders", [
-    '$scope', '$timeout', 'Orders',
-    function ($scope, $timeout, Orders) {
+    '$scope', '$timeout', 'Orders', '$location',
+    function ($scope, $timeout, Orders, $location) {
+
+			var queryMethod = "query";
+			if('/orders-grouped' === $location.path())
+				queryMethod = "queryGrouped";
 
     	$scope.load = function() {
-	    	Orders.query(function(res) {
-				$scope.orders = res;
-
-				$scope.load && $timeout($scope.load, 1000);
+	    	Orders[queryMethod](function(res) {
+					$scope.orders = res;
+					$scope.load && $timeout($scope.load, 1000);
 	    	});
     	};
 

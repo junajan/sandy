@@ -32,6 +32,7 @@ module.exports = function(app) {
     apiRoutes.get('/holidays', Web.isApiAuthorized, Api.getHolidays);
     apiRoutes.get('/config', Web.isApiAuthorized, Api.getFullConfig);
     apiRoutes.get('/orders', Web.isApiAuthorized, Api.getOrders);
+    apiRoutes.get('/orders-grouped', Web.isApiAuthorized, Api.getOrdersGroup);
     apiRoutes.get('/log', Web.isApiAuthorized, Api.getLog);
 
 

@@ -4,6 +4,10 @@ Sandy.factory('Orders', [
 		return $resource($$config.api + 'orders',{}, {
 			getOpenPrices: {
 				url: $$config.api + 'open-prices'
+			},
+			queryGrouped: {
+				url: $$config.api + 'orders-grouped',
+				isArray:true
 			}
 		});
 	}

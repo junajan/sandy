@@ -45,6 +45,15 @@ var Api = function(app) {
 		});
 	};
 
+	this.getOrdersGroup = function(req, res) {
+		var limit = parseInt(req.query.limit) || null;
+		var from = '(SELECT SUM(amount) as amount, SUM(amount * open_price) AS open_price_total, ticker, SUM(close_price*amount) as close_price_total, close_date, MIN(open_date) as open_date_min, MAX(open_date) as open_date_max, COUNT(1) as scale FROM `positions` GROUP BY ticker, close_date) as tmp';
+
+		DB.getData('*, close_price_total - open_price_total as profit', from, '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date_min DESC', limit, function(err, data) {
+			res.json(data);
+		});
+	};
+
 	this.getHolidays = function(req, res) {
 		DB.getData('*', 'exchange_schedule', 'invalidated IS NULL and YEAR(date) = YEAR(NOW())', null, 'date', 'ASC', function(err, data) {
 			res.json(data);
