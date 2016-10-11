@@ -7,7 +7,7 @@ var log4js = require('log4js');
 // load configuration
 var app = new events();
 
-app.config = require("./config");
+app.config = require("../config");
 app.logger = app.config.logger;
 
 app.DB = require(app.config.dirCore+'Mysql')(app.config.mysql);
@@ -18,32 +18,33 @@ app.getLogger = log4js.getLogger;
 
 app.on("API.ready", function () {
 
-    // var tickers = "AAPL,CSCO,MSFT,INTC".split(",");
-    // console.log("Loading prices for", tickers.length, "tickers");
-    // Broker.startStreaming(tickers, function () {
-    //     console.log("Streaming started.");
-    // });
-    //
-    // setTimeout(function() {
-    //     Broker.getMarketPriceBulk(tickers, function (err, prices) {
-    //         if(err) console.error("ERROR while loading prices", err);
-    //         Broker.stopStreaming();
-    //
-    //         console.log("=== Prices ===");
-    //         _.each(prices, function (info, ticker) {
-    //             console.log(ticker,"|", info.price,"|",info.origin);
-    //         });
-    //     });
-    // }, 120000);
+    var tickers = "AAPL,CSCO,MSFT,INTC".split(",");
+    // var tickers = "MSFT".split(",");
+    console.log("Loading prices for", tickers.length, "tickers");
+    Broker.startStreaming(tickers, function () {
+        console.log("Streaming started.");
+    });
 
-    console.log("BUY");
-    Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
-    // setTimeout(function() {
+    setTimeout(function() {
+        Broker.getMarketPriceBulk(tickers, function (err, prices) {
+            if(err) console.error("ERROR while loading prices", err);
+            Broker.stopStreaming(_.noop);
 
-    Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
-    Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
-    Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
-    Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
+            console.log("=== Prices ===");
+            _.each(prices, function (info, ticker) {
+                console.log(ticker,"|", info.price,"|",info.origin);
+            });
+        });
+    }, 120000);
+
+    // console.log("BUY");
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
+    // // setTimeout(function() {
+    //
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
+    // Broker.sendBuyOrder("AAPL", 20, "MKT" , null, console.log.bind(this, "ORDER RESULT".rainbow));
     // }, 1000);
     // Broker.sendSellOrder("ALL", 14, "MKT" , 123, function (err, res) {
     //     console.log("======== RESULT ==========");

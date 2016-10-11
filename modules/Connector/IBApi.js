@@ -14,6 +14,8 @@ const throttle = require('../throttledFunction');
 const ORDER_TIMEOUT = 60000;
 const HEARTBEAT_INTERVAL = 1000;
 
+const CSCO_MSFT_INTC_STREAMING_EXCHANGE = "BATS";
+
 // IB API status codes
 const IB_CONNECTION_RESTORED = 1102;
 const IB_CONNECTION_IS_OK = 2106;
@@ -282,6 +284,9 @@ var IBApi = function(config, app) {
         var data = serializeTicker(ticker, market || null);
 
         streamingPrices[ticker] = {};
+
+        if(["MSFT", "CSCO", "INTC"].indexOf(ticker) >= 0)
+            data.market = CSCO_MSFT_INTC_STREAMING_EXCHANGE;
 
         Log.debug("Start watching", ticker, "with ID", id);
         ib.reqMktData(id, ib.contract[type](data.ticker, data.market), '', false);
