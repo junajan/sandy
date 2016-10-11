@@ -420,8 +420,8 @@ var Strategy = function(app) {
  					// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
 			};
 
-			if(config.indicators[ticker].rsi === false) {
-				Log.error('There was a problem when processing indicators for ticker '+ticker);
+			if(!config.indicators[ticker].sma200 || !config.indicators[ticker].rsi) {
+				Log.error('Error while processing indicators for %s with data length %d', ticker, data.length);
 				delete config.data[ticker];
 				delete config.indicators[ticker];
 			}
@@ -687,7 +687,7 @@ var Strategy = function(app) {
 
 				if(position.pieces >= _maxPositionSize) {
 					Log.info("Stock "+ item.ticker + " is on max "+ position.pieces + " pieces .. selecting another stock", true);
-					return done(null, config);
+					continue;
 				}
 
 				var piecesCount = self.getNextPiecesCount(position.pieces);
@@ -723,6 +723,7 @@ var Strategy = function(app) {
 			config.newState.free_pieces -= parseFloat(newPos.pieces, 2);
 			config.newState.unused_capital -= parseFloat(newPos.price * newPos.amount, 2);
 		}
+
 		done(null, config);
 	};
 
@@ -730,7 +731,7 @@ var Strategy = function(app) {
 		var out = {
 			pieces: 0,
 			price: 0,
-			volume: 0,
+			volume: 0
 		};
 
 		positions.forEach(function(pos) {
@@ -749,14 +750,14 @@ var Strategy = function(app) {
 	};
 
 	this.filterSellStocks = function(config, done) {
-        Log.info('Filtering stocks for sell condition');
+		Log.info('Filtering stocks for sell condition');
 
-        config.closePositions = {};
-        config.newState = {
+		config.closePositions = {};
+		config.newState = {
 			current_capital: parseFloat(config.settings.current_capital, 2),
 			unused_capital: parseFloat(config.settings.unused_capital, 2),
 			free_pieces: parseInt(config.settings.free_pieces),
-        };
+		};
 
 		// Pokud nejsou zadne otevrene pozice
 		if(! Object.keys(config.positions).length) {
@@ -769,16 +770,17 @@ var Strategy = function(app) {
 			
 			self.isLastPriceEntry(ticker, config, function(isLast) {
 
-	        	// test for close condition
-		        if(indicators.price > indicators.sma5 || isLast || config.sellAll) { // is openned and actual price > sma5
-	        		if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
-	        		// we will close this position
-	        		config.closePositions[ticker] = pos;
-	        		config.newState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
-	        		config.newState.free_pieces += pos.pieces;
-		        }
+				// test for close condition
+				// first test if indicators are present (can be skipped when stock is disabled or there was some error in datafeed)
+				if(indicators && indicators.price > indicators.sma5 || isLast || config.sellAll) { // is openned and actual price > sma5
+					if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
+					// we will close this position
+					config.closePositions[ticker] = pos;
+					config.newState.unused_capital += parseFloat(indicators.price * pos.amount, 2);
+					config.newState.free_pieces += pos.pieces;
+				}
 
-		        done(null);
+				done(null);
 			});
 		}, function(err, res) {
 			done(null, config);

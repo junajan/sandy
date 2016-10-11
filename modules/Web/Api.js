@@ -70,6 +70,9 @@ var Api = function(app) {
 
 	this.loadUfinishedPrices = function() {
 		DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
+			if(err)
+				return Log.error('There was an error while retrieving data from DB', err);
+
 			tickers = tickers.map(function(p) {
 				return p.ticker;
 			});
