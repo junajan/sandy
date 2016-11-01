@@ -20,7 +20,7 @@ var Strategy = function(app) {
 		var Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
-	var _PRICE_COLUMN_NAME = 'close';
+	var _PRICE_COLUMN_NAME = 'close'; // or adjClose
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
@@ -616,6 +616,7 @@ var Strategy = function(app) {
 		var item;
 		var newScalePosition = false;
 		var newPos = false;
+		var newBuyPosition = false;
 		var opennedPositions = 0;
 		var opennedFirstRSI = 0;
         config.openPositions = [];
@@ -641,39 +642,39 @@ var Strategy = function(app) {
 
 
 			// ============== OPEN STRATEGIE 3 ===============
-			
-			// otevira se jen jedna nova pozice za den
-			// TEST - oteviraji se jen 2 pozice
-			if(opennedPositions && !config.positionsAggregated[item.ticker]) {
-				if(opennedPositions >= 2) continue;
-				
-				if(opennedPositions == 1 && (item.rsi - opennedFirstRSI > 0.5 || item.rsi > 1)) {
-					continue;
-				}
-			}
-
-			if(!config.positionsAggregated[item.ticker]) {
-				opennedPositions++;
-				opennedFirstRSI = item.rsi;
-			}
+			// scale all but open max two new stocks
+			// if(opennedPositions && !config.positionsAggregated[item.ticker]) {
+			// 	if(opennedPositions >= 2) continue;
+			//
+			// 	if(opennedPositions == 1 && (item.rsi - opennedFirstRSI > 0.5 || item.rsi > 1)) {
+			// 		continue;
+			// 	}
+			// }
+      //
+			// if(!config.positionsAggregated[item.ticker]) {
+			// 	opennedPositions++;
+			// 	opennedFirstRSI = item.rsi;
+			// }
 
 
 			// ============== OPEN STRATEGIE 2===============
-			// if((newBuyPosition && !config.positionsAggregated[item.ticker]))
-			// 	continue;
+			// scale everything but buy only one new stock
+			if(newBuyPosition && !config.positionsAggregated[item.ticker])
+				continue;
 
 			// if(!config.positionsAggregated[item.ticker])
 			// 	newBuyPosition = true;
 
 
 			// ============== OPEN STRATEGIE 1 ===============
-			// otevira se jen jedna nova pozice za den
+			// buy and scale only one stock per day
 			// if((newBuyPosition && !config.positionsAggregated[item.ticker]) || (newScalePosition && config.positionsAggregated[item.ticker]))
 			// 	continue;
 
-			// if(!config.positionsAggregated[item.ticker])
-			// 	newBuyPosition = true;
 
+			// ============ LOG ORDER =============
+			if(!config.positionsAggregated[item.ticker])
+				newBuyPosition = true;
 
 			if(config.positionsAggregated[item.ticker])
 				newScalePosition = true;
