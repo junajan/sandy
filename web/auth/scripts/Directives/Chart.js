@@ -5,14 +5,28 @@ Sandy.directive('chart', [
 			restrict: 'E',
 			replace: true,
 			scope: {
-				data: '=',
+				data: '='
 			},
-            template: '<div class="chart" style="height: 450px; width: 100%;"></div>',
+			template: '<div class="chart" style="height: 450px; width: 100%;"></div>',
 			link: function($scope, element, attrs) {
 				var len = 0;
 				var chart = null;
-				var s1 = {name: 'Equity curve', data: [], id: "s1"};
-				var s2 = {name: 'Unused capital', data: [], id: "s2"};
+				var s1 = {
+					name: 'Transfer Adjusted Equity',
+					data: [],
+					id: "s2",
+					color: Highcharts.getOptions().colors[0]
+				};
+
+				var s2 = {
+					name: 'Real Equity',
+					data: [],
+					visible: false,
+					id: "s1",
+					color: Highcharts.getOptions().colors[3]
+				};
+
+				// var s2 = {name: 'Unused capital', data: [], id: "s2"};
 				var conf = {
 					chart: {
 						zoomType: 'x',
@@ -66,8 +80,8 @@ Sandy.directive('chart', [
 							}
 						}
 					},
-			        series: [s1]
-			    };
+					series: [s2, s1]
+				};
 
 				$timeout(function() {
 
@@ -76,18 +90,21 @@ Sandy.directive('chart', [
 						$scope.$watch('data', function(data) {
 							if(data.length == len || !chart) return;
 							len = data.length;
-							var d = [];
+							var d1 = [];
+							var d2 = [];
 
 							for(var i in data) {
 								var date = (new Date(data[i].date)).getTime();
 								if(date) {
-									d.push([date, parseInt(data[i].capital)])
+									d1.push([date, parseInt(data[i].capital)])
+									d2.push([date, parseInt(data[i].adjCapital)])
 								}
 							}
 
-							ch.get('s1').setData(d);
+							ch.get('s2').setData(d1);
+							ch.get('s1').setData(d2);
 						});
-				    });
+					});
 				});
 
 			}

@@ -640,12 +640,22 @@ var Strategy = function(app) {
 				return done(null, config);
 			}
 
-
-			// ============== OPEN STRATEGIE 3 ===============
-			// scale all but open max two new stocks
-			// if(opennedPositions && !config.positionsAggregated[item.ticker]) {
-			// 	if(opennedPositions >= 2) continue;
+			// ============== OPEN STRATEGIE 5 ===============
+			// scale everything but buy only one new stock
+			// var posHeld = Object.keys(config.positionsAggregated).length;
+			// if((newBuyPosition || posHeld > 4) && !config.positionsAggregated[item.ticker])
+			// 	continue;
+      //
+			// if(!config.positionsAggregated[item.ticker])
+			// 	newBuyPosition = true;
 			//
+			// ============== OPEN STRATEGIE 4 ===============
+			// scale all but open max two new stocks only if there are not so many positions
+			// if(opennedPositions && !config.positionsAggregated[item.ticker]) {
+      //
+			// 	var posHeld = Object.keys(config.positionsAggregated).length;
+			// 	if(opennedPositions >= 2 || (opennedPositions >= 1 && posHeld >= 3)) continue;
+      //
 			// 	if(opennedPositions == 1 && (item.rsi - opennedFirstRSI > 0.5 || item.rsi > 1)) {
 			// 		continue;
 			// 	}
@@ -657,14 +667,25 @@ var Strategy = function(app) {
 			// }
 
 
+			// ============== OPEN STRATEGIE 3 ===============
+			// scale all but open max two new stocks
+			// if(opennedPositions && !config.positionsAggregated[item.ticker]) {
+			// 	if(opennedPositions >= 2) continue;
+      //
+			// 	if(opennedPositions == 1 && (item.rsi - opennedFirstRSI > 0.5 || item.rsi > 1)) {
+			// 		continue;
+			// 	}
+			// }
+      //
+			// if(!config.positionsAggregated[item.ticker]) {
+			// 	opennedPositions++;
+			// 	opennedFirstRSI = item.rsi;
+			// }
+
 			// ============== OPEN STRATEGIE 2===============
 			// scale everything but buy only one new stock
 			if(newBuyPosition && !config.positionsAggregated[item.ticker])
 				continue;
-
-			// if(!config.positionsAggregated[item.ticker])
-			// 	newBuyPosition = true;
-
 
 			// ============== OPEN STRATEGIE 1 ===============
 			// buy and scale only one stock per day
