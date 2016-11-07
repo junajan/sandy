@@ -13,6 +13,8 @@ var config = require("./config");
 // load and start web server
 var server = require(config.dirWeb+'Server');
 
+var PROCESS_LOAD_DELAY = process.argv[2];
+
 var app = server.run(config);
 require("./config/app")(app, config);
 app.DB = require(config.dirCore+'Mysql')(config.mysql);
@@ -26,9 +28,13 @@ var Robot;
 
 require(config.dirWeb+'Routes')(app);
 
-const PROCESS_LOAD_DELAY = 120000;
+if(!PROCESS_LOAD_DELAY || PROCESS_LOAD_DELAY < 30000) {
+  Log.error("Delay can't be smaller than 30'000ms - value: "+PROCESS_LOAD_DELAY)
+  process.exit(1)
+}
 
-Log.info("Running strategy");
+
+Log.info("Running strategy with delay %dms", PROCESS_LOAD_DELAY);
 
 Robot = require(config.dirCore+"Robot")(app);
 Robot.setStrategy(Strategy);
