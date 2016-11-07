@@ -101,8 +101,8 @@ Sandy.directive('chart', [
 								}
 							}
 
-							ch.get('s2').setData(d1);
-							ch.get('s1').setData(d2);
+							ch.get('s1').setData(d1);
+							ch.get('s2').setData(d2);
 						});
 					});
 				});
