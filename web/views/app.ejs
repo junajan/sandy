@@ -40,14 +40,17 @@
                 <img src="./images/icon.png" width="20"  style="position: relative; top: -4px;" />
                 Sandy bot
 
-                <span class="hidden-lg hidden-sm hidden-md small"> | capital: {{ statistics.current_capital | currency:'$' }}</span>
+                <span class="hidden-lg hidden-sm hidden-md small">
+                  | capital: {{ statistics.current_capital | currency:'$' }}
+                  | time: {{ apiTime }}
+                </span>
               </span>
             </a>
           </div>
-          <div id="navbar" class="navbar-collapse collapse" data-toggle="collapse"  data-target="#navbar">
+          <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
               <li class="home"><a href="/">Equity</a></li>
-              <li class="orders"><a href="orders-grouped">Orders</a></li>
+              <li class="orders-grouped"><a href="orders-grouped">Orders</a></li>
               <li class="log"><a href="log">Log</a></li>
               <li class="watchlist"><a href="watchlist">Watchlist</a></li>
               <li class="holidays"><a href="holidays">Holidays</a></li>
@@ -108,5 +111,13 @@
     <script src="./scripts/Services/Resources/Orders.js"></script>
     <script src="./scripts/Services/Resources/Config.js"></script>
     <script src="./scripts/Services/Resources/Watchlist.js"></script>
+
+  <script>
+
+    $('#navbar a').click(function () {
+      $('#navbar').collapse('hide');
+    });
+  </script>
+
   </body>
 </html>

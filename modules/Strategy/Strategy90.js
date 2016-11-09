@@ -177,7 +177,7 @@ var Strategy = function(app) {
 	};
 
 	this.printState = function(config, state) {
-		Log.info(("Current: Date: "+self.getDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
+		Log.info(("Current: Date: "+self.getDBDate(config.date)+" Equity: "+ state.current_capital.toFixed(2)+ " Unused: "+ state.unused_capital.toFixed(2)+ " Free pieces: "+ state.free_pieces).yellow);
 	}
 
 	this.saveCurrentState = function(config, done) {
@@ -189,29 +189,26 @@ var Strategy = function(app) {
 	};
 
 	this.saveNewEquity = function(config, done) {
-		Log.info('Saving new equity');
+		var date = self.getDBDate(config.date);
+		Log.info('Saving new equity with date '+date);
 
 		var state = config.currentState;
 
 		// dont save when there are no changes in positions
-		if(!config.changedPositions)
-			return done(null, config);
+		// if(!config.changedPositions)
+		// 	return done(null, config);
 
 		DB.insert("equity_history", {
 			capital: state.current_capital,
 			free_pieces: state.free_pieces,
 			unused_capital: state.unused_capital,
 			import_id: config.importId,
-			date: self.getDBDate(config.date)
-		}, function(err, res) {done(err, config)});
+			date: date
+		}, function(err) {done(err, config)});
 	};
 
 	this.getDBDate = function(d) {
-		return d.format(_dateFormat);
-	};
-
-	this.getDate = function(d) {
-		return d.format(_dateFormat);
+		return d.format(_dateFormat)+moment().format(' HH:mm:ss');
 	};
 
 	this.closePositions = function(config, done) {
