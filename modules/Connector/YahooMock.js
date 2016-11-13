@@ -1,7 +1,11 @@
 var moment = require("moment");
 var request = require("request");
+var Promise = require("bluebird");
 var _ = require("lodash");
 var csv = require("fast-csv");
+var yahooFinance = require('yahoo-finance');
+
+var yahooHIstorical = Promise.promisify(yahooFinance.historical);
 
 const HEARTHBEAT_INTERVAL = 1000;
 
@@ -12,7 +16,6 @@ var LogMockup = {};
 });
 
 var YahooApi = require("./_yahoo");
-
 
 var Mock = function(config, app) {
     var self = this;
@@ -30,7 +33,7 @@ var Mock = function(config, app) {
     // realtime data mockup URL
     var realtimeUrl = 'http://download.finance.yahoo.com/d/quotes.csv?f=sl1&s=';
 
-    Log.info("Starting mockup API with config:", config);
+    Log.info("Starting mockup API");
 
     var getNextOrderId = function() {
         return orderId++;
@@ -124,13 +127,24 @@ var Mock = function(config, app) {
 
     self.watchConnection = function() {
         setInterval(function () {
-            app.emit("API.time", moment().format("X"));
+            self.emit("API.time", moment().format("X"));
 
-            app.emit("API.connection", app.apiConnection);
+            self.emit("API.connection", app.apiConnection);
         }, HEARTHBEAT_INTERVAL);
     };
 
-    app.emit("API.connection", app.apiConnection);
+    self.getHistory = function(ticker, from, to) {
+        return yahooHIstorical({
+            symbol: ticker,
+            from, to
+        });
+    };
+
+    self.emit = function(a, b) {
+        app.emit && app.emit(a, b);
+    };
+
+    self.emit("API.connection", app.apiConnection);
     self.watchConnection();
     
     return this;

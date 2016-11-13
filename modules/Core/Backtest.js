@@ -6,22 +6,11 @@ var Backtest = function(Strategy) {
 	var stats = {
 		months: {},
 		days: {},
-		years: {},
+		years: {}
 	};
 
 	var statsLastMonth = false;
 	var statsLastYear = false;
-
-	this.getNextWorkDay = function(date) {
-
-		var date = moment(date).add(1, "day");
-		if(date.day() == 6)
-			return date.add(2, 'day');
-		if(date.day() == 0)
-			return date.add(1, 'day');
-		
-		return date;
-	};
 
 	this.statsOnEndDay = function(info, isEnd) {
 		var testDay = info.date;
@@ -47,26 +36,15 @@ var Backtest = function(Strategy) {
 			}
 		}
 
-		var openCount = info.openPositions.length;
-		var closeCount = Object.keys(info.closePositions).length;
-
-		stats.months[statsLastMonth]['openOrdersCount'] += openCount;
-		stats.months[statsLastMonth]['closeOrdersCount'] += closeCount;
-		stats.months[statsLastMonth]['ordersCount'] += openCount + closeCount;
-
-		stats.years[statsLastYear]['openOrdersCount'] += openCount;
-		stats.years[statsLastYear]['closeOrdersCount'] += closeCount;
-		stats.years[statsLastYear]['ordersCount'] += openCount + closeCount;
 	};
-
 
 	this.statsOnEndMonth = function(info, month) {
 		if(!month) return;
 
 		stats.months[month]['dateEnd'] = info.date.format('DD.MM.YYYY');
-		stats.months[month]['endCapital'] = info.newState.current_capital;
-		stats.months[month]['profit'] = info.newState.current_capital - stats.months[month].startCapital;
-		stats.months[month]['roi'] = (info.newState.current_capital / stats.months[month].startCapital - 1 ) * 100
+		stats.months[month]['endCapital'] = info.newState.capital;
+		stats.months[month]['profit'] = info.newState.capital - stats.months[month].startCapital;
+		stats.months[month]['roi'] = (info.newState.capital / stats.months[month].startCapital - 1 ) * 100
 
 		console.log(self.getStatItem("Month", month, stats.months[month]).yellow);
 	};
@@ -75,7 +53,7 @@ var Backtest = function(Strategy) {
 
 		stats.months[month] = {
 			dateStart: info.date.format('DD.MM.YYYY'),
-			startCapital: info.newState.current_capital,
+			startCapital: info.newState.capital,
 			openOrdersCount: 0,
 			closeOrdersCount: 0,
 			ordersCount: 0
@@ -85,9 +63,9 @@ var Backtest = function(Strategy) {
 	this.statsOnEndYear = function(info, year) {
 		if(!year) return;
 		stats.years[year]['dateEnd'] = info.date.format('DD.MM.YYYY');
-		stats.years[year]['endCapital'] = info.newState.current_capital;
-		stats.years[year]['profit'] = info.newState.current_capital - stats.years[year].startCapital;
-		stats.years[year]['roi'] = (info.newState.current_capital / stats.years[year].startCapital - 1 ) * 100
+		stats.years[year]['endCapital'] = info.newState.capital;
+		stats.years[year]['profit'] = info.newState.capital - stats.years[year].startCapital;
+		stats.years[year]['roi'] = (info.newState.capital / stats.years[year].startCapital - 1 ) * 100
 
 		self.printStats(stats);
 		// console.log(self.getStatItem("Year", year, stats.years[year]).yellow);
@@ -97,14 +75,14 @@ var Backtest = function(Strategy) {
 
 		stats.years[year] = {
 			dateStart: info.date.format('DD.MM.YYYY'),
-			startCapital: info.newState.current_capital,
+			startCapital: info.newState.capital,
 			openOrdersCount: 0,
 			closeOrdersCount: 0,
 			ordersCount: 0
 		};
 	};
 
-	self.getStatItem = function(type, date, i) {
+	this.getStatItem = function(type, date, i) {
 		return [
 			type+":",
 			date,
@@ -121,7 +99,7 @@ var Backtest = function(Strategy) {
 		].join(' ');
 	};
 
-	self.printStats = function(stats) {
+	this.printStats = function(stats) {
 
 		console.log("===== MONTH STATS ====".yellow);
 		for(var m in stats.months) {
@@ -158,7 +136,10 @@ var Backtest = function(Strategy) {
 	this.isWeekend = function(date) {
 		return date.day() == 6 || date.day() == 0;
 	};
-	this.wipe = Strategy.initClear;
+
+	this.wipe = function(config) {
+		return Strategy.wipe(config);
+	};
 
 	this.isLastDay = function (testDate, lastDate) {
 		var nextDay = testDate.clone().add(1, "day");
@@ -171,76 +152,75 @@ var Backtest = function(Strategy) {
 		return false;
 	};
 
-	this.run = function(config, dayCallback, finishCallback) {
+	this.testDay = function(config, done) {
+		console.log("============== Date: "+ config.date.format("DD.MM.YYYY") +" ==============");
+		console.time("============== Date End ==============");
+		if(self.isWeekend(config.date)) {
+			console.log("Skipping - weekend");
+			return done(null);
+		}
+
+		if(self.isLastDay(config.date, config.to)) {
+			console.log('Last day of backtests.. will close all remaining positions');
+			config.lastDay = true;
+			config.sellAll = true;
+		}
+
+		Strategy.init(config)
+			.then(() => Strategy.process(config))
+			.then(res => {
+				console.timeEnd("============== Date End ==============");
+
+				self.statsOnEndDay(config, config.lastDay);
+				done(null, res)
+			})
+			.catch(done);
+	};
+
+	/**
+	 * Run after every test
+	 * @returns {boolean} True if we should continue in testing
+	 */
+	this.testAfterEach = function(config, endDay) {
+		// increment day
+		config.date = config.date.add(1, "day");
+		return !endDay.isBefore(config.date);
+	};
+
+	/**
+	 * Run after test finishes
+   */
+	this.testAfter = function(resolve, reject, config, err, res) {
+		this.statsOnEndTest(config);
+		console.timeEnd("============== Finished ==============");
+
+		return err ? reject(err) : resolve(res);
+	};
+
+	/**
+	 * Core method which runs test day by day
+	 * @param config {from, to, capital, tickers} Object
+	 * @returns {Promise}
+   */
+	this.run = function(config) {
 		if(!self.testConfig(config))
-			return console.log("Config must contain from and to attributes");
+			return Promise.reject(new Error("Config must contain from and to attributes"));
+
 		console.log("Starting backtest from", config.from, "to", config.to);
-
-		var testDay = moment(config.from);
-		var endDay = moment(config.to);
-		config.dontPersist = true;
-		config.internalHistory = true;
-
 		console.time("============== Finished ==============");
-		
+
+		var endDay = moment(config.to);
+		config.date = moment(config.from);
+		config.backtest = true;
+
 		self.statsOnStartTest(config);
 
-		async.doWhilst(function(done) {
-			console.log("============== Date: "+ testDay.format("DD.MM.YYYY") +" ==============");
-			console.time("============== Date End ==============");
-			if(self.isWeekend(testDay)) {
-				console.log("Skipping - weekend");
-				return done(null);
-			}
-
-			config.date = testDay;
-
-			if(self.isLastDay(testDay, config.to)) {
-				console.log('Last day of backtests.. will close all remaining positions');
-				config.lastDay = true;
-				config.sellAll = true;
-			}
-
-			Strategy.init(config, function(err, res) {
-				if(err) console.log(err);
-
-				async.series([
-					function(done) {
-						if(config.monthlyAdd && Number(testDay.format("DD")) == 1)
-							Strategy.increaseCapital(config, config.monthlyAdd, done);
-						else
-							done(null, 1);
-					},
-					function(done) {
-						if(config.processingDelay)
-							console.log("Delaying processing - "+config.processingDelay+"ms");
-
-						setTimeout(function () {
-
-							Strategy.process(config, function(err, res) {
-
-								self.statsOnEndDay(config, config.lastDay);
-
-								dayCallback && dayCallback();
-								console.timeEnd("============== Date End ==============");
-								done(err);
-							});
-						}, config.processingDelay || 0);
-					}], done);
-
-			});
-			
-		}, function() {
-			// increment day
-			testDay = testDay.add(1, "day");
-			return !endDay.isBefore(testDay);
-		}, function(err) {
-
-			self.statsOnEndTest(config);
-
-			console.timeEnd("============== Finished ==============");
-			if(err) console.log(err);
-			finishCallback && finishCallback();
+		return new Promise((resolve, reject) => {
+			async.doWhilst(
+				done => this.testDay(config, done),
+				() => this.testAfterEach(config, endDay),
+				(err, res) => this.testAfter(resolve, reject, config, err, res)
+			);
 		});
 	};
 
@@ -248,7 +228,7 @@ var Backtest = function(Strategy) {
 };
 
 
-module.exports = function(S) {
-	return new Backtest(S);
+module.exports = function(conf) {
+	return new Backtest(conf);
 };
 

@@ -5,7 +5,6 @@ var _ = require('lodash');
 var async = require('async');
 var moment = require('moment');
 
-
 function chunkArray(array, chunkSize) {
     return [].concat.apply([],
         array.map(function(elem,i) {
@@ -26,10 +25,6 @@ function yDownloader() {
 			to: to,
 		};
 	}
-
-	// this.setFields = function(f) {
-	// 	_fields = f || _defaultFields;
-	// };
 
 	this.serializeHistoricalData = function(importId, data) {
 		var importData = [];
@@ -62,20 +57,6 @@ function yDownloader() {
 			db.insertValues(
 				'stock_history_full (import_id, date, open, high, low, close, volume, adjClose, symbol)',
 				self.serializeHistoricalData(importId, [].concat(res)),cb);
-		});
-	};
-
-	this.cleanImport = function(db, tickers, done) {
-		var config = {
-			from: "1990-01-01",
-			to: moment().format('YYYY-MM-DD')
-		};
-
-		var importId = 1;
-		self.deleteHistory(app.get('db'), function() {
-			async.mapSeries(chunkArray(tickers, 10), function(tChunk, done) {
-				self.importHistory(app.get('db'), 1, tChunk, config.from, config.to, done);
-			}, done);
 		});
 	};
 

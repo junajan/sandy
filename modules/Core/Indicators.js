@@ -119,3 +119,7 @@ exports.rsi2 = function(prices) {
   if(! avgdown) return false;
   return +(100 - (100 / (1 + (avgup / avgdown)))).toFixed(2);
 }
+
+exports.roc = function (price, priceOld) {
+  return (price - priceOld) / priceOld * 100;
+}
