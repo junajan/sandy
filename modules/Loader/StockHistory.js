@@ -24,7 +24,7 @@ class StockHistory {
   };
 
   saveHistory(ticker, data) {
-    return DB.insertMultiple(
+    return this.DB.insertMultiple(
       _FULL_TABLE+' (date, open, high, low, close, volume, adjClose, ticker)',
       this.serializeHistoricalData(ticker, data));
   };

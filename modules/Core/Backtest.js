@@ -46,7 +46,7 @@ var Backtest = function(Strategy) {
 		stats.months[month]['profit'] = info.newState.capital - stats.months[month].startCapital;
 		stats.months[month]['roi'] = (info.newState.capital / stats.months[month].startCapital - 1 ) * 100
 
-		console.log(self.getStatItem("Month", month, stats.months[month]).yellow);
+		// console.log(self.getStatItem("Month", month, stats.months[month]).yellow);
 	};
 
 	this.statsOnStartMonth = function(info, month) {
@@ -67,7 +67,6 @@ var Backtest = function(Strategy) {
 		stats.years[year]['profit'] = info.newState.capital - stats.years[year].startCapital;
 		stats.years[year]['roi'] = (info.newState.capital / stats.years[year].startCapital - 1 ) * 100
 
-		self.printStats(stats);
 		// console.log(self.getStatItem("Year", year, stats.years[year]).yellow);
 	};
 
@@ -153,10 +152,8 @@ var Backtest = function(Strategy) {
 	};
 
 	this.testDay = function(config, done) {
-		console.log("============== Date: "+ config.date.format("DD.MM.YYYY") +" ==============");
-		console.time("============== Date End ==============");
 		if(self.isWeekend(config.date)) {
-			console.log("Skipping - weekend");
+			// console.log("Skipping - weekend");
 			return done(null);
 		}
 
@@ -166,10 +163,16 @@ var Backtest = function(Strategy) {
 			config.sellAll = true;
 		}
 
+		console.time("============== Date End ==============");
 		Strategy.init(config)
+			.then(() => {
+				if(config.isTradingDay)
+					console.log("============== Date: "+ config.date.format("DD.MM.YYYY") +" ==============");
+			})
 			.then(() => Strategy.process(config))
 			.then(res => {
-				console.timeEnd("============== Date End ==============");
+				if(config.isTradingDay)
+					console.timeEnd("============== Date End ==============");
 
 				self.statsOnEndDay(config, config.lastDay);
 				done(null, res)

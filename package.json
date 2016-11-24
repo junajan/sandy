@@ -18,10 +18,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://junajan@bitbucket.org/junajan/ariva.git"
+    "url": "git+https://junajan@bitbucket.org/junajan/ariva.git"
   },
-  "engines" : {
-    "node" : ">=6"
+  "engines": {
+    "node": ">=6"
   },
   "author": "Jan Juna <mail@janjuna.cz>",
   "license": "ISC",
@@ -31,6 +31,7 @@
     "body-parser": "^1.15.2",
     "cheerio": "^0.22.0",
     "cookie-parser": "^1.4.3",
+    "ejs": "^2.5.2",
     "express": "^4.14.0",
     "express-session": "^1.14.2",
     "fast-csv": "^2.3.0",
@@ -47,5 +48,11 @@
     "socket.io": "^1.5.1",
     "strip-ansi": "^3.0.1",
     "yahoo-finance": "^0.2.14"
-  }
+  },
+  "homepage": "https://bitbucket.org/junajan/ariva#readme",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "devDependencies": {}
 }

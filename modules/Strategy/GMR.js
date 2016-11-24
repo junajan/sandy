@@ -17,24 +17,204 @@ var Strategy = function(app) {
 	var Tickers = require(config.dirLoader+'./Tickers');
 
 	// settings
-	var _ROC_LEN = 14;
-	var _DAYS_DELAY = 7;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 
+	var PERIOD_VOLAT = 21;
+	var PERIOD_METRIC = 63;
 
-    this.getNextPiecesCount = function(c) {
-        if(!c) return 1;
-		if(c == 1) return 2;
-		if(c == 3) return 3;
-		if(c == 6) return 4;
+	var _PERIOD = 31;
 
-		throw "Err - not defined pieces count";
- 	};
+	var FACTOR_PERFORMANCE = 0.7;
+	var FACTOR_VOLATILITY = 0.3;
 
-	function addWeekends(count) {
-		return Math.floor(count / 5 * 7);
+	var _ = require('lodash');
+
+	function getMinMax(obj) {
+		var values = _.values(obj);
+
+		return {
+			min: _.min(values),
+			max: _.max(values)
+		};
 	}
+
+	function rsVolatility(period, prices) {
+		// Rogers and Satchell (1991)
+		var r = [];
+
+		for(var i = 0; i < period; i++) {
+			var a = Math.log(prices[i]["high"] / prices[i]["close"]);
+			var b = Math.log(prices[i]["high"] / prices[i]["open"]);
+			var c = Math.log(prices[i]["low"] / prices[i]["close"]);
+			var d = Math.log(prices[i]["low"] / prices[i]["open"]);
+			r.push( a*b + c*d );
+		}
+
+		// Take the square root of the sum over the period - 1.  Then multiply
+		// that by the square root of the number of trading days in a year
+		var vol = Math.sqrt(_.sum(r) / period) * Math.sqrt(252/period);
+		return vol;
+	}
+
+	function histVolatility(period, prices) {
+		var returns = [];
+		for(var i = period; i > 1; i--) {
+
+			returns.push(Math.log(prices[i]["close"] / prices[i-1]["close"]));
+			// console.log("%d = %d / %d", Math.log(prices[i]["close"] / prices[i-1]["close"]), prices[i]["close"], prices[i-1]["close"])
+		}
+
+		var rmean = _.sum(returns) / period;
+
+		var diff = [];
+		for(var ret of returns) {
+			diff.push(Math.pow((ret - rmean), 2));
+		}
+
+		// console.log("Diffs:", diff);
+		var vol = Math.sqrt(_.sum(diff) / (period - 1)) //  * Math.sqrt(252/period);
+		return vol;
+	}
+
+	function getStockMetrics(symbol, metricPeriod, volatilityPeriod, prices) {
+		// Frank GrossmannComments (114)
+		// You can use the 20 day volatility averaged over 3 month.
+		// For the ranking I calculate the 3 month performance of all ETF's and normalise between 0-1.
+		// The best will have 1. Then I calculate the medium 3 month 20 day volatility and also normalize from 0-1.
+		// Then I used Ranking= 0.7*performance +0.3*volatility.
+		// This will give me a ranking from 0-1 from which I will take the best.
+
+		// You can use the 20 day volatility averaged over 3 month.
+		// For the ranking I calculate the 3 month performance of all ETF's and normalise between 0-1. The best will have 1. Then I calculate the medium 3 month 20 day volatility and also normalize from 0-1.
+		// Then I used Ranking= 0.7*performance +0.3*volatility.
+		// This will give me a ranking from 0-1 from which I will take the best.
+
+		var period = metricPeriod;
+		var volPeriod = volatilityPeriod - 1;
+		var periodRange = metricPeriod / volPeriod;
+
+		var startInd = prices.length - metricPeriod;
+		var endInd = prices.length - 1;
+
+		// console.log("Start ind %d | price: %j, End ind %d | price: %j", startInd, prices[startInd]["date"], endInd, prices[endInd]["date"]);
+
+		// Calculate the period performance
+		var start = prices[startInd]["close"]; // First item
+		var end = prices[endInd]["close"]; // Last item
+		var performance = (end - start) / start;
+
+		var volats = [];
+
+		for(var i = -1 * metricPeriod; i < -volPeriod; i++) {
+			var start = prices.length + i;
+			var end =  start + volatilityPeriod;
+			var priceList = prices.slice(start, end);
+
+			// console.log("Len %d | Start %d | End %d =====> (len: %d)", prices.length, start, end, priceList.length, priceList[0]["date"], " - ", priceList[priceList.length - 1]["date"]);
+			volats.push(histVolatility(volPeriod, priceList));
+      // volats.push(rsVolatility(volPeriod, priceList));
+		}
+
+		var volatility = _.sum(volats) / period;
+		// var volatility = _.sum(volats) / periodRange;
+
+		// console.log(volatility);
+		// console.log("Symbol: %s, Volatility: %d, Performance %d", symbol, volatility, performance);
+		return { performance, volatility };
+	}
+
+	function sortRanksComparator(a, b) {
+		return b.rank - a.rank;
+	}
+
+	this.processRanks = function(config) {
+		var performances = {};
+		var volatilities = {};
+
+		for(var ticker in config.indicators) {
+			var inds = config.indicators[ticker];
+
+			performances[ticker] = inds["performance"];
+			volatilities[ticker] = inds["volatility"];
+		}
+
+		// volatilities["EDV"] *= 0.5
+
+		var perf = getMinMax(performances);
+		var volat = getMinMax(volatilities);
+
+		var stockRanks = [];
+		var rank;
+		for(var symbol in config.indicators) {
+			var p = (performances[symbol] - perf.min) / (perf.max - perf.min);
+			var v = (volatilities[symbol] - volat.max) / (volat.min - volat.max);
+
+			rank = null;
+			if(!_.isNaN(p) && !_.isNaN(v)) {
+
+			// Adjust volatility for EDV by 50%
+				rank = (symbol == "EDV")
+					? (p * FACTOR_PERFORMANCE) + (v * 0.5 * FACTOR_VOLATILITY)
+					: (p * FACTOR_PERFORMANCE) + (v * FACTOR_VOLATILITY);
+
+				// rank = (p * FACTOR_PERFORMANCE) + (v * FACTOR_VOLATILITY);
+			}
+			console.log("%s | %s | %s | %s", symbol, p, v, rank)
+
+			if(rank !== null)
+				stockRanks.push({symbol, rank});
+		}
+
+		var bestStock = null;
+		if(stockRanks.length) {
+
+			if(stockRanks.length < Object.keys(config.history).length)
+				console.log('FEWER STOCK RANKINGS THAN IN STOCK BASKET!');
+
+			var sorted = stockRanks.sort(sortRanksComparator);
+			for(var r of sorted)
+				console.log('RANK [%s] %s', r.symbol, r.rank);
+
+			bestStock = stockRanks[0].symbol;
+		} else {
+			console.log('NO STOCK RANKINGS FOUND IN BASKET; BEST STOCK IS: NONE')
+		}
+
+		config.bestTicker = bestStock;
+		return Promise.resolve(config);
+	};
+
+	this.processIndicators = function(config) {
+		Log.info('Processing indicators');
+		config.indicators = {};
+
+		for(const ticker in config.history) {
+			const data = config.history[ticker];
+
+			if(data.length < _PERIOD) {
+				Log.error("Ticker %s does not have enough data for period %d - %d instead", ticker, _PERIOD, data.length);
+				continue;
+			}
+
+			var { performance, volatility } = getStockMetrics(ticker, PERIOD_METRIC, PERIOD_VOLAT, data);
+
+			config.indicators[ticker] = {
+				ticker: ticker,
+				performance, volatility,
+				date: data[data.length - 1].date,
+				price: data[data.length - 1].close,
+				oldDate: data[data.length - PERIOD_METRIC].date,
+				oldPrice: data[data.length - PERIOD_METRIC].close
+			};
+		}
+
+		return Promise.resolve(config.indicators);
+	};
+
+	// TODO ==================================
+	// TODO ==================================
+	// TODO ==================================
 
 	this.getWeekDaysInPast = function(days, from) {
 		from = moment(from || moment());
@@ -74,10 +254,6 @@ var Strategy = function(app) {
 		return out;
 	};
 
-	this.countWeightenedAverage = function(price1, amount1, price2, amount2) {
-		return (price1 * amount1 + price2 * amount2) / (amount1 + amount2);
-	};
-
 	this.saveIndicators = function(config) {
 		Log.info('Saving indicators');
 		Log.warn('Saving indicators - NOT IMPLEMENTED');
@@ -102,7 +278,7 @@ var Strategy = function(app) {
 	// ===========================================================
 
 	this.saveNewEquity = function(config, state) {
-		Log.info('Saving new equity');
+		// Log.info('Saving new equity');
 
 		// dont save when there are no changes in positions
 		return DB.insert("equity_history", {
@@ -125,8 +301,7 @@ var Strategy = function(app) {
 	};
 
 	this.getConfig = function(config) {
-		Log.info('Retrieving config');
-
+		// Log.info('Retrieving config');
 		return DB.getData("*", "config", "1=1")
 			.then(res => {
 				config.settings = {};
@@ -170,11 +345,15 @@ var Strategy = function(app) {
 		const ind = config.indicators[config.closeTicker];
 		const capital = pos.amount * ind.price + config.newState.capitalFree;
 
+		const profit = (ind.price - pos.open_price) * pos.amount;
+		// console.log(pos, " ==== ", ind, capital)
+		// process.exit() // TODO remove me
 		delete config.positionsAggregated[config.closeTicker];
 		config.newState = {
 			capital: capital,
 			capitalFree: capital
 		};
+		console.log("Sell %s | Profit %d".yellow, ind.ticker, profit);
 
 		return DB.update("positions", {
 			close_price: ind.price,
@@ -186,54 +365,12 @@ var Strategy = function(app) {
 		config.openTicker = null;
 		config.closeTicker = null;
 
-		let bestTicker = null;
-		let bestRoc = null;
-
-		for(const ticker in config.indicators) {
-			const ind = config.indicators[ticker];
-
-			// TODO myslet i na prioritu v pripade jiz drzenych akcii
-			if(bestRoc <= ind.roc)
-				continue;
-
-			bestTicker = ticker;
-			bestRoc = ind.roc;
-		}
-
-		if(bestTicker && !config.positions[bestTicker]) {
-			config.openTicker = bestTicker;
+		if(config.bestTicker && !config.positions[config.bestTicker]) {
+			config.openTicker = config.bestTicker;
 			config.closeTicker = Object.keys(config.positions)[0];
 		}
 
-		console.log("Filtered stocks: BUY %s | SELL %s", config.openTicker, config.closeTicker);
 		return Promise.resolve();
-	};
-
-	this.processIndicators = function(config) {
-		Log.info('Processing indicators');
-
-		const colName = "close";
-		config.indicators = {};
-
-		for(const ticker in config.history) {
-			const data = config.history[ticker];
-
-			const price = data[data.length-1][colName];
-			const priceOld = data[data.length-1 - _ROC_LEN][colName];
-			const roc = Indicators.roc(price, priceOld);
-
-			console.log("Ticker: %s \tOld: %d \tNew: %d \tROC: %d", ticker, priceOld, price, roc);
-
-			if(price && priceOld) {
-				config.indicators[ticker] = {
-					roc, price, priceOld, ticker
-				};
-
-			} else
-				delete config.data[ticker];
-		}
-
-		return Promise.resolve(config.indicators);
 	};
 
 	this.sendOrders = function(config) {
@@ -305,10 +442,10 @@ var Strategy = function(app) {
 		}, { concurrency: 2 });
 	};
 
-	this.printState = function(config, state, positions) {
+	this.printState = function(config, state) {
 		let openedTicker = config.openTicker;
 		if(!openedTicker && Object.keys(config.positionsAggregated).length)
-			openedTicker = Object.keys(config.positionsAggregated).pop()
+			openedTicker = Object.keys(config.positionsAggregated).pop();
 
 		Log.info((
 			"Current: Date: " + this.formatDate(config.date)
@@ -322,11 +459,6 @@ var Strategy = function(app) {
 		return this.saveConfig({
 			"lastTestDate": this.formatDate(config.date)
 		});
-	};
-
-	this.isTradingDate = function(current, last) {
-		const diff = moment.duration(current.diff(last)).asDays();
-		return diff > _DAYS_DELAY;
 	};
 
 	this.snapshotEquity = function(config) {
@@ -346,27 +478,46 @@ var Strategy = function(app) {
 			.then(() => this.printState(config, state));
 	};
 
+	this.loadInitData = function(config) {
+		config.isTradingDay = true;
+		return this.queryTickers(config)
+		.then(tickers => this.getHistoricalPrices(config, tickers))
+		.then(() => this.getOpenPositions(config));
+	};
+
 	this.init = function(config) {
+		config.isTradingDay = false;
+
 		return this.getConfig(config)
-			.then(() => this.queryTickers(config))
-			.then(tickers => this.getHistoricalPrices(config, tickers))
-			.then(() => this.getOpenPositions(config));
+			.then(() => {
+				if(this.isTradingDate(config.date, moment(config.settings.lastTestDate)))
+					return this.loadInitData(config);
+				return Promise.resolve(config);
+			})
+	};
+
+	this.isTradingDate = function(current, last) {
+		const diff = moment.duration(current.diff(last)).asDays();
+		return diff > 20 && [1,2,3,4].indexOf(current.date()) >= 0;
 	};
 
 	this.process = function(config) {
-		if(! this.isTradingDate(config.date, moment(config.settings.lastTestDate))) {
+		if(!config.isTradingDay)
 			return this.snapshotEquity(config);
-		}
 
 		return this.saveLastTrading(config)
-			.then(() => this.processIndicators(config))
-			.then(() => this.saveIndicators(config))
-			.then(() => this.filterBuyStocks(config))
 			.then(() => this.printState(config, config.oldState))
+			.then(() => this.processIndicators(config))
+			.then(() => this.processRanks(config))
+			// // .then(() => this.saveIndicators(config))
+			.then(() => this.filterBuyStocks(config))
 			.then(() => this.sendOrders(config))
 			.then(() => this.printState(config, config.newState))
 			.then(() => this.saveConfig(config.newState))
 			.then(() => this.saveNewEquity(config, config.newState))
+			.then(() => this.saveConfig({
+				lastTestDate: this.formatDate(config.date)
+			}))
 			.catch(err => {
 				Log.error("Strategy finished with an error", err);
 				return Promise.reject(err);

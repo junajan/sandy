@@ -23,7 +23,6 @@ if(process.argv[2])
 	tickers = process.argv[2];
 
 function downloadHistory(ticker, done) {
-
 	return DB.get('date', _TABLE, 'ticker = ?', ticker, 'date', 'DESC')
 		.then((res) => {
 			var from = (res

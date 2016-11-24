@@ -31,7 +31,7 @@ Log.info("Running Backtest");
 
 config = {
   tickers: tickers,
-  from: '2015-01-01',
+  from: '2011-01-01',
   to: moment().format('YYYY-MM-DD'),
   capital: 20000,
   mailLog: false
