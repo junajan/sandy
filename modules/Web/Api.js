@@ -9,19 +9,19 @@ var Api = function(app) {
 	this.openPrices = {'MO': 123};
 
 	this.getWatchlist = function(req, res) {
-		DB.getData('*', 'watchlist', function(err, data) {
-			res.json(data);
-		});
+		DB.getData('*', 'watchlist')
+			.then(data => res.json(data))
 	};
 
 	this.getConfig = function(req, res) {
-		DB.getData('*', 'config', function(err, data) {
-			var c = {};
+		DB.getData('*', 'config')
+			.then((data) => {
+				var c = {};
 
-			for(var i in data)
-				c[data[i]['var']] = data[i].val;
-			res.json(c);
-		});
+				for(var i in data)
+					c[data[i]['var']] = data[i].val;
+				res.json(c);
+			});
 	};
 
 	this.getEquity = function(req, res) {
@@ -32,42 +32,37 @@ var Api = function(app) {
 			"SELECT h.*, IFNULL(SUM(t.amount), 0) as transfer " +
 			"FROM equity_history as h " +
 			"LEFT JOIN transfers t " +
-				"ON t.date <= h.date " +
-			"GROUP BY h.date, h.id, h.import_id ORDER BY h.date) as tmp " +
+				"ON t.date_add <= h.date_add " +
+			"GROUP BY h.date, h.id ORDER BY h.date) as tmp " +
 			"WHERE DATE(date) > DATE(?) ORDER BY date ASC";
 
-		DB.sql(sql, from, function(err, data) {
-			res.json(data);
-		});
+		DB.sql(sql, from)
+			.then(data => res.json(data));
 	};
 
 	this.getFullConfig = function(req, res) {
-		DB.getData('*', 'config', '1=1', null, "var", "ASC", function(err, data) {
-			res.json(data);
-		});
+		DB.getData('*', 'config', '1=1', null, "var", "ASC")
+			.then(data => res.json(data));
 	};
 
 	this.getOrders = function(req, res) {
 		var limit = parseInt(req.query.limit) || null;
 
-		DB.getData('id, ticker, pieces, amount, open_price, open_date, close_price, close_date', 'positions', '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date DESC', limit, function(err, data) {
-			res.json(data);
-		});
+		DB.getData('id, ticker, amount, amount, open_price, open_date, close_price, close_date', 'positions', '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date DESC', limit)
+			.then(data => res.json(data));
 	};
 
 	this.getOrdersGroup = function(req, res) {
 		var limit = parseInt(req.query.limit) || null;
 		var from = '(SELECT SUM(amount) as amount, SUM(amount * open_price) AS open_price_total, ticker, SUM(close_price*amount) as close_price_total, close_date, MIN(open_date) as open_date_min, MAX(open_date) as open_date_max, COUNT(1) as scale FROM `positions` GROUP BY ticker, close_date) as tmp';
 
-		DB.getData('*, close_price_total - open_price_total as profit', from, '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date_min DESC', limit, function(err, data) {
-			res.json(data);
-		});
+		DB.getData('*, close_price_total - open_price_total as profit', from, '1=1', null, 'ISNULL(close_date)', 'DESC, close_date DESC, open_date_min DESC', limit)
+			.then(data => res.json(data));
 	};
 
 	this.getHolidays = function(req, res) {
-		DB.getData('*', 'exchange_schedule', 'invalidated IS NULL and YEAR(date) = YEAR(NOW())', null, 'date', 'ASC', function(err, data) {
-			res.json(data);
-		});
+		DB.getData('*', 'exchange_schedule', 'invalidated IS NULL and YEAR(date) = YEAR(NOW())', null, 'date', 'ASC')
+			.then(data => res.json(data));
 	};
 
 	this.getLog = function(req, res) {
@@ -79,26 +74,24 @@ var Api = function(app) {
 	};
 
 	this.loadUfinishedPrices = function() {
-		DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
-			if(err)
-				return Log.error('There was an error while retrieving data from DB', err);
+		DB.getData('ticker', 'positions', 'close_date IS NULL')
+			.then((tickers) => {
+				tickers = tickers.map(function(p) {
+					return p.ticker;
+				});
+				Yahoo.actual(tickers, function(err, res) {
+					var out = {};
 
-			tickers = tickers.map(function(p) {
-				return p.ticker;
+					if(err)
+						Log.trace("There was an error when requesting actual prices from Yahoo API", err);
+					else if(res)
+						res.map(function(d) {
+							out[d[0]] = d[1];
+						});
+
+					self.openPrices = out;
+				});
 			});
-			Yahoo.actual(tickers, function(err, res) {
-				var out = {};
-
-				if(err)
-					Log.trace("There was an error when requesting actual prices from Yahoo API", err);
-				else if(res)
-					res.map(function(d) {
-						out[d[0]] = d[1];
-					});
-
-				self.openPrices = out;
-			});
-		});
 	};
 	
 	setInterval(this.loadUfinishedPrices, 10000);

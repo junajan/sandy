@@ -58,8 +58,8 @@
               <li class="logout"><a class="text-bold" href="/logout" onClick="window.location = this.href;">Logout</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right link-small">
-              <li><a href="">Cap: {{ statistics.current_capital | currency:'$' }}</a></li>
-              <li><a href="">Free: {{ statistics.unused_capital | currency:'$' }}</a></li>
+              <li><a href="">Cap: {{ statistics.capital | currency:'$' }}</a></li>
+              <li><a href="">Free: {{ statistics.capitalFree | currency:'$' }}</a></li>
               <li ng-if="apiTime"><a href="">Time: {{ apiTime }}</a></li>
               <li ng-if="state.api !== null && state.ib !== null">
                 <a title="{{stateTitle}}">API:

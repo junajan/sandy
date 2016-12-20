@@ -40,6 +40,7 @@
     "log4js-memory-appender": "^1.0.5",
     "moment": "^2.16.0",
     "mysql": "^2.12.0",
+    "node-schedule": "^1.2.0",
     "nodemailer": "^2.6.4",
     "nodemailer-smtp-transport": "^2.7.2",
     "reload": "^1.1.0",

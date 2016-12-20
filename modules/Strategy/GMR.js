@@ -20,10 +20,11 @@ var Strategy = function(app) {
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	var _dateFormat = "YYYY-MM-DD";
 
+
+	var _PERIOD = 20;
+
 	var PERIOD_VOLAT = 21;
 	var PERIOD_METRIC = 63;
-
-	var _PERIOD = 31;
 
 	var FACTOR_PERFORMANCE = 0.7;
 	var FACTOR_VOLATILITY = 0.3;
@@ -160,7 +161,7 @@ var Strategy = function(app) {
 
 				// rank = (p * FACTOR_PERFORMANCE) + (v * FACTOR_VOLATILITY);
 			}
-			console.log("%s | %s | %s | %s", symbol, p, v, rank)
+			// console.log("%s | %s | %s | %s", symbol, p, v, rank)
 
 			if(rank !== null)
 				stockRanks.push({symbol, rank});
@@ -173,8 +174,8 @@ var Strategy = function(app) {
 				console.log('FEWER STOCK RANKINGS THAN IN STOCK BASKET!');
 
 			var sorted = stockRanks.sort(sortRanksComparator);
-			for(var r of sorted)
-				console.log('RANK [%s] %s', r.symbol, r.rank);
+			// for(var r of sorted)
+				// console.log('RANK [%s] %s', r.symbol, r.rank);
 
 			bestStock = stockRanks[0].symbol;
 		} else {
@@ -203,6 +204,9 @@ var Strategy = function(app) {
 				ticker: ticker,
 				performance, volatility,
 				date: data[data.length - 1].date,
+				sma5: Indicators.sma(5, data),
+				sma10: Indicators.sma(10, data),
+				sma15: Indicators.sma(15, data),
 				price: data[data.length - 1].close,
 				oldDate: data[data.length - PERIOD_METRIC].date,
 				oldPrice: data[data.length - PERIOD_METRIC].close
@@ -278,7 +282,7 @@ var Strategy = function(app) {
 	// ===========================================================
 
 	this.saveNewEquity = function(config, state) {
-		// Log.info('Saving new equity');
+		Log.info('Saving new equity', state);
 
 		// dont save when there are no changes in positions
 		return DB.insert("equity_history", {
@@ -338,6 +342,7 @@ var Strategy = function(app) {
 	};
 
 	this.sendSellOrder = function(config) {
+		Log.info("Closing %s", config.closeTicker)
 		if(!config.closeTicker)
 			return Promise.resolve();
 
@@ -346,8 +351,7 @@ var Strategy = function(app) {
 		const capital = pos.amount * ind.price + config.newState.capitalFree;
 
 		const profit = (ind.price - pos.open_price) * pos.amount;
-		// console.log(pos, " ==== ", ind, capital)
-		// process.exit() // TODO remove me
+
 		delete config.positionsAggregated[config.closeTicker];
 		config.newState = {
 			capital: capital,
@@ -453,6 +457,7 @@ var Strategy = function(app) {
 			+ " Unused: " + state.capitalFree.toFixed(2)
 			+ " Position: " + openedTicker
 		).yellow);
+		return Promise.resolve(config)
 	};
 
 	this.saveLastTrading = function(config) {
@@ -461,7 +466,8 @@ var Strategy = function(app) {
 		});
 	};
 
-	this.snapshotEquity = function(config) {
+	this.snapshotEquity = function(config, save) {
+
 		const openedTicker = Object.keys(config.positionsAggregated)[0];
 		if(! openedTicker || !config.history[openedTicker])
 			return Promise.resolve();
@@ -474,40 +480,42 @@ var Strategy = function(app) {
 			capitalFree: config.oldState.capitalFree
 		};
 
+		if(!save)
+			return this.printState(config, state)
+
 		return this.saveNewEquity(config, state)
-			.then(() => this.printState(config, state));
+			.then(() =>
+				this.printState(config, state)
+			);
 	};
 
 	this.loadInitData = function(config) {
-		config.isTradingDay = true;
 		return this.queryTickers(config)
 		.then(tickers => this.getHistoricalPrices(config, tickers))
 		.then(() => this.getOpenPositions(config));
 	};
 
 	this.init = function(config) {
-		config.isTradingDay = false;
-
 		return this.getConfig(config)
 			.then(() => {
-				if(this.isTradingDate(config.date, moment(config.settings.lastTestDate)))
-					return this.loadInitData(config);
-				return Promise.resolve(config);
+				const lastTestDate = moment(config.settings.lastTestDate);
+				config.isTradingDay = this.isTradingDate(config.date, lastTestDate);
+
+				console.log(config.settings)
+				return this.loadInitData(config)
 			})
+			.then(() => config)
 	};
 
 	this.isTradingDate = function(current, last) {
 		const diff = moment.duration(current.diff(last)).asDays();
-		return diff > 20 && [1,2,3,4].indexOf(current.date()) >= 0;
+		return diff > _PERIOD && [1,2,3,4].indexOf(current.date()) >= 0;
 	};
 
-	this.process = function(config) {
-		if(!config.isTradingDay)
-			return this.snapshotEquity(config);
+	this.mainProcess = function(config) {
 
 		return this.saveLastTrading(config)
 			.then(() => this.printState(config, config.oldState))
-			.then(() => this.processIndicators(config))
 			.then(() => this.processRanks(config))
 			// // .then(() => this.saveIndicators(config))
 			.then(() => this.filterBuyStocks(config))
@@ -522,6 +530,40 @@ var Strategy = function(app) {
 				Log.error("Strategy finished with an error", err);
 				return Promise.reject(err);
 			});
+	};
+
+	this.process = function(config) {
+		return this.processIndicators(config)
+			.then(() => {
+				if(Object.keys(config.positionsAggregated).length) {
+
+					let ticker = Object.keys(config.positionsAggregated)[0];
+					var open = config.positionsAggregated[ticker]
+					var current = config.indicators[ticker]
+
+					console.log("OPEN:", open, "\nCURRENT:", current)
+
+					var now = moment(config.date)
+					var end = open.open_date
+					var duration = moment.duration(now.diff(end));
+					var days = duration.asDays();
+					console.log("DIFF:", days)
+
+					// if(days > 10 && current.sma10 < current.sma15) {
+					// 	config.closeTicker = ticker;
+          //
+					// 	return this.sendSellOrder(config)
+					// 		.then(() => this.saveNewEquity(config, config.newState))
+					// 		.then(() => this.saveConfig(config.newState))
+					// 		.then(() => this.printState(config, config.newState))
+					// 		// .then(() => process.exit(1))
+					// }
+				}
+
+				if(!config.isTradingDay)
+					return this.snapshotEquity(config, false)
+				return this.mainProcess(config)
+			})
 	};
 
 	return this;
