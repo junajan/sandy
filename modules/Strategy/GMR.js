@@ -500,8 +500,6 @@ var Strategy = function(app) {
 			.then(() => {
 				const lastTestDate = moment(config.settings.lastTestDate);
 				config.isTradingDay = this.isTradingDate(config.date, lastTestDate);
-
-				console.log(config.settings)
 				return this.loadInitData(config)
 			})
 			.then(() => config)
@@ -535,31 +533,6 @@ var Strategy = function(app) {
 	this.process = function(config) {
 		return this.processIndicators(config)
 			.then(() => {
-				if(Object.keys(config.positionsAggregated).length) {
-
-					let ticker = Object.keys(config.positionsAggregated)[0];
-					var open = config.positionsAggregated[ticker]
-					var current = config.indicators[ticker]
-
-					console.log("OPEN:", open, "\nCURRENT:", current)
-
-					var now = moment(config.date)
-					var end = open.open_date
-					var duration = moment.duration(now.diff(end));
-					var days = duration.asDays();
-					console.log("DIFF:", days)
-
-					// if(days > 10 && current.sma10 < current.sma15) {
-					// 	config.closeTicker = ticker;
-          //
-					// 	return this.sendSellOrder(config)
-					// 		.then(() => this.saveNewEquity(config, config.newState))
-					// 		.then(() => this.saveConfig(config.newState))
-					// 		.then(() => this.printState(config, config.newState))
-					// 		// .then(() => process.exit(1))
-					// }
-				}
-
 				if(!config.isTradingDay)
 					return this.snapshotEquity(config, false)
 				return this.mainProcess(config)
