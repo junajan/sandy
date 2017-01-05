@@ -896,6 +896,7 @@ var Strategy = function(app) {
 
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
+    _DB_FULL_HISTORY_TABLE = config.stockHistoryTable || _DB_FULL_HISTORY_TABLE;
 
 		MemLog.flushBuffer();
 

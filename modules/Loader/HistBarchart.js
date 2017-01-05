@@ -41,7 +41,7 @@ function bDownloader() {
 				if(item.open== null) continue;
 				importData.push([
 					importId,
-					item.timestamp,
+					item.tradingDay,
 					item.open,
 					item.high,
 					item.low,

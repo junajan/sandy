@@ -35,6 +35,7 @@
     "express-session": "^1.13.0",
     "fast-csv": "^2.0.0",
     "filestore": "^0.1.3",
+    "google-finance": "^0.1.9",
     "ib": "^0.1.9",
     "lodash": "^3.3.1",
     "log4js": "^0.6.25",

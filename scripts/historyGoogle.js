@@ -5,6 +5,8 @@
  */
 
 require('colors');
+var googleFinance = require('google-finance');
+
 var async = require("async");
 var moment = require("moment");
 var config = require("../config");
@@ -27,7 +29,7 @@ app.getLogger = function (type) {
 var Strategy = require(config.dirStrategy+'Strategy90')(app);
 
 const RUN = true;
-const _TABLE = "stock_history_full";
+const _TABLE = "stock_history_full_google";
 
 var dateFrom = moment('1990-01-01');
 var dateTo = moment();
@@ -63,20 +65,29 @@ function downloadHistory(ticker, done) {
 			console.log(">> skipping - no data to load");
 			return done(null, 'No days to import');
 		}
-		ydl.historical({
-			symbol: ticker,
-			from: from,
-			to: to
-		}, function(err, res) {
+
+    googleFinance.historical({
+      symbol: ticker,
+      from: from,
+      to: to
+    }, function(err, res) {
 			if(err)
 				throw err;
-			
-			res.map(function(item){
-				item.date =  moment(item.date).format("YYYY-MM-DD HH:mm:ss");
-				return item;
+
+			res = res.map(function(item){
+				return [
+          0,
+          moment(item.date).format("YYYY-MM-DD"),
+				  item.open || -1,
+				  item.high || -1,
+				  item.low || -1,
+				  item.close,
+				  item.volume || -1,
+				  item.symbol
+        ];
 			});
 
-			saveData(ticker, Strategy.serializeHistoricalData(0, {abcd: res}), done);
+			saveData(ticker, res, done);
 		});
 	});
 }
@@ -88,8 +99,8 @@ function saveData(ticker, data, done) {
 	if(!data.length)
 		return done(null, out);
 	DB.insertValues(
-		_TABLE+' (import_id, date, open, high, low, close, volume, adjClose, symbol)',
-		data, function(err, res) {
+		_TABLE+' (import_id, date, open, high, low, close, volume, symbol)',
+		data, function(err) {
 			done(err, out);
 		});
 }
