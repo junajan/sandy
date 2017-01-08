@@ -1,4 +1,8 @@
 
+exports.percentDiff = function(old, current) {
+  return (current - old) / old * 100;
+};
+
 exports.sma = function(len, data, print) {
     var count = 0;
     if (!len) return 0;
@@ -123,3 +127,28 @@ exports.rsi2 = function(prices) {
 exports.roc = function (price, priceOld) {
   return (price - priceOld) / priceOld * 100;
 }
+
+exports.uo = function (prices, shortPeriods, mediumPeriods, longPeriods) {
+  const avgs = []
+  let bpsSum = 0;
+  let trsSum = 0;
+  let count = 0
+  const max = prices.length - longPeriods
+
+  if(prices.length < longPeriods)
+    return null;
+
+  for(let i = prices.length - 1; i >= max; i--) {
+    const price = prices[i];
+    const prevPrice = prices[i-1];
+
+    bpsSum += price.close - Math.min(price.low, prevPrice.close)
+    trsSum += Math.max(price.high, prevPrice.close) - Math.min(price.low, prevPrice.close)
+
+    if([shortPeriods, mediumPeriods, longPeriods].indexOf(++count) >= 0)
+      avgs.push(bpsSum / trsSum)
+  }
+
+  return 100 * (4 * avgs[0] + 2 * avgs[1] + avgs[2]) / 7
+}
+

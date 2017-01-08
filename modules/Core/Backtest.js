@@ -2,18 +2,18 @@ var moment = require("moment");
 var async = require("async");
 
 var Backtest = function(Strategy) {
-	var self = this;
-	var stats = {
+	const self = this;
+	const stats = {
 		months: {},
 		days: {},
 		years: {}
 	};
 
-	var statsLastMonth = false;
-	var statsLastYear = false;
+	let statsLastMonth = false;
+	let statsLastYear = false;
 
 	this.statsOnEndDay = function(info, isEnd) {
-		var testDay = info.date;
+		const testDay = info.date;
 
 		if(isEnd) {
 			self.statsOnEndMonth(info, statsLastMonth);
@@ -35,25 +35,24 @@ var Backtest = function(Strategy) {
 				self.statsOnStartYear(info, statsLastYear);
 			}
 		}
-
 	};
 
 	this.statsOnEndMonth = function(info, month) {
 		if(!month) return;
+		const newCapital = info.state.capital
 
 		stats.months[month]['dateEnd'] = info.date.format('DD.MM.YYYY');
-		stats.months[month]['endCapital'] = info.newState.capital;
-		stats.months[month]['profit'] = info.newState.capital - stats.months[month].startCapital;
-		stats.months[month]['roi'] = (info.newState.capital / stats.months[month].startCapital - 1 ) * 100
+		stats.months[month]['endCapital'] = newCapital;
+		stats.months[month]['profit'] = newCapital - stats.months[month].startCapital;
+		stats.months[month]['roi'] = (newCapital / stats.months[month].startCapital - 1 ) * 100
 
 		// console.log(self.getStatItem("Month", month, stats.months[month]).yellow);
 	};
 
 	this.statsOnStartMonth = function(info, month) {
-
 		stats.months[month] = {
 			dateStart: info.date.format('DD.MM.YYYY'),
-			startCapital: info.newState.capital,
+			startCapital: info.state.capital,
 			openOrdersCount: 0,
 			closeOrdersCount: 0,
 			ordersCount: 0
@@ -62,19 +61,19 @@ var Backtest = function(Strategy) {
 
 	this.statsOnEndYear = function(info, year) {
 		if(!year) return;
+		const newCapital = info.state.capital;
 		stats.years[year]['dateEnd'] = info.date.format('DD.MM.YYYY');
-		stats.years[year]['endCapital'] = info.newState.capital;
-		stats.years[year]['profit'] = info.newState.capital - stats.years[year].startCapital;
-		stats.years[year]['roi'] = (info.newState.capital / stats.years[year].startCapital - 1 ) * 100
+		stats.years[year]['endCapital'] = newCapital;
+		stats.years[year]['profit'] = newCapital - stats.years[year].startCapital;
+		stats.years[year]['roi'] = (newCapital / stats.years[year].startCapital - 1 ) * 100
 
 		// console.log(self.getStatItem("Year", year, stats.years[year]).yellow);
 	};
 
 	this.statsOnStartYear = function(info, year) {
-
 		stats.years[year] = {
 			dateStart: info.date.format('DD.MM.YYYY'),
-			startCapital: info.newState.capital,
+			startCapital: info.state.capital,
 			openOrdersCount: 0,
 			closeOrdersCount: 0,
 			ordersCount: 0
@@ -212,7 +211,7 @@ var Backtest = function(Strategy) {
 		console.log("Starting backtest from", config.from, "to", config.to);
 		console.time("============== Finished ==============");
 
-		var endDay = moment(config.to);
+		const endDay = moment(config.to);
 		config.date = moment(config.from);
 		config.backtest = true;
 

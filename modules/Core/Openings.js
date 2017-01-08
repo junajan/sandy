@@ -15,7 +15,7 @@ var Openings = function(app) {
 	var nyseHoursUrl = "https://www.nyse.com/markets/hours-calendars";
 
 	this.getDefaultHours = function(done) {
-		DB.getData('*', 'config', "var = 'exchange_closing' OR var = 'exchange_opening'", function(err, res) {
+		DB.getData('*', 'config', "var = 'exchangeClosing' OR var = 'exchangeOpening'", function(err, res) {
 			if(err) return done(err, null);
 			
 			defaultOpenings = res ? {} : false;
@@ -48,7 +48,7 @@ var Openings = function(app) {
 				return done(null, res.exception.close);
 			}
 
-			done(null, res.regular.exchange_closing);
+			done(null, res.regular.exchangeClosing);
 		});
 	};
 	

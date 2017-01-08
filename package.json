@@ -35,7 +35,7 @@
     "express": "^4.14.0",
     "express-session": "^1.14.2",
     "fast-csv": "^2.3.0",
-    "lodash": "^4.16.6",
+    "lodash": "^4.17.4",
     "log4js": "^1.0.1",
     "log4js-memory-appender": "^1.0.5",
     "moment": "^2.16.0",
