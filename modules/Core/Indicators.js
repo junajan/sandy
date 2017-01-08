@@ -1,9 +1,10 @@
+const _ = require('lodash');
 
 exports.percentDiff = function(old, current) {
   return (current - old) / old * 100;
 };
 
-exports.sma = function(len, data, print) {
+exports.sma = function(len, data, ticker) {
     var count = 0;
     if (!len) return 0;
 
@@ -11,18 +12,14 @@ exports.sma = function(len, data, print) {
     var max = data.length - len;
 
     if(data.length < len) {
+    	console.log("Not enought data for ticker %s", ticker);
     	console.log("Not enought data for sma("+len+"): ", data.length);
     	return false;
     }
 
-    for (; i >= max; i--) {
-      if(print) console.log(parseFloat(data[i].close));
+    for (; i >= max; i--)
+      count += parseFloat(data[i].close);
 
-        count += parseFloat(data[i].close);
-    }
-
-    if(print)
-      console.log(count, len, ' = ', count / len);
     return count / len;
 };
 
@@ -135,13 +132,15 @@ exports.uo = function (prices, shortPeriods, mediumPeriods, longPeriods) {
   let count = 0
   const max = prices.length - longPeriods
 
-  if(prices.length < longPeriods)
+  if(prices.length < longPeriods + 1)
     return null;
 
   for(let i = prices.length - 1; i >= max; i--) {
     const price = prices[i];
     const prevPrice = prices[i-1];
 
+    if(!prevPrice)
+      console.log(prices)
     bpsSum += price.close - Math.min(price.low, prevPrice.close)
     trsSum += Math.max(price.high, prevPrice.close) - Math.min(price.low, prevPrice.close)
 
@@ -149,6 +148,6 @@ exports.uo = function (prices, shortPeriods, mediumPeriods, longPeriods) {
       avgs.push(bpsSum / trsSum)
   }
 
-  return 100 * (4 * avgs[0] + 2 * avgs[1] + avgs[2]) / 7
+  return _.round(100 * (4 * avgs[0] + 2 * avgs[1] + avgs[2]) / 7, 2)
 }
 

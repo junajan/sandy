@@ -16,193 +16,16 @@ var Strategy = function(app) {
 	const Indicators = require(config.dirCore+'./Indicators');
 	const Tickers = require(config.dirLoader+'./Tickers');
 	const Yahoo = require(config.dirLoader+'./HistYahoo');
-
-	if(!config.disabledOrders)
-		var Broker = require(config.dirCore+"OrderManager")(app);
+	const Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
-	const _PRICE_COLUMN_NAME = 'close'; // or adjClose
+	const _PRICE_COLUMN_NAME = 'adjClose'; // or adjClose
+	// const _PRICE_COLUMN_NAME = 'close'; // or adjClose
 	const _MAX_OPEN_PER_DAY = 5;
 	const _INIT_FREE_PIECES = 10;
-	const _HISTORY_DATA_LENGTH = 240;
+	const _HISTORY_DATA_LENGTH = 25;
 	const _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	const _DATE_FORMAT = "YYYY-MM-DD";
-
-	this.closePositions = function(config, done) {
-		// =========== CLOSE POSITION process
-		config.changedPositions += Object.keys(config.closePositions).length;
-
-		async.each(Object.keys(config.closePositions), function(ticker, done) {
-			var pos = config.closePositions[ticker];
-			var indicators = config.indicators[ticker];
-
-			Broker.sendSellOrder(ticker, pos.amount, "MKT", indicators.price, function(err, res) {
-
-				if(err && err.codeName === 'timeout') {
-					Log.error("Timeout during sell order", err.errorText || err.toString());
-
-					// this will disable new open/scale orders
-					config.disableOrders = true;
-					return done(null, err);
-
-				} else if(err) {
-					Log.error("Error during sell order", err.errorText || err.toString());
-					return done(err.toString());
-				}
-
-				var finalPrice = res.price;
-				var orderFee = 0;
-				if(!config.feesDisabled && config.settings.feeOrderSell) {
-
-					finalPrice -= (config.settings.feeOrderSell / pos.amount);
-					orderFee = config.settings.feeOrderSell;
-				}
-
-				Log.info("CLOSE: ".red + pos.amount+ "x "+ pos.ticker+ " price "+ indicators.price+ " > SMA5 "+ indicators.sma5.toFixed(2) +" PROFIT: "+ ((res.price - pos.open_price) * pos.amount).toFixed(2));
-
-				DB.update("positions", {
-					sell_import_id: config.importId,
-					requested_close_price: indicators.price,
-					close_price: finalPrice,
-					close_price_without_fee: res.price,
-					close_fee: orderFee,
-					requested_close_date: self.getDBDate(config.date),
-					close_date: self.getDBDate(config.date)
-				}, "close_price IS NULL AND ticker = ?", pos.ticker, function(err, resDb) {
-					if(err) {
-						Log.error("Error while saving sold positions to DB", err);
-						return done(err);
-					}
-
-					config.log.orders.push({
-						type: "C",
-						ticker: pos.ticker,
-						amount: pos.amount
-					});
-
-					// decrement available resources
-					config.currentState.current_capital += parseFloat(finalPrice * res.amount - pos.open_price * pos.amount, 2); // current_capital - add profit/loss
-					config.currentState.unused_capital += parseFloat(finalPrice * res.amount, 2); // add to unused_capital received money from SELL order
-					config.currentState.free_pieces += pos.pieces;
-					done(err, res);
-				});
-			});
-		}, done);
-	};
-
-	this.openPositions = function(config, done) {
-
-		if(config.disableOrders) {
-			Log.error('There was a problem when closing orders - open/scale orders were disabled'.red);
-			return done(null, 1)
-		}
-
-		// =========== OPEN POSITION process
-		config.changedPositions += config.openPositions.length;
-
-		// if this is the last day of the backtest - don't open new positions
-		if(config.lastDay)
-			return done(null);
-
-		async.each(config.openPositions, function(pos, done) {
-			var type = "OPEN";
-			if(config.positionsAggregated[pos.ticker])
-				type = "SCALE";
-
-			Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.requested_open_price, function(err, res) {
-				if(err && err.codeName == 'timeout') {
-					Log.error("Timeout during buy order", (err.errorText || err.toString()));
-					return done(null, err);
-				} else if(err) {
-					Log.error("Error during buy order", (err.errorText || err.toString()));
-					return done(err.toString());
-				}
-
-				var finalPrice = res.price;
-				var orderFee = 0;
-				if(!config.feesDisabled && config.settings.feeOrderBuy) {
-
-					finalPrice += (config.settings.feeOrderBuy / pos.amount);
-					orderFee = config.settings.feeOrderBuy;
-				}
-
-				Log.info((type+': ').green + pos.amount + "x "+ pos.ticker+ " for "+ finalPrice+ " with rsi: "+ pos.rsi.toFixed(2));
-
-				DB.insert("positions", {
-					requested_open_price: pos.requested_open_price,
-					buy_import_id: config.importId,
-					ticker: pos.ticker,
-					pieces: pos.pieces,
-					amount: res.amount,
-					open_price: finalPrice,
-					open_fee: orderFee,
-					open_price_without_fee: res.price,
-					open_date: self.getDBDate(config.date)
-				}, function(err) {
-					if(err) {
-						Log.error("Error while saving bought positions to DB", err);
-						return done(err);
-					}
-
-					config.log.orders.push({
-						type: type == "OPEN" ? "O" : "S",
-						ticker: pos.ticker,
-						amount: pos.amount
-					});
-
-					// lower available resources
-					config.currentState.unused_capital -= finalPrice * res.amount; // remove money spent on BUY order
-					config.currentState.free_pieces -= pos.pieces;	// remove spent pieces
-					done(err, res);
-				});
-			});
-		}, done);
-	};
-
-	this.sendOrders = function(config, done) {
-		Log.info('Sending orders');
-
-		config.currentState = {
-			current_capital: parseFloat(config.settings.current_capital, 2),
-			unused_capital: parseFloat(config.settings.unused_capital, 2),
-			free_pieces: parseInt(config.settings.free_pieces)
-		};
-
-		config.log = {
-			orders: [],
-			capitalStart: config.currentState.current_capital,
-			capitalEnd: 0,
-			capitalDiff: 0
-		};
-
-		config.changedPositions = 0;
-		self.printState(config, config.currentState);
-
-		async.series([
-			function(done) {
-				self.closePositions(config, done);
-			},
-			function(done) {
-				self.openPositions(config, done);
-			}
-		], function(err) {
-
-			config.log.capitalEnd = config.currentState.current_capital;
-			config.log.capitalDiff = (config.log.capitalEnd - config.log.capitalStart).toFixed(2);
-			done(err, config);
-		});
-	};
-
-	// this.isLastPriceEntry = function(ticker, config, done) {
-	// 	if(!config.internalHistory)
-	// 		return done(false);
-  //
-	// 	return DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and ticker = ?", [config.date.format(), ticker], function(err, res) {
-	// 		if(err)
-	// 			throw err;
-	// 		done(!res);
-	// 	});
-	// };
 
 	this.getPositionSummary = function(positions) {
 		var out = {
@@ -224,15 +47,6 @@ var Strategy = function(app) {
 		});
 
 		return out;
-	};
-
-	this.increaseCapital = function(config, inc, done) {
-
-		self.getConfig(config, function(err, config) {
-			config.settings.current_capital = inc + Number(config.settings.current_capital);
-			config.settings.unused_capital = inc + Number(config.settings.unused_capital);
-			self.saveConfig(config.settings, done);
-		});
 	};
 
 	this.sendMailLog = function() {
@@ -388,7 +202,7 @@ var Strategy = function(app) {
     if(config.internalHistory) {
       const tickers = "'"+config.tickers.join("','")+"'";
 
-      promise = DB.getData("ticker, " + _PRICE_COLUMN_NAME + " as close, volume, open, high, low, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+") GROUP BY ticker, date, close, open, high, low, volume", [dateFrom, dateTo], "date ASC")
+      promise = DB.getData("ticker, " + _PRICE_COLUMN_NAME + " as close, volume, open, high, low, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+") GROUP BY ticker, date, close, adjClose, open, high, low, volume", [dateFrom, dateTo], "date ASC")
 				.then(res => this.deserializeHistoricalData(res))
 		} else {
     	throw new Error('NOT IMPLEMENTED')
@@ -527,27 +341,27 @@ var Strategy = function(app) {
 
     tickers.forEach((ticker) => {
       const history = config.history[ticker];
+			var historyDate = moment(history[history.length - 1].date).format(_DATE_FORMAT);
 
       const indicators = {
         date: config.dateDb,
         ticker: ticker,
         price: parseFloat(history[history.length - 1].close),
-        yesterdayDiff: parseFloat(),
-        sma5: Indicators.sma(5, history),
-        sma4: Indicators.sma(4, history),
-        sma3: Indicators.sma(3, history),
-        sma2: Indicators.sma(2, history),
-        sma50: Indicators.sma(50, history),
-        sma100: Indicators.sma(100, history),
-        sma200: Indicators.sma(200, history),
+        // sma5: Indicators.sma(5, history, ticker),
+        // sma4: Indicators.sma(4, history, ticker),
+        // sma3: Indicators.sma(3, history, ticker),
+        // sma2: Indicators.sma(2, history, ticker),
+        // sma50: Indicators.sma(50, history, ticker),
+        // sma100: Indicators.sma(100, history, ticker),
+        // sma200: Indicators.sma(200, history, ticker),
         rsi14: Indicators.rsiWilders(14, history),
         rsi2: Indicators.rsiWilders(2, history),
-        uoWinp: Indicators.uo(history, 5, 10, 15),
+        uo: Indicators.uo(history, 5, 10, 15),
         uoWill: Indicators.uo(history, 7, 14, 28),
       }
 
-      if(!indicators.sma200 || !indicators.rsi2) {
-        Log.error('Error when processing indicators %s with data length %d', ticker, history.length);
+      if(indicators.uo < 0) {
+        Log.error('Error when processing indicators %s with data length %d and uo', ticker, history.length, indicators.uo);
         delete config.history[ticker];
         return;
       }
@@ -577,10 +391,21 @@ var Strategy = function(app) {
 
   this.isLastPriceEntry = function(ticker, date) {
     if(!config.internalHistory)
-      return false;
+      return Promise.resolve(false);
 
     return DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and ticker = ?", [config.date.format(), ticker])
 			.then(res => !res)
+  };
+
+  this.sendOrders = function(config) {
+    const close = config.closePositions;
+    const open = config.openPositions;
+    Log.info('Sending %d close and %d open orders', close.length, open.length);
+
+    this.printState(config.state, config.date);
+
+		return this.closePositions(config, close)
+			.then(() => this.openPositions(config, open))
   };
 
   this.filterSellStocks = function(config) {
@@ -592,29 +417,114 @@ var Strategy = function(app) {
     Log.info('Filtering %d open trades for sell condition', openedTickers.length);
 
     if(!openedTickers.length)
-      return Promise.resolve()
+      return Promise.resolve();
 
-		return Promise.map(openedTickers, (ticker) => this.isLastPriceEntry(ticker, config.dateDb))
-			.then((lastEntries) => {
-        const pos = config.positions[ticker];
-        const indicators = config.indicators[ticker];
+		return Promise.map(openedTickers, (ticker) => {
+      return this.isLastPriceEntry(ticker, config.dateDb)
+				.then((isLastEntry) => {
+          const pos = config.positions[ticker];
+          const ind = config.indicators[ticker];
 
-        console.log(indicators)
-        console.log(lastEntries)
-        console.log(pos)
-				process.exit() // TODO remove me
+          if(!ind) {
+          	Log.error('Error when filtering ticker %s for sell condition', ticker)
+						return
+					}
 
-        if(indicators && indicators.price > indicators.sma5 || isLast || config.sellAll) { // is openned and actual price > sma5
-          if(isLast) Log.warn('Closing because %s has no more entries in DB'.yellow, ticker);
-          // we will close this position
-          config.closePositions[ticker] = pos;
+          const pricePercentDiff = Indicators.percentDiff(pos.open_price, ind.price);
+					if(ind && (config.sellAll || isLastEntry || pricePercentDiff > 1 || ind.uo > 35)) {
+            config.closePositions.push(pos)
 
-          config.newState.capitalFree += parseFloat(indicators.price * pos.amount, 2);
-          config.newState.freePieces += pos.pieces;
-        }
-			})
+            config.newState.capitalFree += parseFloat(ind.price * pos.amount, 2);
+            config.newState.freePieces += pos.pieces;
+          }
+				});
+		});
 	};
 
+  this.closePositions = function(config, close) {
+    return Promise.map(close, (pos) => {
+
+    	return new Promise((resolve, reject) => {
+        const ind = config.indicators[pos.ticker];
+
+				Broker.sendSellOrder(pos.ticker, pos.amount, "MKT", ind.price, (err, res) => {
+					if(err && err.codeName === 'timeout') {
+						Log.error("Timeout during sell order", err.errorText || err.toString());
+
+						// this will disable new open/scale orders
+						config.disableOrders = true;
+						return resolve(null, err);
+
+					} else if(err) {
+						Log.error("Error during sell order", err.errorText || err.toString());
+						return reject(err.toString());
+					}
+
+					const profit = ((res.price - pos.open_price) * pos.amount).toFixed(2);
+          Log.info("%s %dx %s for %d USD | Profit: %d USD",
+						"CLOSE:".red, pos.amount, pos.ticker, res.price, profit)
+
+					const request = {
+            close_price: res.price,
+            close_date: self.getDBDate(config.date)
+          };
+
+					return DB.update("positions",request, "close_price IS NULL AND ticker = ?", pos.ticker)
+						.then(() => {
+              // decrement available resources
+              config.state.capital += parseFloat(res.price * res.amount - pos.open_price * pos.amount, 2);
+              config.state.capitalFree += parseFloat(res.price * res.amount, 2);
+              config.state.freePieces += pos.pieces;
+              resolve()
+						});
+        });
+      });
+    });
+  };
+
+  this.openPositions = function(config, open) {
+    if(config.lastDay)
+      return Promise.resolve();
+
+    if(config.disableOrders) {
+      Log.error('There was a problem when closing orders - open/scale orders are disabled'.red);
+      return Promise.resolve();
+    }
+
+		return Promise.map(open, (pos) => {
+      const type = config.positions[pos.ticker]
+				? "SCALE"
+				: "OPEN";
+
+      return new Promise((resolve, reject) => {
+      	Broker.sendBuyOrder(pos.ticker, pos.amount, "MKT", pos.price, (err, res) => {
+					if(err && err.codeName == 'timeout') {
+						Log.error("Timeout during buy order", (err.errorText || err.toString()));
+						return resolve(null, err);
+					} else if(err) {
+						Log.error("Error during buy order", (err.errorText || err.toString()));
+						return reject(err.toString());
+					}
+
+					Log.info('%s %dx %s for %s USD', (type+': ').green, pos.amount, pos.ticker, res.price);
+
+					delete pos.price;
+          pos = _.extend(pos, {
+						open_price: res.price,
+            open_date: self.getDBDate(config.date)
+          })
+
+          return DB.insert("positions", pos)
+						.catch(reject)
+						.then(() => {
+							config.state.capitalFree -= res.price * res.amount;
+							config.state.freePieces -= pos.pieces;
+              resolve(res)
+						})
+	      });
+      })
+		})
+  };
 
   this.getStockForBuy = function(indicators, positions) {
     Log.info('Filtering stocks for buy condition');
@@ -628,33 +538,33 @@ var Strategy = function(app) {
     	const pos = positions[ticker]
 
 			if(pos) {
-				console.log("PRICE MUST BE LOWER THAT 1% from previous trade")
-				process.exit() // TODO remove me
-			}
-
-      if(ind.uoWinp < 30) {
+				const priceDiff = Indicators.percentDiff(pos.open_price, ind.price)
+				if(priceDiff < 1) {
+					Log.info("Scaling up a position because of a price is more than 1% lower")
+					stocks.push(ind);
+				}
+			} else if(ind.uo < 30) {
 				stocks.push(ind);
       }
     };
 
     stocks.sort(function(a, b) {
-      return (a.uoWinp > b.uoWinp) ? 1 : -1;
+      return (a.uo > b.uo) ? 1 : -1;
     });
 
-    stocks.forEach(function(ind) {
-      Log.info("BuyFilter::Ticker %s Price %s %d UltOscilator %d", ind.ticker, ind.price, ind.uoWinp);
-    });
+    // stocks.forEach(function(ind) {
+    //   Log.info("BuyFilter::Ticker %s Price %s UltOscilator %d", ind.ticker, ind.price, ind.uo);
+    // });
 
     return stocks;
   };
-
 
   this.getCapitalByPiece = function(info, pieces = 1) {
     return info.capitalFree / info.freePieces * pieces;
   };
 
   this.getAmountByCapital = function(capital, price) {
-    return parseInt(capital/price);
+    return parseInt(capital / price);
   };
 
   this.filterBuyStocks = function(config) {
@@ -678,26 +588,19 @@ var Strategy = function(app) {
 			}
 
 			const capitalPerPiece = self.getCapitalByPiece(config.newState)
-			process.exit() // TODO remove me
 			const amount = self.getAmountByCapital(capitalPerPiece, item.price)
-
-      config.openPositions.push({
-        ticker: item.ticker,
-        pieces: 1,
-        requested_open_price: item.price,
+			const newPos = {
         amount,
+        pieces: 1,
+        ticker: item.ticker,
         price: item.price,
-      });
+      }
 
-      console.log(item)
-			process.exit() // TODO remove me
-
-
-      config.newState.freePieces -= parseFloat(newPos.pieces, 2);
-      config.newState.capitalFree -= parseFloat(newPos.price * newPos.amount, 2);
+      newState.freePieces--;
+      newState.capitalFree -= parseFloat(newPos.price * newPos.amount, 2);
+      config.openPositions.push(newPos);
     }
   };
-
 
   this.process = function(config) {
     Log.info("Processing strategy");
@@ -710,29 +613,22 @@ var Strategy = function(app) {
 			.then(indicators => this.saveIndicators(config, indicators))
 			.then(() => this.filterSellStocks(config))
 			.then(() => this.filterBuyStocks(config))
-			// .then(() => this.sendOrders(config))
+			.then(() => this.sendOrders(config))
 			// ==== END ====
       .then(() => this.stopStreamingPrices(config))
 			.then(() => this.saveNewEquity(config.date, config.state))
 			.then(() => this.saveState(config))
+			.return(config)
 			.catch((err) => {
 				if(err === "noRealtimeData") {
 					Log.warn('No realtime data for today %s .. quitting', config.dateDb)
 					return Promise.resolve()
 				}
+
+				// self.sendMailLog(config);
+				Log.error("Strategy finished with an error:", err.toString());
 				return Promise.reject(err)
-			})
-			.return(config)
-
-			// .finally((res) => {
-			// 	self.sendMailLog(config, res);
-			// })
-
-
-
-		// ], function(err, res) {
-		// 	if(err)
-		// 		Log.error("Strategy finished with an error", err);
+			});
 	};
 
 	return this;

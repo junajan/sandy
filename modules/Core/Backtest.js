@@ -1,7 +1,8 @@
-var moment = require("moment");
-var async = require("async");
+const moment = require("moment");
+const Promise = require("bluebird");
+const async = require("async");
 
-var Backtest = function(Strategy) {
+const Backtest = function(Strategy, DB) {
 	const self = this;
 	const stats = {
 		months: {},
@@ -170,8 +171,7 @@ var Backtest = function(Strategy) {
 			})
 			.then(() => Strategy.process(config))
 			.then(res => {
-				if(config.isTradingDay)
-					console.timeEnd("============== Date End ==============");
+				console.timeEnd("============== Date End ==============");
 
 				self.statsOnEndDay(config, config.lastDay);
 				done(null, res)
@@ -199,6 +199,44 @@ var Backtest = function(Strategy) {
 		return err ? reject(err) : resolve(res);
 	};
 
+	this.gatherStats = function () {
+		return Promise.props({
+			tradesPerYear: DB.sql('SELECT SUM(1) as count, DATE_FORMAT(close_date, "%Y") as year FROM `positions` WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, "%Y")'),
+			stats: DB.sql(`SELECT 
+					MAX((close_price - open_price) * amount) as max, 
+					MIN((close_price - open_price) * amount) as min, 
+					COUNT(id) as total
+				FROM positions`),
+	    avgs: DB.sql(`SELECT
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price > open_price AND close_price IS NOT NULL) as avgProfit,
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as avgLoss,
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price IS NOT NULL) as avgTrade,
+				(SELECT COUNT(1) FROM positions WHERE close_price > open_price AND close_price IS NOT NULL) as winCount,
+				(SELECT COUNT(1) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as lossCount
+			`)
+  })
+		.then(({ stats, tradesPerYear, avgs }) => {
+			console.log("=== Trades per year ===")
+      tradesPerYear.forEach((y) => {
+				console.log("%d: %d", y.year, y.count)
+			})
+			console.log("=======================")
+
+      stats = stats[0]
+      avgs= avgs[0]
+			console.log("Total trades: %s", stats.total)
+			console.log("Max profit: %s USD", stats.max)
+			console.log("Max loss: %s USD", stats.min)
+			console.log("Avg profit: %s USD", avgs.avgProfit)
+			console.log("Avg loss: %s USD", avgs.avgLoss)
+			console.log("Avg trade: %s USD", avgs.avgTrade)
+			console.log("Win count: %s", avgs.winCount)
+			console.log("Loss count %s", avgs.lossCount)
+
+
+		})
+  };
+
 	/**
 	 * Core method which runs test day by day
 	 * @param config {from, to, capital, tickers} Object
@@ -223,14 +261,15 @@ var Backtest = function(Strategy) {
 				() => this.testAfterEach(config, endDay),
 				(err, res) => this.testAfter(resolve, reject, config, err, res)
 			);
-		});
+		})
+			.tap(() => this.gatherStats(config));
 	};
 
 	return this;
 };
 
 
-module.exports = function(conf) {
-	return new Backtest(conf);
+module.exports = function(conf, db) {
+	return new Backtest(conf, db);
 };
 
