@@ -157,6 +157,10 @@ const Backtest = function(Strategy, DB) {
 			return done(null);
 		}
 
+		delete config.history
+		delete config.indicators
+		delete config.positions
+
 		if(self.isLastDay(config.date, config.to)) {
 			console.log('Last day of backtests.. will close all remaining positions');
 			config.lastDay = true;

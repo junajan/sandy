@@ -139,15 +139,13 @@ exports.uo = function (prices, shortPeriods, mediumPeriods, longPeriods) {
     const price = prices[i];
     const prevPrice = prices[i-1];
 
-    if(!prevPrice)
-      console.log(prices)
-    bpsSum += price.close - Math.min(price.low, prevPrice.close)
-    trsSum += Math.max(price.high, prevPrice.close) - Math.min(price.low, prevPrice.close)
+    bpsSum += price.close - Math.min(price.low, prevPrice.close);
+    trsSum += Math.max(price.high, prevPrice.close) - Math.min(price.low, prevPrice.close);
 
     if([shortPeriods, mediumPeriods, longPeriods].indexOf(++count) >= 0)
-      avgs.push(bpsSum / trsSum)
+      avgs.push(bpsSum / trsSum);
   }
 
-  return _.round(100 * (4 * avgs[0] + 2 * avgs[1] + avgs[2]) / 7, 2)
+  return _.round(100 * (4 * avgs[0] + 2 * avgs[1] + avgs[2]) / 7, 2);
 }
 

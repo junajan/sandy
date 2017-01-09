@@ -37,10 +37,11 @@ config = {
   // from: '2009-01-01',
   // from: '2007-01-01',
   // to: '2012-09-28',
-  from: '2013-01-01',
+  // from: '2015-01-01',
+  from: '2015-12-15',
   // from: '2010-05-23',
   to: moment().format('YYYY-MM-DD'),
-  capital: 20000,
+  capital: 70000,
   mailLog: false
 };
 
