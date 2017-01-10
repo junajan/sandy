@@ -178,7 +178,31 @@ const Backtest = function(Strategy, DB) {
 				console.timeEnd("============== Date End ==============");
 
 				self.statsOnEndDay(config, config.lastDay);
-				done(null, res)
+
+				if(!config.handleSplits)
+					return done(null, res);
+
+				let promise = Promise.resolve();
+
+				// if(this.splits[config.dateDb]) {
+				// 	var tickers = Object.keys(this.splits[config.dateDb]);
+				// 	promise = Promise.map(tickers, (ticker) => {
+				// 		var factor = this.splits[config.dateDb][ticker]
+				// 		return DB.update('positions', {
+				// 				".amount": "amount * "+factor
+				// 			},
+				// 			'close_price IS NULL AND ticker = ?', ticker
+         //    )
+				// 		.then(res => {
+				// 			console.log(ticker, factor)
+				// 			console.log(res)
+				// 			process.exit() // TODO remove me
+         //    })
+				// 	})
+				// }
+
+				return promise
+					.then(() => done(null, res))
 			})
 			.catch(done);
 	};
@@ -217,9 +241,11 @@ const Backtest = function(Strategy, DB) {
 				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price IS NOT NULL) as avgTrade,
 				(SELECT COUNT(1) FROM positions WHERE close_price > open_price AND close_price IS NOT NULL) as winCount,
 				(SELECT COUNT(1) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as lossCount
-			`)
+			`),
+			yearProfits: DB.sql(`SELECT SUM((close_price - open_price) * amount) as profit, DATE_FORMAT(close_date, '%Y') as year FROM positions WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, '%Y')`),
+			maxDD: DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh WHERE date > "2014-04-04" ) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 5`)
   })
-		.then(({ stats, tradesPerYear, avgs }) => {
+		.then(({ stats, tradesPerYear, avgs, maxDD }) => {
 			console.log("=== Trades per year ===")
       tradesPerYear.forEach((y) => {
 				console.log("%d: %d", y.year, y.count)
@@ -231,15 +257,40 @@ const Backtest = function(Strategy, DB) {
 			console.log("Total trades: %s", stats.total)
 			console.log("Max profit: %s USD", stats.max)
 			console.log("Max loss: %s USD", stats.min)
-			console.log("Avg profit: %s USD", avgs.avgProfit)
-			console.log("Avg loss: %s USD", avgs.avgLoss)
-			console.log("Avg trade: %s USD", avgs.avgTrade)
+			console.log("Avg profit: %s USD", avgs.avgProfit || 0)
+			console.log("Avg loss: %s USD", avgs.avgLoss || 0)
+			console.log("Avg trade: %s USD", avgs.avgTrade || 0)
+			console.log("Avg win: %s%", parseFloat(avgs.winCount / stats.total * 100, 2))
 			console.log("Win count: %s", avgs.winCount)
 			console.log("Loss count %s", avgs.lossCount)
+
+			console.log("==== 5 MAX DD ====")
+			if(maxDD.length)
+				maxDD.forEach((dd) => {
+					console.log("%s: loss %d = %d%",
+						dd.date, dd.capital - dd.lowerLaterCapital, dd.dd)
+				})
+			else
+				console.log(" .. no DD")
 
 
 		})
   };
+
+  this.loadSplits = function(config) {
+    var cond = 'splitRatio <> 1 AND ticker IN ("'+config.tickers.join('","')+'")';
+    this.splits = {}
+
+    return DB.getData("DATE_FORMAT(date, '%Y-%m-%d') as date, ticker, splitRatio", "stock_history_full_quandl", cond)
+			.then(res => {
+				res.forEach(item => {
+					if(!this.splits[item.date])
+            this.splits[item.date] = {}
+
+					this.splits[item.date][item.ticker] = item.splitRatio
+				})
+      })
+	}
 
 	/**
 	 * Core method which runs test day by day
@@ -259,13 +310,14 @@ const Backtest = function(Strategy, DB) {
 
 		self.statsOnStartTest(config);
 
-		return new Promise((resolve, reject) => {
-			async.doWhilst(
-				done => this.testDay(config, done),
-				() => this.testAfterEach(config, endDay),
-				(err, res) => this.testAfter(resolve, reject, config, err, res)
-			);
-		})
+		return this.loadSplits(config)
+			.then(() => new Promise((resolve, reject) => {
+				async.doWhilst(
+					done => this.testDay(config, done),
+					() => this.testAfterEach(config, endDay),
+					(err, res) => this.testAfter(resolve, reject, config, err, res)
+				);
+			}))
 			.tap(() => this.gatherStats(config));
 	};
 

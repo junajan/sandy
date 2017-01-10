@@ -23,8 +23,9 @@ var Strategy = function(app) {
 	// const _PRICE_COLUMN_NAME = 'close'; // or adjClose
 	const _MAX_OPEN_PER_DAY = 5;
 	const _INIT_FREE_PIECES = 10;
-	const _HISTORY_DATA_LENGTH = 25;
-	const _DB_FULL_HISTORY_TABLE = "stock_history_full";
+	const _HISTORY_DATA_LENGTH = 30;
+	// const _DB_FULL_HISTORY_TABLE = "stock_history_full";
+	const _DB_FULL_HISTORY_TABLE = "stock_history_full_quandl";
 	const _DATE_FORMAT = "YYYY-MM-DD";
 
 	this.getPositionSummary = function(positions) {
@@ -83,9 +84,23 @@ var Strategy = function(app) {
   this.aggregatePositions = function(list) {
     const out = {};
     list.forEach((item) => {
-      const ticker = item.ticker
-      if(!out[ticker])
-        return out[ticker] = item;
+      const ticker = item.ticker;
+
+      if(!out[ticker]) {
+        out[ticker] = item;
+        out[ticker].list = [{
+          amount: item.amount,
+          open_date: item.open_date,
+          open_price: item.open_price
+        }];
+        return;
+      }
+
+      out[ticker].list.push({
+        amount: item.amount,
+        open_date: item.open_date,
+        open_price: item.open_price
+      });
 
       const prevItem = out[ticker]
       prevItem.open_price =
@@ -100,7 +115,7 @@ var Strategy = function(app) {
   this.getOpenPositions = function(config) {
     Log.info('Fetching openned positions');
 
-    return DB.getData("*", "positions", "close_date IS null", null, "open_date ASC")
+    return DB.getData("*", "positions", "close_date IS null", null, "open_date DESC")
 			.then((res) =>
 				(config.positions = this.aggregatePositions(res))
   	  );
@@ -202,7 +217,7 @@ var Strategy = function(app) {
     if(config.internalHistory) {
       const tickers = "'"+config.tickers.join("','")+"'";
 
-      promise = DB.getData("ticker, " + _PRICE_COLUMN_NAME + " as close, volume, open, high, low, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+") GROUP BY ticker, date, close, adjClose, open, high, low, volume", [dateFrom, dateTo], "date ASC")
+      promise = DB.getData("ticker, " + _PRICE_COLUMN_NAME + " as close, volume, adjOpen as open, adjHigh as high, adjLow as low, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+")", [dateFrom, dateTo], "date ASC")
 				.then(res => this.deserializeHistoricalData(res))
 		} else {
     	throw new Error('NOT IMPLEMENTED')
@@ -308,7 +323,7 @@ var Strategy = function(app) {
     if(config.internalHistory) {
     	const date = moment(config.date).format(_DATE_FORMAT);
     	const tickers = "'"+config.tickers.join("','")+"'";
-      return DB.getData("ticker, date, open, high, low, "+_PRICE_COLUMN_NAME+" as close, volume", _DB_FULL_HISTORY_TABLE, "date = ? AND ticker IN ("+tickers+")", date)
+      return DB.getData("ticker, date, adjOpen as open, adjHigh as high, adjLow as low, "+_PRICE_COLUMN_NAME+" as close, volume", _DB_FULL_HISTORY_TABLE, "date = ? AND ticker IN ("+tickers+")", date)
 				.then((res) => {
     			if(!res.length)
     				return Promise.reject("noRealtimeData")
@@ -341,13 +356,20 @@ var Strategy = function(app) {
 
     tickers.forEach((ticker) => {
       const history = config.history[ticker];
-			var historyDate = moment(history[history.length - 1].date).format(_DATE_FORMAT);
+      const price = parseFloat(history[history.length - 1].close);
 
+      if(history.length <= 15) {
+        delete config.history[ticker]
+        return;
+      }
+
+      const prevPrice = parseFloat(history[history.length - 2].close);
       const indicators = {
         date: config.dateDb,
         ticker: ticker,
-        price: parseFloat(history[history.length - 1].close),
-        // sma5: Indicators.sma(5, history, ticker),
+        price, prevPrice,
+        priceDiff: Indicators.percentDiff(prevPrice, price) * -1,
+        // sma: Indicators.sma(5, history, ticker),
         // sma4: Indicators.sma(4, history, ticker),
         // sma3: Indicators.sma(3, history, ticker),
         // sma2: Indicators.sma(2, history, ticker),
@@ -355,14 +377,18 @@ var Strategy = function(app) {
         // sma100: Indicators.sma(100, history, ticker),
         // sma200: Indicators.sma(200, history, ticker),
         rsi14: Indicators.rsiWilders(14, history),
-        rsi2: Indicators.rsiWilders(2, history),
+        rsi: Indicators.rsiWilders(2, history),
         uo: Indicators.uo(history, 5, 10, 15),
-        uoWill: Indicators.uo(history, 7, 14, 28),
+        // uo: Indicators.uo(history, 7, 14, 28),
       }
+
+      // console.log(indicators)
+      // process.exit() // TODO remove me
 
       if(indicators.uo < 0) {
         Log.error('Error when processing indicators %s with data length %d and uo', ticker, history.length, indicators.uo);
         delete config.history[ticker];
+        process.exit() // TODO remove me
         return;
       }
 
@@ -431,7 +457,12 @@ var Strategy = function(app) {
 					}
 
           const pricePercentDiff = Indicators.percentDiff(pos.open_price, ind.price);
-					if(ind && (config.sellAll || isLastEntry || pricePercentDiff > 1 || ind.uo > 35)) {
+					if(config.sellAll || isLastEntry ||
+            (
+					    pricePercentDiff > 1
+              || ind.uo > 35
+            )
+          ) {
             config.closePositions.push(pos)
 
             config.newState.capitalFree += parseFloat(ind.price * pos.amount, 2);
@@ -537,16 +568,23 @@ var Strategy = function(app) {
     	const ind = indicators[ticker]
     	const pos = positions[ticker]
 
-			if(pos) {
-				const priceDiff = Indicators.percentDiff(pos.open_price, ind.price)
-				if(priceDiff < 1) {
-					Log.info("Scaling up a position because of a price is more than 1% lower")
-					stocks.push(ind);
-				}
-			} else if(ind.uo < 30) {
-				stocks.push(ind);
+      if(ind.priceDiff > 8)
+        continue;
+
+      if(ind.uo < 30) {
+        if(pos) {
+          const lastPos = pos.list[0];
+
+          const priceDiff = Indicators.percentDiff(lastPos.open_price, ind.price);
+          if(priceDiff < 1) {
+            Log.info("Scaling up a position because of a price is more than 1% lower");
+            stocks.push(ind);
+          }
+	  		} else  {
+				  stocks.push(ind);
+        }
       }
-    };
+    }
 
     stocks.sort(function(a, b) {
       return (a.uo > b.uo) ? 1 : -1;
@@ -589,6 +627,11 @@ var Strategy = function(app) {
 
 			const capitalPerPiece = self.getCapitalByPiece(config.newState)
 			const amount = self.getAmountByCapital(capitalPerPiece, item.price)
+
+      // not enought capital to buy this stock
+      if(amount < 1)
+        continue;
+
 			const newPos = {
         amount,
         pieces: 1,
