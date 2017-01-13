@@ -608,7 +608,7 @@ var Strategy = function(app) {
 			if(config.positionsAggregated[ticker])
 				return true;
 
-      if(config.takenSectors[config.sectorMap[ticker]] > 2)
+      if(config.takenSectors[config.sectorMap[ticker]] > 1)
       	return false
 
 			config.takenSectors[config.sectorMap[ticker]]++
