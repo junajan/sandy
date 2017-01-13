@@ -243,7 +243,7 @@ const Backtest = function(Strategy, DB) {
 				(SELECT COUNT(1) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as lossCount
 			`),
 			yearProfits: DB.sql(`SELECT SUM((close_price - open_price) * amount) as profit, DATE_FORMAT(close_date, '%Y') as year FROM positions WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, '%Y')`),
-			maxDD: DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh WHERE date > "2014-04-04" ) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 5`)
+			maxDD: DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 5`)
   })
 		.then(({ stats, tradesPerYear, avgs, maxDD }) => {
 			console.log("=== Trades per year ===")

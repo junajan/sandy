@@ -460,6 +460,7 @@ var Strategy = function(app) {
 					if(config.sellAll || isLastEntry ||
             (
 					    pricePercentDiff > 1
+              // || pricePercentDiff < -8
               || ind.uo > 35
             )
           ) {
@@ -575,6 +576,9 @@ var Strategy = function(app) {
         if(pos) {
           const lastPos = pos.list[0];
 
+          if(pos.list.length > 1)
+            continue;
+
           const priceDiff = Indicators.percentDiff(lastPos.open_price, ind.price);
           if(priceDiff < 1) {
             Log.info("Scaling up a position because of a price is more than 1% lower");
@@ -620,7 +624,8 @@ var Strategy = function(app) {
       	break;
 			}
 
-			if(config.openPositions.length >= _MAX_OPEN_PER_DAY) {
+			// if(config.openPositions.length >= _MAX_OPEN_PER_DAY) {
+			if(config.openPositions.length >= 5) {
       	Log.info("Max %d open positions per day", _MAX_OPEN_PER_DAY);
       	break;
 			}
