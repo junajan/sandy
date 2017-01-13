@@ -576,17 +576,22 @@ var Strategy = function(app) {
 		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
 		if(config.sellAll)
 			return stocks;
-		
+
+    Object.keys(config.positionsAggregated).forEach(function (ticker) {
+        config.takenSectors[config.sectorMap[ticker]]++
+    })
+
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
 
 			// Log.info(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
 			if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
-				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200))
+				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200)) {
 					stocks.push(item);
+				}
 			}
-		};
+		}
 
 		// serad je podle RSI
 		stocks.sort(function(a, b) {
@@ -596,6 +601,19 @@ var Strategy = function(app) {
 		stocks.forEach(function(item) {
 			Log.info("BuyFilter::Ticker: "+ item.ticker+ " | RSI: " + item.rsi.toFixed(2) + " | Price: " + item.price + " | Sma200: "+ item.sma200.toFixed(2) + " | Sma5: "+ item.sma5.toFixed(2));
 		});
+
+		stocks = stocks.filter(function (item) {
+			const ticker = item.ticker;
+
+			if(config.positionsAggregated[ticker])
+				return true;
+
+      if(config.takenSectors[config.sectorMap[ticker]] > 2)
+      	return false
+
+			config.takenSectors[config.sectorMap[ticker]]++
+			return true
+    })
 
 		return stocks;
 	};
@@ -894,6 +912,18 @@ var Strategy = function(app) {
 		}
 	};
 
+	this.getTickerSectors = function(config, done) {
+    DB.getData("ticker, sector", "watchlist", "sector IS NOT NULL", function(err, res) {
+    	config.sectorMap = {}
+    	config.takenSectors = {}
+			res.forEach(function(item) {
+				config.sectorMap[item.ticker] = item.sector
+				config.takenSectors[item.sector] = 0
+			})
+			done(null, config)
+    })
+	}
+
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
 
@@ -910,6 +940,7 @@ var Strategy = function(app) {
 			self.processTickers.bind(null, config),
 			self.downloadHistory,
 			self.saveData,
+			self.getTickerSectors,
 			self.markImportAsFinished,
 			self.startStreamingPrices,
 		], done);
