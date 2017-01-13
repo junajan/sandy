@@ -580,7 +580,7 @@ var Strategy = function(app) {
             continue;
 
           const priceDiff = Indicators.percentDiff(lastPos.open_price, ind.price);
-          if(priceDiff < 1) {
+          if(priceDiff < -1) {
             Log.info("Scaling up a position because of a price is more than 1% lower");
             stocks.push(ind);
           }

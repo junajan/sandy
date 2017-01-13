@@ -243,7 +243,7 @@ const Backtest = function(Strategy, DB) {
 				(SELECT COUNT(1) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as lossCount
 			`),
 			yearProfits: DB.sql(`SELECT SUM((close_price - open_price) * amount) as profit, DATE_FORMAT(close_date, '%Y') as year FROM positions WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, '%Y')`),
-			maxDD: DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 5`)
+			maxDD: DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 10`)
   })
 		.then(({ stats, tradesPerYear, avgs, maxDD }) => {
 			console.log("=== Trades per year ===")
@@ -255,15 +255,14 @@ const Backtest = function(Strategy, DB) {
       stats = stats[0]
       avgs= avgs[0]
 			console.log("Total trades: %s", stats.total)
+      console.log("Win count: %s", avgs.winCount)
+      console.log("Loss count %s", avgs.lossCount)
+      console.log("Avg win: %s%", parseFloat(avgs.winCount / stats.total * 100, 2))
 			console.log("Max profit: %s USD", stats.max)
 			console.log("Max loss: %s USD", stats.min)
 			console.log("Avg profit: %s USD", avgs.avgProfit || 0)
 			console.log("Avg loss: %s USD", avgs.avgLoss || 0)
 			console.log("Avg trade: %s USD", avgs.avgTrade || 0)
-			console.log("Avg win: %s%", parseFloat(avgs.winCount / stats.total * 100, 2))
-			console.log("Win count: %s", avgs.winCount)
-			console.log("Loss count %s", avgs.lossCount)
-
 			console.log("==== 5 MAX DD ====")
 			if(maxDD.length)
 				maxDD.forEach((dd) => {
