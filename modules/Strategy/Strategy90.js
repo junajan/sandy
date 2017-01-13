@@ -24,7 +24,7 @@ var Strategy = function(app) {
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
-	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
+	var _DB_FULL_HISTORY_TABLE = "stock_history_full_quandl";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
 	var _smaExitLen = 5;
@@ -152,7 +152,7 @@ var Strategy = function(app) {
 		Log.info("Reading history data from %s to %s", dateFrom, dateTo);
 
 		if(config.internalHistory || config.internalHistorical)
-			DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+			DB.getData("ticker as symbol,  adjClose as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
 
 				config.data = self.deserializeHistoricalData(res);
@@ -479,7 +479,7 @@ var Strategy = function(app) {
 		}
 		
 		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
-			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
+			DB.getData("adjClose as close, adjOpen as open, adjHigh as high, adjLow as low, ticker as symbol, adjClose", _DB_FULL_HISTORY_TABLE, "date = ? AND ticker IN ("+tickers+")", date, processDBResult);
 		else
 			Broker.getMarketPriceBulk(config.tickers, processApiResult);
 	};
@@ -562,7 +562,7 @@ var Strategy = function(app) {
 		if(!config.internalHistory)
 			return done(false);
 
-		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [config.date.format(), ticker], function(err, res) {
+		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and ticker = ?", [config.date.format(), ticker], function(err, res) {
 			if(err)
 				throw err;
 			done(!res);
