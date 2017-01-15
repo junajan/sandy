@@ -382,9 +382,6 @@ var Strategy = function(app) {
         // uo: Indicators.uo(history, 7, 14, 28),
       }
 
-      // console.log(indicators)
-      // process.exit() // TODO remove me
-
       if(indicators.uo < 0) {
         Log.error('Error when processing indicators %s with data length %d and uo', ticker, history.length, indicators.uo);
         delete config.history[ticker];
@@ -602,6 +599,9 @@ var Strategy = function(app) {
   };
 
   this.getCapitalByPiece = function(info, pieces = 1) {
+    if(info.freePieces == 0)
+      return 0
+
     return info.capitalFree / info.freePieces * pieces;
   };
 
@@ -630,21 +630,30 @@ var Strategy = function(app) {
       	break;
 			}
 
+      const pieces = 1
+      // const pieces = config.positions[item.ticker] ? config.positions[item.ticker].list.length + 1 : 1
+
 			const capitalPerPiece = self.getCapitalByPiece(config.newState)
-			const amount = self.getAmountByCapital(capitalPerPiece, item.price)
+      const capitalForTrade = capitalPerPiece * pieces
+
+      if(capitalForTrade > config.newState.capitalFree)
+        continue;
+
+			const amount = self.getAmountByCapital(capitalForTrade, item.price)
 
       // not enought capital to buy this stock
       if(amount < 1)
         continue;
 
+
 			const newPos = {
         amount,
-        pieces: 1,
+        pieces: pieces,
         ticker: item.ticker,
         price: item.price,
       }
 
-      newState.freePieces--;
+      newState.freePieces -= pieces;
       newState.capitalFree -= parseFloat(newPos.price * newPos.amount, 2);
       config.openPositions.push(newPos);
     }
