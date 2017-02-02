@@ -40,7 +40,7 @@
 				</span>
 				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
 					{{(openTickersPrices[item.ticker] * item.amount - item.open_price_total)  | currency:'$' }}
-					| {{(openTickersPrices[item.ticker] - item.open_price_total) / item.open_price_total | percent:2 }}
+					| {{(openTickersPrices[item.ticker] * item.amount - item.open_price_total) / item.open_price_total | percent:2 }}
 				</span>
 			</td>
 		</tr>
