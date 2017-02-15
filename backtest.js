@@ -19,7 +19,7 @@ app.DB = require(config.dirCore+'Mysql')(config.mysql);
 app.mailer = require(config.dirCore+'Mailer')(app);
 
 var Strategy = require(config.dirStrategy+'Strategy90')(app);
-var Backtest = require(config.dirCore+'Backtest')(Strategy);
+var Backtest = require(config.dirCore+'Backtest')(Strategy, app.DB);
 var Log = app.logger.getLogger("APP");
 
 require(config.dirWeb+'Routes')(app);
@@ -31,7 +31,7 @@ Log.info("Running Backtest");
 config = {
   tickers: tickers,
   // from: "2015-01-01",
-  from: '2013-01-01',
+  from: '2017-01-01',
   // to: '2016-01-01',
   // to: '2016-10-10',
   to: moment().format('YYYY-MM-DD'),
