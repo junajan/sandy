@@ -20,7 +20,7 @@ var Strategy = function(app) {
 
 	this.config = config;
 
-	console.log("Using scale strategy: %s", config.scaleStrategy);
+	console.log("Using scale strategy: %s, allowed are [rsi, lower, lowerThanFirst]", config.scaleStrategy);
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
