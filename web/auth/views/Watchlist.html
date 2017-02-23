@@ -5,6 +5,8 @@
 				<th width="30">#</th>
 				<th>Ticker</th>
 				<th>Name</th>
+				<th class="small-hidden">Sector</th>
+				<th class="small-hidden">Exchange</th>
 				<th>Note</th>
 			</tr>
 		</thead>
@@ -13,6 +15,8 @@
 				<td>{{item.id}}</td>
 				<td><b><a href='//finance.yahoo.com/echarts?s={{item.ticker}}' ng-class="{red: !item.active}" target="_blank">{{item.ticker}}</a></b></td>
 				<td>{{item.name}}</td>
+				<td class="small-hidden">{{item.sector}}</td>
+				<td class="small-hidden">{{item.exchange}}</td>
 				<td>{{item.note}}</td>
 			</tr>
 		</tbody>

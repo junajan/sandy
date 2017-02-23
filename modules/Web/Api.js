@@ -27,12 +27,12 @@ var Api = function(app) {
 	this.getEquity = function(req, res) {
 		var from = req.query.from || 0;
 
-		var sql = "SELECT *, capital - transfer as adjCapital " +
+		var sql = "SELECT *, capital + transfer as adjCapital " +
 			"FROM (" +
 			"SELECT h.*, IFNULL(SUM(t.amount), 0) as transfer " +
 			"FROM equity_history as h " +
 			"LEFT JOIN transfers t " +
-				"ON t.date <= h.date " +
+				"ON t.date > h.date " +
 			"GROUP BY h.date, h.id, h.import_id ORDER BY h.date) as tmp " +
 			"WHERE DATE(date) > DATE(?) ORDER BY date ASC";
 

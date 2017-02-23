@@ -55,8 +55,7 @@ table {
 }
 
 @media screen and (max-width: 700px) {
-  table.orders tr th:first-child,
-  table.orders tr td:first-child{
+  table .small-hidden {
     display: none;
   }
 }
