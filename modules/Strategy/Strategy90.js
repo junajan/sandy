@@ -6,11 +6,21 @@ var async = require('async');
 
 var Strategy = function(app) {
 	var self = this;
-	var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("STRATEGY");
 	var MemLog = app.memLogger;
 
+	var config = _.defaults(app.config, {
+
+		// rsi - scale when rsi2 < 10
+		// lower - scale when price is lower than previous openPrice
+		// lowerThanFirst - scale when price is lower than first openPrice
+		scaleStrategy: "rsi" // lower, lowerThanFirst
+	});
+
+	this.config = config;
+
+	console.log("Using scale strategy: %s, allowed are [rsi, lower, lowerThanFirst]", config.scaleStrategy);
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
@@ -576,17 +586,59 @@ var Strategy = function(app) {
 		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
 		if(config.sellAll)
 			return stocks;
-		
+
+
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
+			var isOpenedPosition = !!config.positionsAggregated[ticker];
 
 			// Log.info(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
-			if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
-				if(config.positionsAggregated[ticker] || (item.sma200 && item.price > item.sma200))
-					stocks.push(item);
+
+			if(self.config.scaleStrategy === 'rsi') {
+
+				if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
+					if(isOpenedPosition || (item.sma200 && item.price > item.sma200))
+						stocks.push(item);
+				}
+			} else if (self.config.scaleStrategy  === "lower") {
+
+				if(item.price <= piecesCapital && item.rsi > 0 && item.price < item.sma5 && !config.closePositions[ticker]) {
+
+					if(isOpenedPosition) {
+						var pos = config.positions[ticker];
+						// last open price
+						var originalPrice = pos[pos.length - 1].open_price;
+
+						// console.log("%s: OriginalPrice %d vs newPrice %d", ticker, originalPrice, item.price);
+						if(item.price < originalPrice)
+							stocks.push(item);
+					} else {
+
+						if(item.rsi < _minRSI && item.sma200 && item.price > item.sma200)
+							stocks.push(item);
+					}
+				}
+			} else if (self.config.scaleStrategy  === "lowerThanFirst") {
+
+				if(item.price <= piecesCapital && item.rsi > 0 && item.price < item.sma5 && !config.closePositions[ticker]) {
+
+					if(isOpenedPosition) {
+						var pos = config.positions[ticker];
+						// first open price
+						var originalPrice = pos[0].open_price;
+
+						// console.log("%s: OriginalPrice %d vs newPrice %d", ticker, originalPrice, item.price);
+						if(item.price < originalPrice)
+							stocks.push(item);
+					} else {
+
+						if(item.rsi < _minRSI && item.sma200 && item.price > item.sma200)
+							stocks.push(item);
+					}
+				}
 			}
-		};
+		}
 
 		// serad je podle RSI
 		stocks.sort(function(a, b) {

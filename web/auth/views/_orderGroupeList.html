@@ -36,9 +36,11 @@
 			<td class="profit_loss" ng-class="{red: item.close_price_total <= item.open_price_total}">
 				<span ng-if="item.close_date">
 					{{(item.close_price_total - item.open_price_total) | currency:'$' }}
+					| {{(item.close_price_total - item.open_price_total) / item.open_price_total | percent:2 }}
 				</span>
 				<span class="shadow not-finished-order" ng-if="!item.close_date && openTickersPrices && openTickersPrices[item.ticker]">
 					{{(openTickersPrices[item.ticker] * item.amount - item.open_price_total)  | currency:'$' }}
+					| {{(openTickersPrices[item.ticker] * item.amount - item.open_price_total) / item.open_price_total | percent:2 }}
 				</span>
 			</td>
 		</tr>

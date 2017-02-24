@@ -1,7 +1,7 @@
 var moment = require("moment");
 var async = require("async");
 
-var Backtest = function(Strategy) {
+var Backtest = function(Strategy, DB) {
 	var self = this;
 	var stats = {
 		months: {},
@@ -171,7 +171,73 @@ var Backtest = function(Strategy) {
 		return false;
 	};
 
-	this.run = function(config, dayCallback, finishCallback) {
+
+  this.gatherStats = function () {
+    return async.parallel({
+      tradesPerYear: function(done) {
+        DB.sql('SELECT SUM(1) as count, DATE_FORMAT(close_date, "%Y") as year FROM `positions` WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, "%Y")', null, done)
+      },
+      stats: function(done) {
+        DB.sql(`SELECT 
+					MAX((close_price - open_price) * amount) as max, 
+					MIN((close_price - open_price) * amount) as min, 
+					COUNT(id) as total
+				FROM positions`, null, done)
+      },
+      avgs: function(done) {
+        DB.sql(`SELECT
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price > open_price AND close_price IS NOT NULL) as avgProfit,
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as avgLoss,
+				(SELECT AVG((close_price - open_price) * amount) FROM positions WHERE close_price IS NOT NULL) as avgTrade,
+				(SELECT COUNT(1) FROM positions WHERE close_price > open_price AND close_price IS NOT NULL) as winCount,
+				(SELECT COUNT(1) FROM positions WHERE close_price <= open_price AND close_price IS NOT NULL) as lossCount
+			`, null, done)
+      },
+      yearProfits: function(done) {
+        DB.sql(`SELECT SUM((close_price - open_price) * amount) as profit, DATE_FORMAT(close_date, '%Y') as year FROM positions WHERE close_date IS NOT NULL GROUP BY DATE_FORMAT(close_date, '%Y')`
+          , null
+          , done)
+      },
+      maxDD: function(done) {
+        DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 10`, null, done)
+      }
+    }, function(err, all) {
+      if(err) throw err;
+
+      var stats = all.stats
+      var tradesPerYear = all.tradesPerYear
+      var avgs = all.avgs
+      var maxDD = all.maxDD
+
+      console.log("=== Trades per year ===")
+      tradesPerYear.forEach((y) => {
+        console.log("%d: %d", y.year, y.count)
+      })
+      console.log("=======================")
+
+      stats = stats[0]
+      avgs= avgs[0]
+      console.log("Total trades: %s", stats.total)
+      console.log("Win count: %s", avgs.winCount)
+      console.log("Loss count %s", avgs.lossCount)
+      console.log("Avg win: %s%", parseFloat(avgs.winCount / stats.total * 100, 2))
+      console.log("Max profit: %s USD", stats.max)
+      console.log("Max loss: %s USD", stats.min)
+      console.log("Avg profit: %s USD", avgs.avgProfit || 0)
+      console.log("Avg loss: %s USD", avgs.avgLoss || 0)
+      console.log("Avg trade: %s USD", avgs.avgTrade || 0)
+      console.log("==== 5 MAX DD ====")
+      if(maxDD.length)
+        maxDD.forEach((dd) => {
+          console.log("%s: loss %d = %d%",
+            dd.date, dd.capital - dd.lowerLaterCapital, dd.dd)
+        })
+      else
+        console.log(" .. no DD")
+    })
+  };
+
+  this.run = function(config, dayCallback, finishCallback) {
 		if(!self.testConfig(config))
 			return console.log("Config must contain from and to attributes");
 		console.log("Starting backtest from", config.from, "to", config.to);
@@ -237,6 +303,7 @@ var Backtest = function(Strategy) {
 		}, function(err) {
 
 			self.statsOnEndTest(config);
+      self.gatherStats()
 
 			console.timeEnd("============== Finished ==============");
 			if(err) console.log(err);
@@ -248,7 +315,7 @@ var Backtest = function(Strategy) {
 };
 
 
-module.exports = function(S) {
-	return new Backtest(S);
+module.exports = function(S, DB) {
+	return new Backtest(S, DB);
 };
 

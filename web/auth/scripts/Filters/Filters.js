@@ -52,4 +52,8 @@ Sandy.filter('ago', [
 		}
 		return input;
 	};
+}).filter('percent', function () {
+  return function (input, decimals) {
+    return parseFloat(input * 100).toFixed(decimals)+'%'
+  };
 });
