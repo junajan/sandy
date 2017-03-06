@@ -8,6 +8,7 @@
 				<th class="small-hidden">Sector</th>
 				<th class="small-hidden">Exchange</th>
 				<th>Note</th>
+				<th>Health</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -18,7 +19,19 @@
 				<td class="small-hidden">{{item.sector}}</td>
 				<td class="small-hidden">{{item.exchange}}</td>
 				<td>{{item.note}}</td>
+				<td>
+					<i ng-if="!indicators.watchlist[item.ticker]" title="Unknown state for ticker {{item.ticker}}">unknown</i>
+					<b class="green" ng-if="indicators.watchlist[item.ticker] && indicators.watchlist[item.ticker][0] > indicators.watchlist[item.ticker][1]" title="Price({{indicators.watchlist[item.ticker][0]}}) > SMA({{indicators.watchlist[item.ticker][1]}})">
+						+
+					</b>
+					<b style="color:red" ng-if="indicators.watchlist[item.ticker] && indicators.watchlist[item.ticker][0] <= indicators.watchlist[item.ticker][1]" title="Price({{indicators.watchlist[item.ticker][0]}}) <= SMA({{indicators.watchlist[item.ticker][1]}})">
+						-
+					</b>
+				</td>
 			</tr>
 		</tbody>
 	</table>
+	<small ng-if="indicators.date" class="small text-right block">
+		Healthy {{indicators.healthy}} ({{indicators.healthyPercent}}%) from {{indicators.total}} stocks snapshoted on {{indicators.date | date:'dd.MM.yyyy'}}
+	</small>
 </div>
