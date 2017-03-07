@@ -884,6 +884,9 @@ var Strategy = function(app) {
 
 		async.parallel([
 			function(done) {
+				DB.delete("transfers", "1=1", done);
+			},
+			function(done) {
 				DB.delete("positions", "1=1", done);
 			},
 			function(done) {
