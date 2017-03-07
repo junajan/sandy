@@ -27,6 +27,7 @@ module.exports = function(app) {
 
     apiRoutes.get('/equity', Web.isApiAuthorized, Api.getEquity);
     apiRoutes.get('/watchlist', Web.isApiAuthorized, Api.getWatchlist);
+    apiRoutes.get('/watchlist-indicators', Web.isApiAuthorized, Api.getWatchlistIndicators);
     apiRoutes.get('/statistics', Web.isApiAuthorized, Api.getConfig);
     apiRoutes.get('/open-prices', Web.isApiAuthorized, Api.getOpenPrices);
     apiRoutes.get('/holidays', Web.isApiAuthorized, Api.getHolidays);

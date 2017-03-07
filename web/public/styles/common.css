@@ -3,6 +3,9 @@ body {
   min-width: 600px;
 }
 
+.block {
+  display: block;
+}
 
 .text-bold {
   font-weight: bold;
@@ -69,4 +72,12 @@ table {
   position: absolute;
   right: 20px;
   top: -20px;
+}
+
+.green {
+  color: green;
+}
+
+.red {
+  color: red
 }

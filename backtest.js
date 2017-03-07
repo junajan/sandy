@@ -31,7 +31,7 @@ Log.info("Running Backtest");
 config = {
   tickers: tickers,
   // from: "2015-01-01",
-  from: '2015-01-01',
+  from: '2008-01-01',
   // to: '2016-01-01',
   // to: '2016-10-10',
   to: moment().format('YYYY-MM-DD'),
