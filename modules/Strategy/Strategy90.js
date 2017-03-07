@@ -20,7 +20,7 @@ var Strategy = function(app) {
 
 	this.config = config;
 
-	console.log("Using scale strategy: %s", config.scaleStrategy);
+	console.log("Using scale strategy: %s, allowed are [rsi, lower, lowerThanFirst]", config.scaleStrategy);
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
@@ -557,13 +557,14 @@ var Strategy = function(app) {
 		Object.keys(config.indicators).forEach(function(ticker) {
 			var item = _.toArray(config.indicators[ticker]);
 			item.push(config.importId);
+			item.push(config.date.format("YYYY-MM-DD HH:mm:ss"));
 			buffer.push(item);
 		});
 
 		if(!buffer.length)
 			return done(null, config);
 
-		DB.insertValues("indicators (ticker, price, sma5, sma200, rsi14, import_id)", buffer, function(err, res) {
+		DB.insertValues("indicators (ticker, price, sma5, sma200, rsi14, import_id, date)", buffer, function(err, res) {
 			done(err, config);
 		});
 	};

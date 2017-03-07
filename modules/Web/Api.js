@@ -8,6 +8,31 @@ var Api = function(app) {
 
 	this.openPrices = {'MO': 123};
 
+	this.getWatchlistIndicators = function(req, res) {
+    DB.getData('date, ticker, sma200, price', 'indicators', 'import_id = (SELECT MAX(import_id) FROM indicators)', function(err, data) {
+    	if(err || !data.length)
+    		return res.json({})
+
+      var out = {
+    		date: data[0].date,
+    		total: data.length,
+    		healthy: 0,
+				watchlist: {}
+			};
+
+    	data.forEach(function(item) {
+				out.watchlist[item.ticker] = [
+					item.price,
+					item.sma200
+        ];
+
+				if(Number(item.price) > Number(item.sma200))
+					out.healthy++;
+      });
+    	res.json(out);
+    });
+  };
+
 	this.getWatchlist = function(req, res) {
 		DB.getData('*', 'watchlist', function(err, data) {
 			res.json(data);
@@ -27,12 +52,12 @@ var Api = function(app) {
 	this.getEquity = function(req, res) {
 		var from = req.query.from || 0;
 
-		var sql = "SELECT *, capital - transfer as adjCapital " +
+		var sql = "SELECT *, capital + transfer as adjCapital " +
 			"FROM (" +
 			"SELECT h.*, IFNULL(SUM(t.amount), 0) as transfer " +
 			"FROM equity_history as h " +
 			"LEFT JOIN transfers t " +
-				"ON t.date <= h.date " +
+				"ON t.date > h.date " +
 			"GROUP BY h.date, h.id, h.import_id ORDER BY h.date) as tmp " +
 			"WHERE DATE(date) > DATE(?) ORDER BY date ASC";
 

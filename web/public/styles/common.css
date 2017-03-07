@@ -3,6 +3,9 @@ body {
   min-width: 600px;
 }
 
+.block {
+  display: block;
+}
 
 .text-bold {
   font-weight: bold;
@@ -55,8 +58,7 @@ table {
 }
 
 @media screen and (max-width: 700px) {
-  table.orders tr th:first-child,
-  table.orders tr td:first-child{
+  table .small-hidden {
     display: none;
   }
 }
@@ -70,4 +72,12 @@ table {
   position: absolute;
   right: 20px;
   top: -20px;
+}
+
+.green {
+  color: green;
+}
+
+.red {
+  color: red
 }
