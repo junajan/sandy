@@ -38,7 +38,7 @@
     "fast-csv": "^2.0.0",
     "filestore": "^0.1.3",
     "ib": "^0.1.9",
-    "lodash": "^3.3.1",
+    "lodash": "*",
     "log4js": "^0.6.25",
     "log4js-memory-appender": "^1.0.3",
     "moment": "^2.9.0",
