@@ -156,7 +156,7 @@ var Backtest = function(Strategy, DB) {
 	};
 
 	this.isWeekend = function(date) {
-		return date.day() == 6 || date.day() == 0;
+		return date.day() == 6 || date.day() == 0 || date.format('MM-DD') == '01-01'
 	};
 	this.wipe = Strategy.initClear;
 
@@ -255,7 +255,7 @@ var Backtest = function(Strategy, DB) {
 			console.log("============== Date: "+ testDay.format("DD.MM.YYYY") +" ==============");
 			console.time("============== Date End ==============");
 			if(self.isWeekend(testDay)) {
-				console.log("Skipping - weekend");
+				console.log("Skipping - weekend/feast");
 				return done(null);
 			}
 
