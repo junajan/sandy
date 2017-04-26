@@ -3,16 +3,19 @@
 var _ = require('lodash');
 var moment = require('moment');
 var async = require('async');
+var BacktestHistory = require('../Core/BacktestHistory');
 
 var Strategy = function(app) {
 	var self = this;
 	var DB = app.DB;
 	var Log = app.getLogger("STRATEGY");
 	var MemLog = app.memLogger;
+  var History = new BacktestHistory(DB);
 
 	var config = _.defaults(app.config, {
 
 		// rsi - scale when rsi2 < 10
+		// rsiLower - scale when rsi2 < 10 and price is lower than prev price
 		// lower - scale when price is lower than previous openPrice
 		// lowerThanFirst - scale when price is lower than first openPrice
 		scaleStrategy: "rsi" // lower, lowerThanFirst
@@ -20,7 +23,7 @@ var Strategy = function(app) {
 
 	this.config = config;
 
-	console.log("Using scale strategy: %s, allowed are [rsi, lower, lowerThanFirst]", config.scaleStrategy);
+	console.log("Using scale strategy: %s, allowed are [rsiLower, rsi, lower, lowerThanFirst]", config.scaleStrategy);
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
@@ -30,7 +33,7 @@ var Strategy = function(app) {
 		var Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
-	var _PRICE_COLUMN_NAME = 'close'; // or adjClose
+	var _PRICE_COLUMN_NAME = 'adjClose'; // or adjClose
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
@@ -44,8 +47,8 @@ var Strategy = function(app) {
 	var _dataLen = _smaEntryLen + config.dateOffset;
 
 
-    this.getNextPiecesCount = function(c) {
-        if(!c) return 1;
+	this.getNextPiecesCount = function(c) {
+		if(!c) return 1;
 		if(c == 1) return 2;
 		if(c == 3) return 3;
 		if(c == 6) return 4;
@@ -55,7 +58,7 @@ var Strategy = function(app) {
 
 	function addWeekends(count) {
 		return Math.floor(count / 5 * 7);
-	};
+	}
 
 	this.queryTickers = function(config, done) {
 		if(config.tickers) return done(null, null);
@@ -72,9 +75,13 @@ var Strategy = function(app) {
 
 	this.getWeekDaysInPast = function(days, from) {
 		from = moment(from || moment());
+    from.subtract(days || 0, 'days')
+
 		var dayNumber = from.day();
-		if(dayNumber == 6) days++; // saturday
-		if(dayNumber === 0) days += 2; // sunday
+		if(dayNumber == 6) days = 1; // saturday
+		else if(dayNumber === 0) days = 2; // sunday
+		else days = 0
+
 		return from.subtract(days || 0, 'days').format(_dateFormat);
 	};
 
@@ -154,18 +161,37 @@ var Strategy = function(app) {
 		});
 	};
 
+	this.checkHistoricalData = function(tickers, data, dateTo) {
+    Object.keys(data).forEach(function (ticker) {
+      var last = data[ticker][data[ticker].length - 1]
+			if(!last || last.date !== dateTo) {
+      	console.log('ERR: missing data for %s - deleting'.yellow, ticker)
+				console.log(last, dateTo)
+			}
+    })
+		return data
+	}
+
 	this.downloadHistory = function(config, done) {
-		var dateFrom = self.getWeekDaysInPast(addWeekends(_dataLen), config.date);
-		var dateTo = self.getWeekDaysInPast(1, config.date);
-		var tickers = "'"+config.tickers.join("','")+"'";
+		var len = addWeekends(_dataLen);
+		var dateFrom = self.getWeekDaysInPast(len, config.date);
+    var dateTo = self.getWeekDaysInPast(1, config.date);
+
+    var tickers = "'"+config.tickers.join("','")+"'";
+
 
 		Log.info("Reading history data from %s to %s", dateFrom, dateTo);
 
-		if(config.internalHistory || config.internalHistorical)
-			DB.getData("ticker as symbol,  adjClose as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+		if(config.preloadHistory) {
+			config.data = History.getRange(config.tickers, len, dateTo)
+      done(null, config);
+		} else if(config.internalHistory || config.internalHistorical)
+			DB.getData("ticker as symbol,  adjClose as close, DATE_FORMAT(date, '%Y-%m-%d') as date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND ticker IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
 
 				config.data = self.deserializeHistoricalData(res);
+        config.data = self.checkHistoricalData(config.tickers, config.data, dateTo)
+
 				done(err, config);
 			});
 		else
@@ -203,11 +229,6 @@ var Strategy = function(app) {
 		Log.info('Saving new equity with date '+date);
 
 		var state = config.currentState;
-
-		// dont save when there are no changes in positions
-		// if(!config.changedPositions)
-		// 	return done(null, config);
-
 		DB.insert("equity_history", {
 			capital: state.current_capital,
 			free_pieces: state.free_pieces,
@@ -397,7 +418,6 @@ var Strategy = function(app) {
 	};
 
 	this.getLastImportId = function(done) {
-
 		DB.get("import_id", "import_batch", "result = 1", null, "import_id DESC", done);
 	};
 
@@ -414,6 +434,9 @@ var Strategy = function(app) {
 		config.indicators = {};
 		for(var ticker in config.data) {
 			var data = config.data[ticker];
+
+			if(!data || !data.length)
+				continue;
 
 			config.indicators[ticker] = {
 				ticker: ticker,
@@ -557,13 +580,14 @@ var Strategy = function(app) {
 		Object.keys(config.indicators).forEach(function(ticker) {
 			var item = _.toArray(config.indicators[ticker]);
 			item.push(config.importId);
+			item.push(config.date.format("YYYY-MM-DD HH:mm:ss"));
 			buffer.push(item);
 		});
 
 		if(!buffer.length)
 			return done(null, config);
 
-		DB.insertValues("indicators (ticker, price, sma5, sma200, rsi14, import_id)", buffer, function(err, res) {
+		DB.insertValues("indicators (ticker, price, sma5, sma200, rsi14, import_id, date)", buffer, function(err, res) {
 			done(err, config);
 		});
 	};
@@ -601,7 +625,20 @@ var Strategy = function(app) {
 					if(isOpenedPosition || (item.sma200 && item.price > item.sma200))
 						stocks.push(item);
 				}
-			} else if (self.config.scaleStrategy  === "lower") {
+			} else if (self.config.scaleStrategy  === "rsiLower") {
+
+				var prevPrice = 99999999; // larger than any possible open price
+        if(isOpenedPosition) {
+          var pos = config.positions[ticker];
+          prevPrice = pos[pos.length - 1].open_price;
+        }
+
+        if(item.price <= piecesCapital && item.price < prevPrice && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
+          if(isOpenedPosition || (item.sma200 && item.price > item.sma200))
+            stocks.push(item);
+        }
+
+      } else if (self.config.scaleStrategy  === "lower") {
 
 				if(item.price <= piecesCapital && item.rsi > 0 && item.price < item.sma5 && !config.closePositions[ticker]) {
 
@@ -610,8 +647,10 @@ var Strategy = function(app) {
 						// last open price
 						var originalPrice = pos[pos.length - 1].open_price;
 
+						var diff = (originalPrice - item.price) / originalPrice * 100;
+
 						// console.log("%s: OriginalPrice %d vs newPrice %d", ticker, originalPrice, item.price);
-						if(item.price < originalPrice)
+            if(item.price 	< originalPrice && diff > 0.5)
 							stocks.push(item);
 					} else {
 
@@ -946,6 +985,16 @@ var Strategy = function(app) {
 		}
 	};
 
+	this.preloadHistory = function (config, done) {
+		if(!config.preloadHistory)
+			return done()
+
+    var dateFrom = self.getWeekDaysInPast(addWeekends(_dataLen), config.from);
+    var dateTo = config.to
+
+    History.preloadHistory(config.tickers, dateFrom, dateTo, done)
+  }
+
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
 
@@ -956,7 +1005,8 @@ var Strategy = function(app) {
 			function(config, done) {
 				async.parallel({
 					clear: self.clearPreviousData.bind(null, config),
-					tickers: self.queryTickers.bind(null, config)
+					tickers: self.queryTickers.bind(null, config),
+					history: self.preloadHistory.bind(null, config)
 				},done);
 			},
 			self.processTickers.bind(null, config),
