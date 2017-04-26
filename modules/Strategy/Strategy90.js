@@ -489,7 +489,7 @@ var Strategy = function(app) {
 		}
 		
 		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
-			DB.getData("*", _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
+			DB.getData("*, "+_PRICE_COLUMN_NAME+' as close', _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
 		else
 			Broker.getMarketPriceBulk(config.tickers, processApiResult);
 	};
