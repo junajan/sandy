@@ -14,13 +14,16 @@ var Strategy = function(app) {
 
 		// rsi - scale when rsi2 < 10
 		// lower - scale when price is lower than previous openPrice
-		// lowerThanFirst - scale when price is lower than first openPrice
 		scaleStrategy: "rsi" // lower, lowerThanFirst
 	});
 
 	this.config = config;
 
-	console.log("Using scale strategy: %s, allowed are [rsi, lower, lowerThanFirst]", config.scaleStrategy);
+	console.log("Using scale strategy: %s, allowed are [rsi, lower]", config.scaleStrategy);
+	if(config.scaleStrategy === "lower") {
+		if(config.scaleStrategyLowerDiff)
+			console.log('Using configuration for lower scale strategy minDiff = %d', config.scaleStrategyLowerDiff)
+	}
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
@@ -30,11 +33,12 @@ var Strategy = function(app) {
 		var Broker = require(config.dirCore+"OrderManager")(app);
 
 	// settings
-	var _PRICE_COLUMN_NAME = 'close'; // or adjClose
+	var _PRICE_COLUMN_NAME = 'adjClose';
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
+	// var _DB_FULL_HISTORY_TABLE = "stock_history_full_quandl";
 	var _dateFormat = "YYYY-MM-DD";
 	var _smaEntryLen = 200;
 	var _smaExitLen = 5;
@@ -440,8 +444,6 @@ var Strategy = function(app) {
 	this.appendActualPrices = function(config, done) {
 		Log.info('Appending actual prices');
 		for(var symbol in config.actual) {
-			var item = config.actual[symbol];
-
 			if(!config.data[symbol]) {
 				Log.info(("Ticker("+symbol+") does not exists in data feed!").red);
 				continue;
@@ -480,7 +482,7 @@ var Strategy = function(app) {
 
 		function processDBResult(err, res) {
 			if(err) return done(err, config);
-			
+
 			res.forEach(function(item) {
 				config.actual[item.symbol] = item;
 			});
@@ -569,11 +571,11 @@ var Strategy = function(app) {
 		});
 	};
 	
-	this.isLastPriceEntry = function(ticker, config, done) {
+	this.isLastPriceEntry = function(symbol, config, done) {
 		if(!config.internalHistory)
 			return done(false);
 
-		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [config.date.format(), ticker], function(err, res) {
+		DB.get("id", _DB_FULL_HISTORY_TABLE, "date > ? and symbol = ?", [config.date.format(), symbol], function(err, res) {
 			if(err)
 				throw err;
 			done(!res);
@@ -583,74 +585,70 @@ var Strategy = function(app) {
 	this.getStockForBuy = function(config) {
 		Log.info('Filtering stocks for buy condition');
 
-		var stocks = [];
+		var stocksToBuy = [];
 		var piecesCapital = config.newState.unused_capital / config.newState.free_pieces;
 		if(config.sellAll)
-			return stocks;
-
+			return stocksToBuy;
 
 		// vyber akcie co maji RSI pod 10
 		for(var ticker in config.indicators) {
 			var item = config.indicators[ticker];
 			var isOpenedPosition = !!config.positionsAggregated[ticker];
 
-			// Log.info(("Ticker: "+ item.ticker+ " RSI10: " + item.rsi + " Price: " + item.price + " Sma200: "+ item.sma200+ " Sma5: "+ item.sma5).green);
+			// don't buy if:
+			// - we do not have enough capital pieces
+			// - stock will be sold in the same run
+      if(item.price > piecesCapital || config.closePositions[ticker])
+      	continue;
 
+      // first buy is when the stock goes under RSI 10 and above SMA 200
+			if(!isOpenedPosition) {
+        if(item.rsi < _minRSI && item.sma200 && item.price > item.sma200) {
+          stocksToBuy.push(item);
+					continue;
+
+				} else {
+					// if we don't hold this stock and it does not match required indicators
+					// than skip it
+					continue;
+				}
+			}
+
+			// handle scaling based on the selected strategy
+			// - rsi - scale when RSI < 10
+			// - lower - when price is lower then last buy price
+			// - lower with diff - when price is lower at least N% then last buy price
 			if(self.config.scaleStrategy === 'rsi') {
+				if(item.rsi <= _minRSI)
+					stocksToBuy.push(item);
 
-				if(item.price <= piecesCapital && item.rsi > 0 && item.rsi <= _minRSI && item.price < item.sma5 && !config.closePositions[ticker]) {
-					if(isOpenedPosition || (item.sma200 && item.price > item.sma200))
-						stocks.push(item);
-				}
 			} else if (self.config.scaleStrategy  === "lower") {
+				var pos = config.positions[ticker];
+				var lastOpenPrice = pos[pos.length - 1].open_price;
+				var diffValid = item.price < lastOpenPrice;
 
-				if(item.price <= piecesCapital && item.rsi > 0 && item.price < item.sma5 && !config.closePositions[ticker]) {
+				if(self.config.scaleStrategyLowerDiff) {
+					const diff = item.price - lastOpenPrice;
+					const diffPercent = Math.abs(diff / lastOpenPrice * 100);
 
-					if(isOpenedPosition) {
-						var pos = config.positions[ticker];
-						// last open price
-						var originalPrice = pos[pos.length - 1].open_price;
-
-						// console.log("%s: OriginalPrice %d vs newPrice %d", ticker, originalPrice, item.price);
-						if(item.price < originalPrice)
-							stocks.push(item);
-					} else {
-
-						if(item.rsi < _minRSI && item.sma200 && item.price > item.sma200)
-							stocks.push(item);
-					}
+					diffValid = diff < 0 && diffPercent >= self.config.scaleStrategyLowerDiff;
 				}
-			} else if (self.config.scaleStrategy  === "lowerThanFirst") {
 
-				if(item.price <= piecesCapital && item.rsi > 0 && item.price < item.sma5 && !config.closePositions[ticker]) {
-
-					if(isOpenedPosition) {
-						var pos = config.positions[ticker];
-						// first open price
-						var originalPrice = pos[0].open_price;
-
-						// console.log("%s: OriginalPrice %d vs newPrice %d", ticker, originalPrice, item.price);
-						if(item.price < originalPrice)
-							stocks.push(item);
-					} else {
-
-						if(item.rsi < _minRSI && item.sma200 && item.price > item.sma200)
-							stocks.push(item);
-					}
-				}
+				if(diffValid)
+					stocksToBuy.push(item);
 			}
 		}
 
-		// serad je podle RSI
-		stocks.sort(function(a, b) {
+		// sort buy candidates by RSI
+		stocksToBuy.sort(function(a, b) {
 			return (a.rsi > b.rsi) ? 1 : -1;
 		});
 
-		stocks.forEach(function(item) {
+		stocksToBuy.forEach(function(item) {
 			Log.info("BuyFilter::Ticker: "+ item.ticker+ " | RSI: " + item.rsi.toFixed(2) + " | Price: " + item.price + " | Sma200: "+ item.sma200.toFixed(2) + " | Sma5: "+ item.sma5.toFixed(2));
 		});
 
-		return stocks;
+		return stocksToBuy;
 	};
 
 	this.getCapitalByPiece = function(info, pieces) {
