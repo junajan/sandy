@@ -77,7 +77,7 @@ function readEodData(boundaries) {
 
 	return Promise.map(boundaries, (item) => {
 		return new Promise((resolve, reject) => {
-			DB.getData('adjLow as low, DATE_FORMAT(date, "%Y-%m-%d") as date', TABLE_READ, 'ticker = ? AND date >= ? and date <= ? ORDER BY date ASC', [item.ticker, item.from, item.to], (err, res) => {
+			DB.getData('adjLow as low, DATE_FORMAT(date, "%Y-%m-%d") as date', TABLE_READ, 'symbol = ? AND date >= ? and date <= ? ORDER BY date ASC', [item.ticker, item.from, item.to], (err, res) => {
 				if(err) return reject(err)
 				data[item.ticker] = res
 				resolve()
