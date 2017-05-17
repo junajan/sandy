@@ -48,8 +48,8 @@ var Strategy = function(app) {
 	var _dataLen = _smaEntryLen + config.dateOffset;
 
 
-    this.getNextPiecesCount = function(c) {
-        if(!c) return 1;
+	this.getNextPiecesCount = function(c) {
+		if(!c) return 1;
 		if(c == 1) return 2;
 		if(c == 3) return 3;
 		if(c == 6) return 4;
@@ -59,7 +59,7 @@ var Strategy = function(app) {
 
 	function addWeekends(count) {
 		return Math.floor(count / 5 * 7);
-	};
+	}
 
 	this.queryTickers = function(config, done) {
 		if(config.tickers) return done(null, null);
@@ -102,7 +102,7 @@ var Strategy = function(app) {
 					item.low,
 					item.close,
 					item.volume,
-					item.adjClose,
+					item.close, // Google sends adjClose as close
 					item.symbol,
 				]);
 			}
@@ -128,24 +128,6 @@ var Strategy = function(app) {
 		return out;
 	};
 
-	this.saveData = function(config, done) {
-		Log.info("Saving data for "+ Object.keys(config.data).length +" tickers");
-
-		if(config.internalHistory) {
-			Log.info('Saving data - Using internal history so nothing was saved');
-			return done(null, config);
-		}
-
-		DB.insertValues(
-			'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
-			self.serializeHistoricalData(config.importId, config.data),
-			function(err, res) {
-				Log.info('Data was saved');
-				config.insert = res;
-				done(err, config);
-			});
-	};
-
 	this.createImportId = function(config, done) {
 		DB.insert("import_batch", {trigger: "robot"}, function(err, res) {
 			if(!res) {
@@ -162,7 +144,6 @@ var Strategy = function(app) {
 		var dateFrom = self.getWeekDaysInPast(addWeekends(_dataLen), config.date);
 		var dateTo = self.getWeekDaysInPast(1, config.date);
 		var tickers = "'"+config.tickers.join("','")+"'";
-
 		Log.info("Reading history data from %s to %s", dateFrom, dateTo);
 
 		if(config.internalHistory || config.internalHistorical)
@@ -183,7 +164,33 @@ var Strategy = function(app) {
 			});
 	};
 
-	this.markImportAsFinished = function(info, done) {
+  this.saveData = function(config, done) {
+    Log.info("Saving data for "+ Object.keys(config.data).length +" tickers");
+
+    if(config.internalHistory) {
+      Log.info('Saving data - Using internal history so nothing was saved');
+      return done(null, config);
+    }
+
+    var serializedData = self.serializeHistoricalData(config.importId, config.data)
+    if(!serializedData.length) {
+      Log.error('No historical data were loaded')
+      Log.debug('Historical data:', config.data)
+      return done('No historical data given')
+    }
+
+    DB.insertValues(
+      'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
+      self.serializeHistoricalData(config.importId, config.data),
+      function(err, res) {
+        if(err) return done(err)
+        Log.info('Data was saved');
+        config.insert = res;
+        done(err, config);
+      });
+  };
+
+  this.markImportAsFinished = function(info, done) {
 		Log.info('Marking import as finished');
 		DB.update("import_batch", {result: 1, rows_imported: info.insert && info.insert.affectedRows}, "import_id = ?", info.importId, function(err, res) {
 			done(err, info);
