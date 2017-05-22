@@ -105,7 +105,7 @@ var Robot = function(app) {
 			// schedule processes
 			scheduler.today(times.init.format('HH:mm'), self.strategyInit);
 			scheduler.today(times.process.format('HH:mm'), self.strategyProcess);
-			scheduler.today(times.splitCheck.format('HH:mm'), self.splitCheck);
+			// scheduler.today(times.splitCheck.format('HH:mm'), self.splitCheck); // TODO DISABLED
 		});
 	};
 
