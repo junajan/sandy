@@ -78,6 +78,17 @@ var Mailer = function(app) {
 			})
 		}
 
+		if(smsConf.smtp) {
+			opts = smtpTransport({
+        port: smsConf.smtp.port,
+				host: smsConf.smtp.host,
+				auth: {
+					user: smsConf.smtp.user,
+					pass: smsConf.smtp.pass
+				}
+			})
+		}
+
 		var transport = nodemailer.createTransport(opts);
 
 		var mailConfig = {  //email options
@@ -87,7 +98,14 @@ var Mailer = function(app) {
 			text: text
 		};
 
-		transport.sendMail(mailConfig);
+		transport.sendMail(mailConfig)
+			.then(function (res) {
+				console.log(res)
+			})
+			.catch(function (err) {
+				console.error(err)
+      })
+
 	};
 
 	this.sendStartMessage = function() {
@@ -108,7 +126,23 @@ var Mailer = function(app) {
 		self.send(title, msg);
 	};
 
+	this.sendSplitCheckerWarning = function (stocks) {
+    var title = config.env+" sandy hit splitChecker!";
+    var msg = 'Sandy bot triggered splitChecker for following stocks:'
+
+		stocks.forEach(function (stock) {
+			msg += 'Stock: '+stock.ticker
+				+' | actual price: '+stock.actualPrice
+				+'('+stock.actualDate
+				+') | old price: '+stock.price
+				+'('+stock.date+') | diffPercent: '+stock.diffPercent+'%\n'
+    })
+
+    self.send(title, msg);
+  }
+
 	app.on('event:error_late_start', this.sendLateStartErrorMessage);
+	app.on('event:warn_split_checker', this.sendSplitCheckerWarning);
 	this.sendStartMessage();
 	return this;
 };
