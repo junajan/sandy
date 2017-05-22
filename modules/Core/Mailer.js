@@ -108,8 +108,6 @@ var Mailer = function(app) {
 
 	};
 
-	this.sendDailySmsLog("AHOJ")
-
 	this.sendStartMessage = function() {
 		var title = config.env+" sandy was stared";
 		var msg = 'Sandy bot was started at '+getFullDate(moment());

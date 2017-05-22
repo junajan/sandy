@@ -1,3 +1,4 @@
+var splitCheck = require("./SplitCheck");
 var scheduler = require("./Scheduler");
 var moment = require('moment');
 var _ = require('lodash');
@@ -10,6 +11,7 @@ var Robot = function(app) {
 	var DELAY_PROCESSING = 1;
 	var DELAY_INIT = 4;
 
+	self.SplitCheck = new splitCheck(app);
 	self.Strategy = null;
 	self.strategyInited = false;
 	self.strategyConfig = {};
@@ -42,11 +44,27 @@ var Robot = function(app) {
 
 		self.Strategy.process(self.strategyConfig, function(err, res) {
 			console.timeEnd("Processing finished");
-			if(err) Log.error("Strategy processing returned error:", err);
+			if(err) Log.error("Strategy processing returned an error:", err);
 
 			if(_.isFunction(done)) done(err, res);
 		});
 	};
+
+	this.splitCheck = function (done) {
+    Log.info(("Running split check at:"+ moment().format('LT')).green);
+    console.time("SplitCheck finished");
+
+    self.SplitCheck.splitCheck(self.strategyConfig, function(err, stocks) {
+      console.timeEnd("SplitCheck finished");
+      if(err) Log.error("SplitCheck returned an error:", err);
+
+      if(err) return Log.error("Error when checking splits: ".red, err);
+      if(stocks.length)
+        app.emit('event:warn_split_checker', stocks);
+
+      if(_.isFunction(done)) done(err, stocks);
+    });
+  }
 
 	this.scheduleToday = function() {
 		var dayOfWeek = moment().isoWeekday();
@@ -56,33 +74,38 @@ var Robot = function(app) {
 		
 		Openings.getTodaysClosingTime(moment().format('YYYY-MM-DD'), function(err, time) {
 			if(err) return Log.error("error when scheduling: ".red, err);
-
-			console.log("Todays closing time is at:", time);
+			// do not trade if there is a holiday
 			if(!time) return false;
+
+			console.log("Today's closing time is at:", time);
 
 			var timeClose = moment(time, "HH:mm");
 			if(!timeClose.isValid()) return console.log('Time is invalid'.red);
 
-			var timeStrategyInit = moment(timeClose).subtract(DELAY_INIT, 'minutes');
-			var timeStrategyProcess = moment(timeClose).subtract(DELAY_PROCESSING, 'minutes');
-			
-			Log.info("Strategy will be inited today at", timeStrategyInit.format('LTS'), "and started at", timeStrategyProcess.format('LTS'));
+			const times = {
+				init: moment(timeClose).subtract(DELAY_INIT, 'minutes'),
+				process: moment(timeClose).subtract(DELAY_PROCESSING, 'minutes'),
+				splitCheck: moment('10:00', 'HH:mm')
+			}
 
-			if(moment().isAfter(timeStrategyInit)) {
+			Log.info("Strategy will be inited today at", times.init.format('LTS'), "and started at", times.process.format('LTS'));
+
+			if(moment().isAfter(times.init)) {
 
 				if(moment().isBefore(moment(timeClose)))
 					app.emit('event:error_late_start', {
 						now: moment(),
-						timeStrategyInit: timeStrategyInit,
+						timeStrategyInit: times.init,
 						timeClose: moment(timeClose)
 					});
 
 				return Log.error("It is too late to start strategy init today - exiting");
 			}
 
-			// schedule strategy init
-			scheduler.today(timeStrategyInit.format('HH:mm'), self.strategyInit);
-			scheduler.today(timeStrategyProcess.format('HH:mm'), self.strategyProcess);
+			// schedule processes
+			scheduler.today(times.init.format('HH:mm'), self.strategyInit);
+			scheduler.today(times.process.format('HH:mm'), self.strategyProcess);
+			scheduler.today(times.splitCheck.format('HH:mm'), self.splitCheck);
 		});
 	};
 
@@ -94,7 +117,7 @@ var Robot = function(app) {
 		var dayOfWeek = moment().isoWeekday();
 
 		if(dayOfWeek == 6 || dayOfWeek == 7)
-			return Log.info("Today is weekday - strategy will continue on monday");
+			return Log.info("Today is a weekday - strategy will continue on monday");
 		if(moment().hour() < scheduleMorningHour)
 			return Log.info("Strategy will be scheduled at %dAM", scheduleMorningHour);
 

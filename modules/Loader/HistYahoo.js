@@ -16,8 +16,6 @@ function chunkArray(array, chunkSize) {
 
 function yDownloader() {
 	var self = this;
-	// var _defaultFields = ['s', 'n', 'd1', 'l1', 'y', 'r'];
-	// var _fields;
 
 	function _wrapConf(ticker, from, to) {
 		return {
@@ -26,10 +24,6 @@ function yDownloader() {
 			to: to,
 		};
 	}
-
-	// this.setFields = function(f) {
-	// 	_fields = f || _defaultFields;
-	// };
 
 	this.serializeHistoricalData = function(importId, data) {
 		var importData = [];
