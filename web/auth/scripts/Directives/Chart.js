@@ -43,8 +43,11 @@ Sandy.directive('chart', [
             width: 2,
             label: {
               y: 290,
+              x: -5,
+              zIndex: 2,
+              align: 'right',
               rotation: 0,
-              text: label +' USD'
+              text: label
             }
           }
         })
