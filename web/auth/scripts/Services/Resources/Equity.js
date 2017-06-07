@@ -3,7 +3,7 @@ Sandy.factory('Equity', [
 	function($resource) {
 		return $resource($$config.api + 'equity',{}, {
 			get: {
-				isArray:true
+				isArray:false
 			}
 		});
 	}

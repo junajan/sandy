@@ -1,3 +1,5 @@
+var async = require('async');
+
 var Api = function(app) {
 	var self = this;
 	var config = app.config;
@@ -52,18 +54,29 @@ var Api = function(app) {
 	this.getEquity = function(req, res) {
 		var from = req.query.from || 0;
 
-		var sql = "SELECT *, capital + transfer as adjCapital " +
+		var equitySql = "SELECT *, capital + tSum as adjCapital " +
 			"FROM (" +
-			"SELECT h.*, IFNULL(SUM(t.amount), 0) as transfer " +
+			"SELECT h.*, IFNULL(SUM(t.amount), 0) as tSum " +
 			"FROM equity_history as h " +
 			"LEFT JOIN transfers t " +
 				"ON t.date > h.date " +
 			"GROUP BY h.date, h.id, h.import_id ORDER BY h.date) as tmp " +
 			"WHERE DATE(date) > DATE(?) ORDER BY date ASC";
 
-		DB.sql(sql, from, function(err, data) {
-			res.json(data);
-		});
+		var transferSql = "SELECT * FROM transfers t WHERE DATE(date) > DATE(?) ORDER BY date ASC";
+
+
+    async.parallel({
+      equity: function(done) {
+        DB.sql(equitySql, from, done)
+      },
+			transfers: function(done) {
+        DB.sql(transferSql, from, done)
+      }
+		}, function(err, data) {
+    	if(err) return res.json(err)
+      res.json(data);
+		})
 	};
 
 	this.getFullConfig = function(req, res) {

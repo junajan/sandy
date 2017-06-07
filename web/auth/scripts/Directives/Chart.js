@@ -5,7 +5,8 @@ Sandy.directive('chart', [
 			restrict: 'E',
 			replace: true,
 			scope: {
-				data: '='
+				data: '=',
+				transfers: '='
 			},
 			template: '<div class="chart" style="height: 450px; width: 100%;"></div>',
 			link: function($scope, element, attrs) {
@@ -25,6 +26,29 @@ Sandy.directive('chart', [
 					id: "s1",
 					color: Highcharts.getOptions().colors[3]
 				};
+
+				var transfers = $scope.transfers.map(function(item) {
+          var label = item.amount
+
+					if(label === 0)
+						return null
+
+					if(label > 0)
+						label = '+'+label
+
+					return {
+            value: new Date(item.date),
+            color: (item.amount > 0 ? 'green' : 'red'),
+            dashStyle: 'shortdash',
+            width: 2,
+            label: {
+              y: 290,
+              rotation: 0,
+              text: label +' USD'
+            }
+          }
+        })
+					.filter(Boolean)
 
 				// var s2 = {name: 'Unused capital', data: [], id: "s2"};
 				var conf = {
@@ -61,6 +85,7 @@ Sandy.directive('chart', [
 						x: -20
 					},
 					xAxis: {
+            plotLines: transfers,
 						type: 'datetime',
 						dateTimeLabelFormats: {
 							month: '%e. %b',
