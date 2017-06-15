@@ -540,7 +540,7 @@ var Strategy = function(app) {
 			var item = pos[i];
 
 			if(!out[item.ticker])
-				out[item.ticker] = item;
+				out[item.ticker] = _.clone(item);
 			else {
 				out[item.ticker].pieces += item.pieces;
 				out[item.ticker].open_price = self.countWeightenedAverage(out[item.ticker].open_price, out[item.ticker].amount, item.open_price, item.amount);
