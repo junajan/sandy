@@ -10,7 +10,20 @@ Sandy.controller ( "Orders", [
 	    	Orders[queryMethod](function(res) {
 					$scope.orders = res;
 					$scope.load && $timeout($scope.load, 1000);
-          $rootScope.countActualProfitLoss(res)
+
+					var mapped = res.map(function (item) {
+						return {
+							ticker: item.ticker,
+							amount: item.amount,
+							open_price: item.open_price_total / item.amount,
+              close_date: item.close_date,
+						}
+          })
+						.filter(function (item) {
+							return !item.close_date
+            })
+
+          $rootScope.countActualProfitLoss(mapped)
 	    	});
     	};
 

@@ -17,7 +17,7 @@
 	</thead>
 	<tbody>
 		<tr ng-repeat="item in orders">
-			<td><b><a href='//finance.yahoo.com/echarts?s={{item.ticker}}' target="_blank">{{item.ticker}}</a></b></td>
+			<td><b><a href='https//finance.yahoo.com/quote/{{item.ticker}}' target="_blank">{{item.ticker}}</a></b></td>
 			<td>{{item.amount}} ({{item.scale}})</td>
 			<td>{{item.open_date_min | date}}</td>
 			<td>{{item.open_price_total | currency:'$'}} ({{ item.open_price_total / item.amount | currency:'$'}})</td>
