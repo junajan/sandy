@@ -11,6 +11,8 @@ var Mailer = function(app) {
 	var emailConf = config.email;
 	var smsConf = config.sms;
 
+	var apiDisconnectSent = false
+
 	function getFullDate(d) {
 		return d.format("YYYY-MM-DD HH:mm:ss");
 	}
@@ -56,56 +58,57 @@ var Mailer = function(app) {
 		});
 	};
 
+	this.sendSms = function(text) {
+    var email = smsConf.to;
+    var title = smsConf.subject;
+    var opts = {};
+
+    if(smsConf.gmail) {
+      opts = smtpTransport({
+        service: 'gmail',
+        auth: {
+          user: smsConf.gmail.user,
+          pass: smsConf.gmail.pass
+        }
+      })
+    }
+
+    if(smsConf.smtp) {
+      opts = smtpTransport({
+        port: smsConf.smtp.port,
+        host: smsConf.smtp.host,
+        auth: {
+          user: smsConf.smtp.user,
+          pass: smsConf.smtp.pass
+        }
+      })
+    }
+
+    var transport = nodemailer.createTransport(opts);
+
+    var mailConfig = {  //email options
+      from: smsConf.from,
+      to: email,
+      subject: title,
+      text: text
+    };
+
+    transport.sendMail(mailConfig)
+      .then(function (res) {
+        console.log(res)
+      })
+      .catch(function (err) {
+        console.error(err)
+      })
+	}
+
 	this.sendDailySmsLog = function (text) {
 		if(!smsConf.enabled)
 			return false;
 
 		Log.info('Sending SMS notice');
-
 		// max text len 48 characters
-		var text = text;
-		var email = smsConf.to;
-		var title = smsConf.subject;
-		var opts = undefined;
-
-		if(smsConf.gmail) {
-			opts = smtpTransport({
-				service: 'gmail',
-				auth: {
-					user: smsConf.gmail.user,
-					pass: smsConf.gmail.pass
-				}
-			})
-		}
-
-		if(smsConf.smtp) {
-			opts = smtpTransport({
-        port: smsConf.smtp.port,
-				host: smsConf.smtp.host,
-				auth: {
-					user: smsConf.smtp.user,
-					pass: smsConf.smtp.pass
-				}
-			})
-		}
-
-		var transport = nodemailer.createTransport(opts);
-
-		var mailConfig = {  //email options
-			from: smsConf.from,
-			to: email,
-			subject: title,
-			text: text
-		};
-
-		transport.sendMail(mailConfig)
-			.then(function (res) {
-				console.log(res)
-			})
-			.catch(function (err) {
-				console.error(err)
-      })
-
+		self.sendSms(text)
 	};
 
 	this.sendStartMessage = function() {
@@ -126,6 +129,23 @@ var Mailer = function(app) {
 		self.send(title, msg);
 	};
 
+	this.sendApiDisconnect = function(state) {
+		var title = config.env+" sandy API disconnect";
+		var msg = 'Sandy bot API disconnect event occurred';
+
+		if(state.ib)
+			return apiDisconnectSent = false
+
+		// do not send alert more than once
+		if(apiDisconnectSent)
+			return
+
+    Log.warn('Sending API disconnect alert');
+		apiDisconnectSent = true
+		self.sendSms(msg)
+    self.send(title, msg);
+	};
+
 	this.sendSplitCheckerWarning = function (stocks) {
     var title = config.env+" sandy hit splitChecker!";
     var msg = 'Sandy bot triggered splitChecker for following stocks:'
@@ -143,6 +163,7 @@ var Mailer = function(app) {
 
 	app.on('event:error_late_start', this.sendLateStartErrorMessage);
 	app.on('event:warn_split_checker', this.sendSplitCheckerWarning);
+	app.on('API.connection', this.sendApiDisconnect);
 	this.sendStartMessage();
 	return this;
 };
