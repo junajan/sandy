@@ -1,14 +1,17 @@
+var _ = require('lodash');
 var async = require('async');
+var nasdaqFinance = require('nasdaq-finance').default
 
 var Api = function(app) {
 	var self = this;
-	var config = app.config;
+  var Nasdaq = new nasdaqFinance()
+  var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
 
 	var Yahoo = require(config.dirLoader+'HistYahoo');
 
-	this.openPrices = {'MO': 123};
+	this.openPrices = {};
 
 	this.getWatchlistIndicators = function(req, res) {
     DB.getData('date, ticker, sma200, price', 'indicators', 'import_id = (SELECT MAX(import_id) FROM indicators)', function(err, data) {
@@ -121,25 +124,20 @@ var Api = function(app) {
 			if(err)
 				return Log.error('There was an error while retrieving data from DB', err);
 
-			tickers = tickers.map(function(p) {
-				return p.ticker;
-			});
-			Yahoo.actual(tickers, function(err, res) {
-				var out = {};
-
-				if(err)
-					Log.trace("There was an error when requesting actual prices from Yahoo API", err);
-				else if(res)
-					res.map(function(d) {
-						out[d[0]] = d[1];
-					});
-
-				self.openPrices = out;
-			});
+			tickers.map(function (trade) {
+				Nasdaq.getPrice(trade.ticker)
+					.then(function (price) {
+            self.openPrices[trade.ticker] = price;
+					})
+					.catch(function (err) {
+						Log.warn("There was an error when requesting actual prices from Nasdaq", err);
+          })
+      });
 		});
 	};
 	
-	setInterval(this.loadUfinishedPrices, 10000);
+	setInterval(this.loadUfinishedPrices, 5000);
+  this.loadUfinishedPrices();
 	return this;
 };
 

@@ -31,3 +31,4 @@ Log.info("Running scheduler for automated trading");
 Robot = require(config.dirCore+"Robot")(app);
 Robot.setStrategy(Strategy);
 Robot.start(Strategy);
+

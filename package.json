@@ -44,6 +44,7 @@
     "log4js-memory-appender": "^1.0.3",
     "moment": "^2.9.0",
     "mysql": "^2.5.5",
+    "nasdaq-finance": "^1.1.4",
     "node-mysql": "^0.4.1",
     "node-schedule": "^0.1.16",
     "nodemailer": "^2.6.0",
