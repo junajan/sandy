@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var async = require('async');
+var moment = require('moment');
 var nasdaqFinance = require('nasdaq-finance').default
 
 var Api = function(app) {
@@ -119,22 +120,38 @@ var Api = function(app) {
 		res.json(self.openPrices);
 	};
 
-	this.loadUfinishedPrices = function() {
-		DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
-			if(err)
-				return Log.error('There was an error while retrieving data from DB', err);
+  this.loadUfinishedPrices = function() {
+    const isWeekDay = moment().isoWeekday() >= 6
+    let run = true
 
-			tickers.map(function (trade) {
-				Nasdaq.getPrice(trade.ticker)
-					.then(function (price) {
-            self.openPrices[trade.ticker] = price;
-					})
-					.catch(function (err) {
-						Log.warn("There was an error when requesting actual prices from Nasdaq", err);
-          })
-      });
-		});
-	};
+    if(isWeekDay && Object.keys(this.openPrices).length)
+      run = false
+
+    if(!isWeekDay && (moment().hour() < 9 || moment().hour() > 23))
+      run = false
+
+    if(run)
+      DB.getData('ticker', 'positions', 'close_date IS NULL')
+        .then((tickers) => {
+          tickers = tickers.map(function(p) {
+            return p.ticker;
+          });
+          if(tickers.length)
+            Yahoo.actual(tickers, function(err, res) {
+              var out = {};
+
+              if(err)
+                Log.trace("There was an error when requesting actual prices from Yahoo API", err);
+              else if(res)
+                res.map(function(d) {
+                  out[d[0]] = d[1];
+                });
+
+              self.openPrices = out;
+            });
+        });
+  };
+
 	
 	setInterval(this.loadUfinishedPrices, 5000);
   this.loadUfinishedPrices();
