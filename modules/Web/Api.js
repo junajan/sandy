@@ -124,7 +124,7 @@ var Api = function(app) {
     const isWeekDay = moment().isoWeekday() >= 6
     let run = true
 
-    if(isWeekDay && Object.keys(this.openPrices).length)
+    if(isWeekDay && Object.keys(self.openPrices).length)
       run = false
 
     if(!isWeekDay && (moment().hour() < 9 || moment().hour() > 23))
