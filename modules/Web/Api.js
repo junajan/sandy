@@ -131,25 +131,21 @@ var Api = function(app) {
       run = false
 
     if(run)
-      DB.getData('ticker', 'positions', 'close_date IS NULL')
-        .then((tickers) => {
-          tickers = tickers.map(function(p) {
-            return p.ticker;
-          });
-          if(tickers.length)
-            Yahoo.actual(tickers, function(err, res) {
-              var out = {};
+      DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
+        if(err)
+          return Log.error('There was an error while retrieving data from DB', err);
 
-              if(err)
-                Log.trace("There was an error when requesting actual prices from Yahoo API", err);
-              else if(res)
-                res.map(function(d) {
-                  out[d[0]] = d[1];
-                });
-
-              self.openPrices = out;
-            });
-        });
+        if(tickers.length)
+          tickers.map(function (trade) {
+						Nasdaq.getPrice(trade.ticker)
+							.then(function (price) {
+								self.openPrices[trade.ticker] = price;
+							})
+							.catch(function (err) {
+								Log.warn("There was an error when requesting actual prices from Nasdaq", err);
+							})
+					});
+				});
   };
 
 	
