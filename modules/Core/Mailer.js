@@ -163,7 +163,20 @@ var Mailer = function(app) {
 
 	app.on('event:error_late_start', this.sendLateStartErrorMessage);
 	app.on('event:warn_split_checker', this.sendSplitCheckerWarning);
-	app.on('API.connection', this.sendApiDisconnect);
+
+	let apiConnection = null
+	let apiDisconnectTimeout = null
+	app.on('API.connection', function(state) {
+		apiConnection = state.ib
+		clearTimeout(apiDisconnectTimeout)
+
+		if(apiConnection)
+			return;
+
+		apiDisconnectTimeout = setTimeout(function() {
+			this.sendApiDisconnect(state)
+		}, 60000);
+	});
 	this.sendStartMessage();
 	return this;
 };
