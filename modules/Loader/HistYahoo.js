@@ -1,5 +1,5 @@
 var csv = require("fast-csv");
-var googleFinance = require('google-finance');
+var googleFinance = require('yahoo-finance');
 var request = require('request');
 var _ = require('lodash');
 var async = require('async');
