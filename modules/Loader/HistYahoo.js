@@ -45,7 +45,7 @@ function yDownloader() {
 			}
 		});
 
-		return importData;
+		return importData.reverse();
 	};
 	
 	this.deleteHistory = function(db, done) {
