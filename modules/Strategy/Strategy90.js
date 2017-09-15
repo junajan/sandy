@@ -108,7 +108,7 @@ var Strategy = function(app) {
 			}
 		});
 
-		return importData;
+		return importData.reverse();
 	};
 	
 	this.deserializeHistoricalData = function(data) {
