@@ -92,6 +92,7 @@ var Strategy = function(app) {
 	this.serializeHistoricalData = function(importId, data) {
 		var importData = [];
 		Object.keys(data).forEach(function(ticker) {
+			data[ticker] = data[ticker].reverse()
 			
 			for(var i in data[ticker]) {
 				var item = data[ticker][i];
