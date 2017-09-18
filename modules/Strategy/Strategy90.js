@@ -92,6 +92,7 @@ var Strategy = function(app) {
 	this.serializeHistoricalData = function(importId, data) {
 		var importData = [];
 		Object.keys(data).forEach(function(ticker) {
+			
 			for(var i in data[ticker]) {
 				var item = data[ticker][i];
 				importData.push([
@@ -108,7 +109,7 @@ var Strategy = function(app) {
 			}
 		});
 
-		return importData.reverse();
+		return importData;
 	};
 	
 	this.deserializeHistoricalData = function(data) {
@@ -181,7 +182,7 @@ var Strategy = function(app) {
 
     DB.insertValues(
       'stock_history (import_id, date, open, high, low, close, volume, adjClose, symbol)',
-      self.serializeHistoricalData(config.importId, config.data),
+      serializedData,
       function(err, res) {
         if(err) return done(err)
         Log.info('Data was saved');
