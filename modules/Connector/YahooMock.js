@@ -130,6 +130,14 @@ var Mock = function(config, app) {
         }, HEARTHBEAT_INTERVAL);
     };
 
+    self.disconnect = function() {
+        return null;
+    }
+
+    self.getDailyHistory = function (ticker, dateFrom, barsCount) {
+
+    }
+
     app.emit("API.connection", app.apiConnection);
     self.watchConnection();
     
