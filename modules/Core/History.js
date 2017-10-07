@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const moment = require('moment');
 Promise = require('bluebird');
 
 const SecondaryService = require('../Connector/YahooMock');
@@ -32,8 +33,31 @@ class History {
       });
   }
 
+  removeInvalidData(data) {
+    Object.keys(data).forEach(ticker => {
+      const tickerData = data[ticker]
+      for (const row of tickerData) {
+        if (!row.open || !row.high || !row.low || !row.close) {
+          this.logger.error(`Ticker ${ticker} has invalid value on ${row.date} .. disabling ticker.`, row);
+          delete data[ticker];
+          return;
+        }
+      }
+
+      // check if the data are in the correct order (newest to oldest)
+      const newest = tickerData[0].date
+      const oldest = tickerData[tickerData.length - 1].date
+      if (moment(newest).isBefore(oldest))
+        data[ticker] = data[ticker].reverse();
+    });
+
+    return data;
+  }
+
   getHistoryMultiple (tickers, fromDate, barCount) {
-    return this.connectors.primary.getDailyHistoryMultiple(tickers, fromDate, barCount)
+    barCount = parseInt(barCount);
+
+    return this.connectors.primary.getDailyHistoryMultiple(tickers, fromDate, barCount + 50)
       .catch((err) => {
         this.logger.error(`There was an error when downloading history from primary service`, err);
         return Promise.resolve({})
@@ -54,10 +78,10 @@ class History {
           })
           .then((dataSecondary) => {
             this.logger.info(`Merging data from a secondary source`);
-            data = _.merge(data, dataSecondary);
-            return data;
+            return _.merge(data, dataSecondary);
           })
       })
+      .then(data => this.removeInvalidData(data))
   }
 }
 

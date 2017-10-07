@@ -131,7 +131,7 @@ var Mock = function (config, app) {
   }
 
   self.getDailyHistoryMultiple = function (symbol, dateFrom, barsCount) {
-    const daysInPast = barsCount / 5 * 7 + 20;
+    const daysInPast = barsCount / 5 * 7;
     const conf = {
       symbols: (_.isArray(symbol) ? symbol : [symbol]),
       to: moment(dateFrom).format('YYYY-MM-DD 22:00:00'),
