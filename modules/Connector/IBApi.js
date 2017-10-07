@@ -147,7 +147,6 @@ var IBApi = function(config, app) {
             app.emit("API.time", time);
 
         }).once('nextValidId', function (id) {
-
             Log.debug('First valid ID is'.yellow, id);
             orderId = id;
 
@@ -155,6 +154,7 @@ var IBApi = function(config, app) {
                 app.apiConnection.api = true;
                 app.apiConnection.ib = true;
 
+                app.emit("API.IB.ready");
                 app.emit("API.ready");
                 app.emit("API.connection", app.apiConnection);
             }
@@ -289,12 +289,12 @@ var IBApi = function(config, app) {
                     low,
                     close,
                     volume,
-                    ticker: info.ticker,
+                    symbol: info.ticker,
                     date: moment(date, 'YYYYMMDD').format('YYYY-MM-DD'),
                     adjClose: close,
                 }
 
-                info.buffer.push(row)
+                info.buffer.unshift(row)
             }
         });
 
@@ -564,18 +564,19 @@ var IBApi = function(config, app) {
     };
 
     // sometimes it returns less amount of days than what we request so we should request more and trim afterwards
-    self.getDailyHistory = function (ticker, fromDate, daysCount) {
+    self.getDailyHistory = function (ticker, fromDate, barCount) {
       const orderId = getNextOrderId();
       const tickerInfo = serializeTicker(ticker);
-      Log.debug('Streaming(%d) %d historical prices from %s for ticker %s:%s', orderId, daysCount, fromDate, ticker, tickerInfo.market)
+      Log.debug('Streaming(%d) %d historical prices from %s for ticker %s:%s', orderId, barCount, fromDate, ticker, tickerInfo.market)
 
+      fromDate = moment(fromDate).format('YYYYMMDD')
       return new Promise(function(resolve, reject) {
         const orderInfo = {
           orderId,
           ticker,
           tickerInfo,
           fromDate,
-          daysCount,
+          barCount,
           buffer: [],
           finish: () => {
             delete streamingHistoricalPrices[orderId];
@@ -601,8 +602,20 @@ var IBApi = function(config, app) {
 
         streamingHistoricalPrices[orderId] = orderInfo;
         const contract = ib.contract.stock(tickerInfo.ticker, tickerInfo.market,'USD')
-        ib.reqHistoricalData(orderId, contract, fromDate+' 22:00:00', daysCount+' D', '1 day', 'TRADES', 1, 1);
+        ib.reqHistoricalData(orderId, contract, fromDate+' 22:00:00', barCount+' D', '1 day', 'TRADES', 1, 1);
       });
+    };
+
+    self.getDailyHistoryMultiple = function (tickers, fromDate, barCount) {
+        return Promise.map(tickers, ticker =>
+            self.getDailyHistory(ticker, fromDate, barCount)
+            .tap((data) => Log.debug(`History loading ${ticker} finished`, data.length))
+            .catch((err) => {
+                Log.error(`Error occurred when downloading historical data for ${ticker}` , err);
+                return Promise.resolve([])
+            })
+        , { concurrency: 5 })
+          .then(data => _.zipObject(tickers, data));
     };
 
     self.disconnect = function () {

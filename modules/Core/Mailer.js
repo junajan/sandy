@@ -174,7 +174,7 @@ var Mailer = function(app) {
 			return;
 
 		apiDisconnectTimeout = setTimeout(function() {
-			this.sendApiDisconnect(state)
+			self.sendApiDisconnect(state)
 		}, 60000);
 	});
 	this.sendStartMessage();
