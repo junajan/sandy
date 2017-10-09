@@ -122,7 +122,7 @@ var IBApi = function(config, app) {
 
                 app.emit("API.connection", app.apiConnection);
 
-            } else if(data.code === 103) { // Duplicate order Id
+            } else if(data && data.code === 103) { // Duplicate order Id
                 var orderInfo = placedOrders[data.id];
 
                 if(orderInfo) {
@@ -579,6 +579,7 @@ var IBApi = function(config, app) {
           barCount,
           buffer: [],
           finish: () => {
+            clearTimeout(orderInfo.timeoutId)
             delete streamingHistoricalPrices[orderId];
           },
           resolve: () => {
@@ -597,7 +598,7 @@ var IBApi = function(config, app) {
             err.codeName = 'timeout';
 
             orderInfo.reject(err);
-          }, ORDER_TIMEOUT * 100)
+          }, ORDER_TIMEOUT * 5) // 5 min
         }
 
         streamingHistoricalPrices[orderId] = orderInfo;

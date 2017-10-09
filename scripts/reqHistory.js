@@ -48,7 +48,7 @@ app.once('API.ready', function() {
       process.exit()
     })
     .catch((err) => {
-      console.log(err)
+      console.log("Final ERROR:", err)
       process.exit(1)
     })
 })
