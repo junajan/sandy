@@ -8,8 +8,8 @@ var Robot = function(app) {
 	var scheduleMorningHour = 3;
 	var Openings = require("./Openings")(app);
 	var Log = app.getLogger("ROBOT");
-	var DELAY_PROCESSING = 1;
-	var DELAY_INIT = 4;
+	const DELAY_PROCESSING = 1;
+	const DELAY_INIT = 10;
 
 	self.SplitCheck = new splitCheck(app);
 	self.Strategy = null;

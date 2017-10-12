@@ -1,5 +1,5 @@
 var csv = require("fast-csv");
-var googleFinance = require('yahoo-finance');
+var yahooFinance = require('yahoo-finance');
 var request = require('request');
 var _ = require('lodash');
 var async = require('async');
@@ -75,12 +75,12 @@ function yDownloader() {
 	};
 
 	this.historical = function(conf, done) {
-    googleFinance.historical(conf, done);
+    yahooFinance.historical(conf, done);
 	};
 
 	this.get = function(ticker, from, to, cb) {
 		console.log("Getting ticker", ticker, "from", from, "to", to);
-    googleFinance.historical(_wrapConf(ticker, from, to),cb);
+    yahooFinance.historical(_wrapConf(ticker, from, to),cb);
 	};
 
 	this.getArray = function(arr, from, to, cb) {

@@ -1,8 +1,9 @@
 "use strict";
 
-var _ = require('lodash');
-var moment = require('moment');
-var async = require('async');
+const _ = require('lodash');
+const moment = require('moment');
+const async = require('async');
+const HistoryService = require('../Core/History');
 
 var Strategy = function(app) {
 	var self = this;
@@ -27,10 +28,11 @@ var Strategy = function(app) {
 	// modules
 	var Indicators = require(config.dirCore+'./Indicators');
 	var Tickers = require(config.dirLoader+'./Tickers');
-	var Yahoo = require(config.dirLoader+'./HistYahoo');
 
 	if(!config.disabledOrders)
 		var Broker = require(config.dirCore+"OrderManager")(app);
+
+	const History = new HistoryService(app);
 
 	// settings
 	var _PRICE_COLUMN_NAME = 'adjClose';
@@ -45,7 +47,7 @@ var Strategy = function(app) {
 	var _maxPositionSize = 10; // 1 + 2 + 3 + 4 = 10 (max 2 fully loaded stocks will be bought)
 	var _rsiLen	= 2;
 	var _minRSI	= 10;
-	var _dataLen = _smaEntryLen + config.dateOffset;
+	var _dataLen = _smaEntryLen;
 
 
 	this.getNextPiecesCount = function(c) {
@@ -90,12 +92,10 @@ var Strategy = function(app) {
 	};
 
 	this.serializeHistoricalData = function(importId, data) {
-		var importData = [];
-		Object.keys(data).forEach(function(ticker) {
-			data[ticker] = data[ticker].reverse()
-			
-			for(var i in data[ticker]) {
-				var item = data[ticker][i];
+		const importData = [];
+		Object.keys(data).forEach(ticker => {
+			if (!data[ticker]) return;
+			for(const item of data[ticker])
 				importData.push([
 					importId,
 					item.date,
@@ -104,17 +104,16 @@ var Strategy = function(app) {
 					item.low,
 					item.close,
 					item.volume,
-					item.close, // Google sends adjClose as close
+					item.adjClose,
 					item.symbol,
 				]);
-			}
 		});
 
 		return importData;
 	};
 	
 	this.deserializeHistoricalData = function(data) {
-		var out = {};
+		const out = {};
 
 		if(!data)
 			return null;
@@ -143,27 +142,26 @@ var Strategy = function(app) {
 	};
 
 	this.downloadHistory = function(config, done) {
-		var dateFrom = self.getWeekDaysInPast(addWeekends(_dataLen), config.date);
-		var dateTo = self.getWeekDaysInPast(1, config.date);
-		var tickers = "'"+config.tickers.join("','")+"'";
-		Log.info("Reading history data from %s to %s", dateFrom, dateTo);
+		const barCount = _dataLen;
+    const dateTo = self.getWeekDaysInPast(1, config.date);
+    Log.info("Reading %d last days of history data from date %s ", barCount, dateTo);
 
-		if(config.internalHistory || config.internalHistorical)
-			DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+		if(config.internalHistory || config.internalHistorical) {
+      const tickers = "'"+config.tickers.join("','")+"'";
+      const dateFrom = self.getWeekDaysInPast(addWeekends(barCount) + 20, config.date);
+	    DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
 				if(err) return done(err, config);
 
 				config.data = self.deserializeHistoricalData(res);
 				done(err, config);
 			});
-		else
-			Yahoo.historical({
-				symbols: config.tickers,
-				from: dateFrom,
-				to: dateTo
-			}, function(err, res) {
-				config.data = res;
-				done(err, config);
-			});
+		} else
+      History.getHistoryMultiple(config.tickers, dateTo, barCount)
+				.then((data) => {
+          config.data = data;
+          done(null, config)
+				})
+				.catch(err => done(err));
 	};
 
   this.saveData = function(config, done) {
@@ -174,7 +172,7 @@ var Strategy = function(app) {
       return done(null, config);
     }
 
-    var serializedData = self.serializeHistoricalData(config.importId, config.data)
+    const serializedData = self.serializeHistoricalData(config.importId, config.data);
     if(!serializedData.length) {
       Log.error('No historical data were loaded')
       Log.debug('Historical data:', config.data)
@@ -186,7 +184,7 @@ var Strategy = function(app) {
       serializedData,
       function(err, res) {
         if(err) return done(err)
-        Log.info('Data was saved');
+        Log.info('Historical data was saved');
         config.insert = res;
         done(err, config);
       });
@@ -430,14 +428,10 @@ var Strategy = function(app) {
 
 			config.indicators[ticker] = {
 				ticker: ticker,
-				price: parseFloat(data[data.length-1].close),
+				price: parseFloat(data[0].close),
 				sma5: Indicators.sma(_smaExitLen, data),
 				sma200: Indicators.sma(_smaEntryLen, data),
 				rsi: Indicators.rsiWilders(_rsiLen, data),
-					// Vypočítej mi prosím RSI2 tickeru SPY k 1.8.2014, ukaž mi, jak Ti to vyšlo „přesně (ověřeno na freestockcharts)“ a pak se můžeme pohnout dál.
-					//Má vyjít 0.80.
-					// RSI2 = 0,807851951
- 					// viz: https://winpes.cz/chcete-system-s-90-uspenosti-obchodu/
 			};
 
 			if(!config.indicators[ticker].sma200 || !config.indicators[ticker].rsi) {
@@ -452,12 +446,12 @@ var Strategy = function(app) {
 
 	this.appendActualPrices = function(config, done) {
 		Log.info('Appending actual prices');
-		for(var symbol in config.actual) {
+		for(const symbol in config.actual) {
 			if(!config.data[symbol]) {
 				Log.info(("Ticker("+symbol+") does not exists in data feed!").red);
 				continue;
 			}
-			config.data[symbol].push(config.actual[symbol]);
+			config.data[symbol].unshift(config.actual[symbol]);
 		}
 
 		delete config.actual;
@@ -959,7 +953,6 @@ var Strategy = function(app) {
 
 	this.init = function(config, done) {
 		console.time("Downloaded historical data");
-
 		MemLog.flushBuffer();
 
 		async.waterfall([

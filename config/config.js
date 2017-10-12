@@ -12,7 +12,7 @@ log4js.loadAppender('memory', memLogger);
 
 var _config = {
     scheduleHour: 5,
-    dateOffset: 30,
+    dateOffset: 50,
     api: "/api",
     root: __dirname+"/../",
     dirCore: modules+"Core/",

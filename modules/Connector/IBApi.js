@@ -8,6 +8,7 @@ var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
 var once = require('once');
+Promise = require('bluebird');
 // const throttle = require('throttle-function');
 const throttle = require('../throttledFunction');
 
@@ -53,6 +54,7 @@ var IBApi = function(config, app) {
     var streamingPositions = false;
     var loadingOrders = false;
     var streamingOrders = [];
+    var streamingHistoricalPrices = {};
     var placedOrders = {};
 
     var Log = app.getLogger("IB-API");
@@ -71,7 +73,13 @@ var IBApi = function(config, app) {
         .on('error', function (err, data) {
             if(arguments[1] && arguments[1].id && streamingIdMap[arguments[1].id]) {
 
-                Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err.toString());
+              Log.error("An error for ticker:", streamingIdMap[arguments[1].id].ticker, err.toString());
+            } else if(arguments[1] && arguments[1].id && streamingHistoricalPrices[arguments[1].id]) {
+                const reqId = arguments[1].id
+                const info = streamingHistoricalPrices[reqId];
+
+                const ticker = info.tickerInfo.ticker+':'+info.tickerInfo.market
+                info.reject(new Error('Error when streaming historical prices for '+ticker+' - orderId: ' + reqId + ' - ' + err.toString()))
             } else if(err && err.code == "ECONNREFUSED") {
 
                 Log.error("ERROR: cannot connect to IB api ... exiting".red);
@@ -114,7 +122,7 @@ var IBApi = function(config, app) {
 
                 app.emit("API.connection", app.apiConnection);
 
-            } else if(data.code === 103) { // Duplicate order Id
+            } else if(data && data.code === 103) { // Duplicate order Id
                 var orderInfo = placedOrders[data.id];
 
                 if(orderInfo) {
@@ -130,7 +138,7 @@ var IBApi = function(config, app) {
                 Log.error(err.toString(), data);
             }
         }).on('result', function (event, args) {
-            if (!_.includes(['currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
+            if (!_.includes(['historicalData', 'currentTime', 'nextValidId', 'execDetails', 'orderStatus', 'openOrderEnd', 'openOrder', 'positionEnd', 'position', 'tickEFP', 'tickGeneric', 'tickOptionComputation', 'tickPrice',
                     'tickSize', 'tickString'], event)) {
                 Log.debug('API Result:'.yellow +' %s %s', (event + ':').yellow, JSON.stringify(args));
             }
@@ -139,7 +147,6 @@ var IBApi = function(config, app) {
             app.emit("API.time", time);
 
         }).once('nextValidId', function (id) {
-
             Log.debug('First valid ID is'.yellow, id);
             orderId = id;
 
@@ -147,6 +154,7 @@ var IBApi = function(config, app) {
                 app.apiConnection.api = true;
                 app.apiConnection.ib = true;
 
+                app.emit("API.IB.ready");
                 app.emit("API.ready");
                 app.emit("API.connection", app.apiConnection);
             }
@@ -261,6 +269,33 @@ var IBApi = function(config, app) {
             self.logOrder(exec.orderId, contract.symbol, exec.side, exec.shares, exec.price, "PROCESSED", JSON.stringify(arguments), function (err, res) {
                 if(err) log.error("There was an error while saving execDetails".red, arguments);
             })
+        })
+        .on('historicalData', function (reqId, date, open, high, low, close, volume, barCount, WAP, hasGaps) {
+            const info = streamingHistoricalPrices[reqId];
+
+            if(!info) {
+                Log.debug("Something went really wrong - historical streaming event for unknown tickerId - ".red, arguments);
+                return false;
+            }
+
+            // is this the end of streaming?
+            if (_.includes([-1], open)) {
+                info.resolve()
+            } else {
+
+                const row = {
+                    open,
+                    high,
+                    low,
+                    close,
+                    volume,
+                    symbol: info.ticker,
+                    date: moment(date, 'YYYYMMDD').format('YYYY-MM-DD'),
+                    adjClose: close,
+                }
+
+                info.buffer.unshift(row)
+            }
         });
 
     var getNextOrderId = function () {
@@ -272,11 +307,11 @@ var IBApi = function(config, app) {
      * and BRK-B to BRK B
      */
     var serializeTicker = function (ticker, market) {
-        if(["MSFT", "CSCO", "INTC"].indexOf(ticker) >= 0)
+        if(["MSFT", "CSCO", "INTC", 'SPXS'].indexOf(ticker) >= 0)
             return {ticker: ticker, market: "ISLAND"};
 
         ticker = ticker.replace("-", " ");
-        return {ticker: ticker, market: market};
+        return {ticker: ticker, market: market || 'SMART'};
     };
 
     var streamTickerOrig = function(type, ticker, market) {
@@ -527,6 +562,73 @@ var IBApi = function(config, app) {
             ib.reqCurrentTime();
         }, HEARTBEAT_INTERVAL);
     };
+
+    // sometimes it returns less amount of days than what we request so we should request more and trim afterwards
+    self.getDailyHistory = function (ticker, fromDate, barCount) {
+      const orderId = getNextOrderId();
+      const tickerInfo = serializeTicker(ticker);
+      Log.debug('Streaming(%d) %d historical prices from %s for ticker %s:%s', orderId, barCount, fromDate, ticker, tickerInfo.market)
+
+      fromDate = moment(fromDate).format('YYYYMMDD')
+      return new Promise(function(resolve, reject) {
+        const orderInfo = {
+          orderId,
+          ticker,
+          tickerInfo,
+          fromDate,
+          barCount,
+          buffer: [],
+          finish: () => {
+            clearTimeout(orderInfo.timeoutId)
+            delete streamingHistoricalPrices[orderId];
+          },
+          resolve: () => {
+            resolve(orderInfo.buffer);
+            orderInfo.finish();
+          },
+          reject: (err = 'Unspecified error') => {
+            Log.error(err.toString());
+            ib.cancelHistoricalData(orderId);
+            reject(err);
+            orderInfo.finish();
+          },
+          timeoutId: setTimeout(function () {
+            const err = new Error("Historical streaming with orderId("+orderId+") is taking too long to process - cancelling");
+            err.code = 500;
+            err.codeName = 'timeout';
+
+            orderInfo.reject(err);
+          }, ORDER_TIMEOUT * 5) // 5 min
+        }
+
+        streamingHistoricalPrices[orderId] = orderInfo;
+        const contract = ib.contract.stock(tickerInfo.ticker, tickerInfo.market,'USD')
+        ib.reqHistoricalData(orderId, contract, fromDate+' 22:00:00', barCount+' D', '1 day', 'TRADES', 1, 1);
+      });
+    };
+
+    self.getDailyHistoryMultiple = function (tickers, fromDate, barCount) {
+        return Promise.map(tickers, ticker =>
+            self.getDailyHistory(ticker, fromDate, barCount)
+            .tap((data) => Log.debug(`History loading ${ticker} finished`, data.length))
+            .catch((err) => {
+                Log.error(`Error occurred when downloading historical data for ${ticker}` , err);
+                return Promise.resolve([])
+            })
+        , { concurrency: 5 })
+          .then(data => _.zipObject(tickers, data));
+    };
+
+    self.disconnect = function () {
+        Log.info('Closing IB API connection');
+
+        ib.disconnect();
+        app.apiConnection.api = false;
+        app.apiConnection.ib = false;
+
+        app.emit("API.disconnected");
+        app.emit("API.connection", app.apiConnection);
+    }
 
     /**
      * Connect to IB API
