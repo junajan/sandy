@@ -7,8 +7,12 @@ var Api = function(app) {
   var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
+  var DataProvider = null
 
-	var DataProvider = require(config.dirLoader+'AlphaVantage')(config.alphaVantageKey);
+  if (config.alphaVantageKey)
+    DataProvider = require(config.dirLoader+'AlphaVantage')(config.alphaVantageKey);
+	else
+		Log.error('AlphaVantage data provider is disabled - missing "alphaVantageKey" API key in config')
 
 	this.openPrices = {};
 
@@ -126,12 +130,15 @@ var Api = function(app) {
       tickers = tickers.map(function(p) {
         return p.ticker;
       });
-      DataProvider.lastPrice(tickers, function(err, res) {
-        if(err)
-          Log.trace("There was an error when requesting actual prices from Yahoo API", err);
 
-        self.openPrices = res || {};
-      });
+      if(DataProvider) {
+      	DataProvider.lastPrice(tickers, function(err, res) {
+					if(err)
+						Log.trace("There was an error when requesting actual prices from Yahoo API", err);
+
+					self.openPrices = res || {};
+				});
+			}
     });
   };
 
