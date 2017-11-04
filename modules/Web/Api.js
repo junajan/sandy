@@ -1,7 +1,6 @@
 var _ = require('lodash');
 var async = require('async');
 var moment = require('moment');
-var nasdaqFinance = require('nasdaq-finance').default
 
 var Api = function(app) {
 	var self = this;
@@ -9,7 +8,7 @@ var Api = function(app) {
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
 
-	var Yahoo = require(config.dirLoader+'HistYahoo');
+	var DataProvider = require(config.dirLoader+'AlphaVantage')(config.alphaVantageKey);
 
 	this.openPrices = {};
 
@@ -127,17 +126,11 @@ var Api = function(app) {
       tickers = tickers.map(function(p) {
         return p.ticker;
       });
-      Yahoo.actual(tickers, function(err, res) {
-        var out = {};
-
+      DataProvider.lastPrice(tickers, function(err, res) {
         if(err)
           Log.trace("There was an error when requesting actual prices from Yahoo API", err);
-        else if(res)
-          res.map(function(d) {
-            out[d[0]] = d[1];
-          });
 
-        self.openPrices = out;
+        self.openPrices = res || {};
       });
     });
   };
