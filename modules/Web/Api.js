@@ -123,6 +123,7 @@ var Api = function(app) {
 	};
 
   this.loadUfinishedPrices = function() {
+		// Log.info('Reading realtime prices');
     DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
       if(err)
         return Log.error('There was an error while retrieving data from DB', err);
@@ -134,18 +135,17 @@ var Api = function(app) {
       if(DataProvider) {
       	DataProvider.lastPrice(tickers, function(err, res) {
 					if(err)
-						Log.trace("There was an error when requesting actual prices from Yahoo API", err);
+						return Log.error("There was an error when requesting actual prices", err);
 
-					self.openPrices = res || {};
+					self.openPrices = _.defaults(res || {}, self.openPrices);
+          setTimeout(self.loadUfinishedPrices, 20000);
 				});
 			}
     });
   };
 
-	
-	setInterval(this.loadUfinishedPrices, 5000);
   this.loadUfinishedPrices();
-	return this;
+  return this;
 };
 
 module.exports = function(app) {

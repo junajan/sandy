@@ -12,30 +12,35 @@ function AlphaVantage(API_KEY) {
 	    tickers = [tickers]
     tickers = _.uniq(tickers)
 
-
 		return Promise.map(tickers, function(ticker) {
       var url = URL.replace('%%ticker%%', ticker)
       var conf = {
         url: url,
         json: true
       }
+      var response = null
 
-      // console.log("Calling ", url)
       return request.getAsync(conf)
+        .delay(5000)
         .then(function (res) {
           var prices = res.body['Time Series (60min)']
+          response = res
           var dates = Object.keys(prices)
+
           if(!dates.length)
             return null
 
           return { ticker: ticker, price: prices[dates[0]]['4. close'] }
         })
         .catch(function(err) {
-          conosle.error("Error when downloading realtime prices", err)
+          console.error(
+            `Error when downloading realtime prices for ${ticker}`,
+            err, response.body
+          )
           return Promise.resolve(null)
         })
 
-    }, { concurrency: 2 })
+    }, { concurrency: 1 })
       .then(function(prices) {
         var res = {}
 
