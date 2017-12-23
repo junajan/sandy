@@ -29,7 +29,7 @@ var Robot;
 require(config.dirWeb+'Routes')(app);
 
 if(!PROCESS_LOAD_DELAY || PROCESS_LOAD_DELAY < 1000) {
-  Log.error("Delay can't be smaller than 30'000ms - value: "+PROCESS_LOAD_DELAY)
+  Log.error("Delay can't be smaller than 1'000ms - value: "+PROCESS_LOAD_DELAY)
   process.exit(1)
 }
 

@@ -33,11 +33,12 @@ function AlphaVantage(API_KEY) {
           return { ticker: ticker, price: prices[dates[0]]['4. close'] }
         })
         .catch(function(err) {
+          return null;
+
           console.error(
             `Error when downloading realtime prices for ${ticker}`,
             err, response.body
           )
-          return Promise.resolve(null)
         })
 
     }, { concurrency: 1 })

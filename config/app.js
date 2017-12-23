@@ -18,7 +18,6 @@ module.exports = function(app, config) {
 	app.use(cookieParser());
 	app.use(session({
 		secret: 'This was really big kind of stuff',
-		saveUninitialized: true,
 		resave: false,
 		store: new FileStore({
 			logFn: _.noop,

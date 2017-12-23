@@ -26,9 +26,6 @@ var Mock = function (config, app) {
 
   Log = app.Log || LogMockup;
 
-  // realtime data mockup URL
-  var realtimeUrl = 'http://download.finance.yahoo.com/d/quotes.csv?f=sl1&s=';
-
   Log.info("Starting mockup API with config:", config);
 
   var getNextOrderId = function () {
