@@ -117,7 +117,7 @@ var Robot = function(app) {
 		var dayOfWeek = moment().isoWeekday();
 
 		if(dayOfWeek == 6 || dayOfWeek == 7)
-			return Log.info("Today is a weekday - strategy will continue on monday");
+			return Log.info("Today is a weekend - strategy will continue on Monday");
 		if(moment().hour() < scheduleMorningHour)
 			return Log.info("Strategy will be scheduled at %dAM", scheduleMorningHour);
 
