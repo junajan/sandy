@@ -7,12 +7,7 @@ var Api = function(app) {
   var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
-  var DataProvider = null
-
-  if (config.alphaVantageKey)
-    DataProvider = require(config.dirLoader+'AlphaVantage')(config.alphaVantageKey);
-	else
-		Log.error('AlphaVantage data provider is disabled - missing "alphaVantageKey" API key in config')
+  var DataProvider = require(config.dirLoader+'IEX')();
 
 	this.openPrices = {};
 
@@ -128,12 +123,9 @@ var Api = function(app) {
       if(err)
         return Log.error('There was an error while retrieving data from DB', err);
 
-      tickers = tickers.map(function(p) {
-        return p.ticker;
-      });
-
+      tickers = _.map(tickers, 'ticker');
       if(DataProvider) {
-      	DataProvider.lastPrice(tickers, function(err, res) {
+      	DataProvider.realtimePrices(tickers, function(err, res) {
 					if(err)
 						return Log.error("There was an error when requesting actual prices", err);
 

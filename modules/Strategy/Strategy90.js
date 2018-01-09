@@ -70,7 +70,6 @@ var Strategy = function(app) {
 
 	this.processTickers = function(config, info, done) {
 		if(!config.tickers) config.tickers = [];
-		
 		if(info.tickers)
 			config.tickers = info.tickers.map(function(item) {return item.ticker;});
 		done(null, config);
