@@ -2,7 +2,7 @@ const _ = require('lodash');
 const moment = require('moment');
 Promise = require('bluebird');
 
-const SecondaryService = require('../Connector/YahooMock');
+const SecondaryService = require('../Connector/Mock');
 
 class History {
   constructor (app) {
