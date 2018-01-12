@@ -7,6 +7,7 @@ var ibApi = require("ib");
 var events = require('events');
 var moment = require("moment");
 var YahooApi = require("./_yahoo");
+var MockService = require("./Mock");
 var once = require('once');
 Promise = require('bluebird');
 // const throttle = require('throttle-function');
@@ -59,6 +60,7 @@ var IBApi = function(config, app) {
 
     var Log = app.getLogger("IB-API");
     var DB = app.DB;
+    var Mock = MockService(config, app)
 
     var connectionIssueReported = false;
     app.apiConnection = {
@@ -433,6 +435,19 @@ var IBApi = function(config, app) {
         });
     };
 
+    self.getSecondaryRealtimePrices = function (tickers) {
+      return new Promise((resolve, reject) =>
+        Mock.dataSource.realtimePrices(tickers, (err, res) =>
+          err ? reject(err) : resolve(res)
+        )
+      )
+        .timeout(10000)
+        .catch((err) => {
+            Log.error("Error while loading tickers from secondarySource", err);
+            return {}
+        })
+    }
+
     /**
      * Get prices for given tickers (if they are streamed)
      * @param tickers List of tickers to load
@@ -441,25 +456,23 @@ var IBApi = function(config, app) {
     self.getMarketPriceBulk = function (tickers, done) {
         if(!_.isArray(tickers))
             tickers = tickers.split(",");
-        var tickersList = tickers.join(',');
 
-        Log.debug("Load market prices for tickers:", tickersList);
+        Log.debug("Load market prices for tickers:", tickers.join(','));
 
-        YahooApi.getPrices(tickers, function (err, res) {
-            if(err) Log.error("Error while loading tickers from yahoo", err, res);
-
+        self.getSecondaryRealtimePrices(tickers)
+          .then((res) => {
             _.forEach(res, function (price, ticker) {
-                if(!streamingPrices[ticker]) {
-                    streamingPrices[ticker] = {
-                        unknown: true
-                    };
-                }
+              if(!streamingPrices[ticker]) {
+                streamingPrices[ticker] = {
+                  unknown: true
+                };
+              }
 
-                streamingPrices[ticker].yahooPrice = Number(price);
+              streamingPrices[ticker].yahooPrice = Number(price);
             });
 
             done(null, pickBestPrices(tickers, streamingPrices));
-        });
+          })
     };
 
     self.getPositions = function (done) {

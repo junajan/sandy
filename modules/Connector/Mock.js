@@ -17,6 +17,7 @@ var Mock = function (config, app) {
   var streaming = false;
   var DB = app.DB;
   var orderId = 1;
+  this.dataSource = IEX
 
   app.apiConnection = {
     ib: true,
