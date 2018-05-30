@@ -10,10 +10,10 @@ var moment = require("moment");
 var config = require("../config");
 var yahooFinance = require('yahoo-finance');
 
-var dateFrom = moment('2017-04-19');
-var dateTo = moment('2017-04-23');
+var dateFrom = moment('2000-01-01');
+var dateTo = moment();
 
-var tickers = "AAPL".split(",");
+var tickers = "SPY,".split(",");
 
 function downloadHistory(ticker, done) {
 	var to = dateTo.format('YYYY-MM-DD')
@@ -21,7 +21,7 @@ function downloadHistory(ticker, done) {
 	console.log(("Reading "+ticker+" history data from "+from +" to " + to).yellow);
 
   yahooFinance.historical({
-		symbol: ticker,
+		symbol: "SPY",
 		from: from,
 		to: to
 	}, function(err, res) {

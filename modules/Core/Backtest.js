@@ -199,7 +199,7 @@ var Backtest = function(Strategy, DB) {
           , done)
       },
       maxDD: function(done) {
-        DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 10`, null, done)
+        DB.sql(`SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd FROM (SELECT date, capital, (SELECT MIN(capital) FROM equity_history el WHERE el.date > eh.date) as lowerLaterCapital FROM equity_history as eh) as tmp WHERE lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital ORDER BY dd DESC LIMIT 20`, null, done)
       }
     }, function(err, all) {
       if(err) throw err;

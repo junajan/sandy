@@ -6,6 +6,7 @@
 
 require('colors');
 var async = require("async");
+var _ = require("lodash");
 var moment = require("moment");
 var config = require("../config");
 var DB = require(config.dirCore+'Mysql')(config.mysql);
@@ -13,7 +14,8 @@ var ydl = require(config.dirLoader+'HistYahoo');
 
 var app = {
 	config: config,
-	DB: DB
+	DB: DB,
+	emit: _.noop
 };
 
 config.disabledOrders = true;
@@ -42,10 +44,10 @@ var dateTo = moment();
 // tickers = tickers.concat(["MDY", "IEV", "EEM", "ILF", "EPP", "EDV", "SHY"]);
 // tickers = tickers.concat(["AGG", "EFA", "IWM", "SPY", "ZIV", "SSO", "EDV"]);
 // tickers = tickers.concat(["TSLA"]);
-var tickers = "AAPL,ABBV,ABT,ACN,AGN,AIG,ALL,AMGN,AMZN,AXP,BA,BAC,BIIB,BK,BLK,BMY,BRK-B,C,CAT,CELG,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DHR,DIS,DOW,DUK,EBAY,EMR,EXC,F,FB,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KHC,KMI,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NEE,NKE,ORCL,OXY,PCLN,PEP,PFE,PG,PM,PYPL,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TSLA,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
+// var tickers = "AAPL,ABBV,ABT,ACN,AGN,AIG,ALL,AMGN,AMZN,AXP,BA,BAC,BIIB,BK,BLK,BMY,BRK-B,C,CAT,CELG,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DHR,DIS,DOW,DUK,EBAY,EMR,EXC,F,FB,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KHC,KMI,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NEE,NKE,ORCL,OXY,PCLN,PEP,PFE,PG,PM,PYPL,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TSLA,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
+var tickers = "AAPL,ABBV,ABT,ACN,AGN,AIG,ALL,AMGN,AMZN,AXP,BA,BAC,BIIB,BK,BLK,BMY,BRK-B,C,CAT,CELG,CHTR,CL,CMCSA,COF,COP,COST,CSCO,CVS,CVX,DD,DHR,DIS,DOW,DUK,DWDP,EBAY,EMR,EXC,F,FB,FDX,FOXA,GD,GE,GILD,GM,GOOG,GS,HAL,HD,HON,HPQ,IBM,INTC,JNJ,JPM,KHC,KMI,KO,LLY,LMT,LOW,MA,MCD,MDLZ,MDT,MET,MMM,MO,MON,MRK,MS,MSFT,NEE,NKE,ORCL,OXY,PCLN,PEP,PFE,PG,PM,PYPL,QCOM,RTN,SBUX,SLB,SO,SPG,T,TGT,TSLA,TWX,TXN,UNH,UNP,UPS,USB,UTX,V,VZ,WBA,WFC,WMT,XOM".split(",");
 
 function downloadHistory(ticker, done) {
-
 	DB.get('date', _TABLE, 'symbol=?', ticker, 'date', 'DESC', function(err, res) {
 		if(err) throw err;
 		var to = dateTo.format('YYYY-MM-DD');
@@ -59,7 +61,7 @@ function downloadHistory(ticker, done) {
 		from = from.format('YYYY-MM-DD')
 		console.log(("Reading "+ticker+" history data from "+from +" to " + to).yellow);
 
-		if(from == dateTo) {
+		if(from === dateTo) {
 			console.log(">> skipping - no data to load");
 			return done(null, 'No days to import');
 		}
@@ -95,7 +97,6 @@ function saveData(ticker, data, done) {
 }
 
 if(RUN) {
-
 	async.mapLimit(tickers, 2, downloadHistory, function(err, res) {
 		if(err)
 			console.error('Error:', err);

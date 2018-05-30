@@ -1,9 +1,5 @@
 'use strict';
 
-/**
- * This will import historical data to Mysql table
- */
-
 require('colors');
 const Promise = require("bluebird");
 const async = require("async");
@@ -12,10 +8,9 @@ const moment = require("moment");
 const config = require("../config");
 const DB = require(config.dirCore+'Mysql')(config.mysql);
 
-
-
 const TABLE_POSITIONS = "positions";
-const TABLE_READ = "stock_history_full_quandl";
+// const TABLE_READ = "stock_history_full";
+const TABLE_READ = "stock_history_full_alphavantage";
 const TABLE_SAVE = "equity_history_real";
 
 function readPositions() {
@@ -72,12 +67,21 @@ function getDataBoundaries(positions) {
 	return boundaries
 }
 
+//
+// CLOSE: 2
+// ADJCLOSE: 1
+//
+// LOW: 2.2
+//
+// 1 / 2 * 2.2 = 1.1
+
 function readEodData(boundaries) {
 	const data = {}
 
 	return Promise.map(boundaries, (item) => {
 		return new Promise((resolve, reject) => {
-			DB.getData('adjLow as low, DATE_FORMAT(date, "%Y-%m-%d") as date', TABLE_READ, 'symbol = ? AND date >= ? and date <= ? ORDER BY date ASC', [item.ticker, item.from, item.to], (err, res) => {
+			// DB.getData('adjLow as low, DATE_FORMAT(date, "%Y-%m-%d") as date', TABLE_READ, 'symbol = ? AND date >= ? and date <= ? ORDER BY date ASC', [item.ticker, item.from, item.to], (err, res) => {
+			DB.getData('adjClose / close * low as low, adjClose / close * high as high, DATE_FORMAT(date, "%Y-%m-%d") as date', TABLE_READ, 'symbol = ? AND date >= ? and date <= ? ORDER BY date ASC', [item.ticker, item.from, item.to], (err, res) => {
 				if(err) return reject(err)
 				data[item.ticker] = res
 				resolve()
@@ -102,15 +106,17 @@ function getHistoryOnDate(history, date) {
 	return _.find(history, ['date', date])
 }
 
-function processPositionDate(pos, date, history) {
+function processPositionDate(pos, date, history, isLast = false) {
   const eod = getHistoryOnDate(history, date)
 
 	if(eod) {
-		const buyPrice = pos.open_price * pos.amount
-		const currentPrice = pos.amount * eod.low
+		const origPrice = (isLast ? pos.close_price : pos.open_price) * pos.amount
+		const currentPriceLow = pos.amount * eod.low
+		const currentPriceHigh = pos.amount * eod.high
 
-		// console.log("Price change from %s to %s on %s", buyPrice, currentPrice, date)
-		updatedEquity[date].capital -= buyPrice - currentPrice
+		// console.log("Price change for %s from %s to %s on %s", pos.ticker, origPrice, currentPriceLow, date)
+		updatedEquity[date].equityLow = updatedEquity[date].equityLow - origPrice + currentPriceLow
+		updatedEquity[date].equityHigh = updatedEquity[date].equityHigh - origPrice + currentPriceHigh
 	}
 }
 
@@ -118,21 +124,20 @@ function processPosition(ticker, position) {
 	const history = data[ticker]
 	position.forEach((pos) => {
 		let date = pos.open_date
-		do {
+    while(getDateDiff(date, pos.close_date) >= 0) {
 			// console.log('Processing date %s', date)
-
-			processPositionDate(pos, date, history)
+			processPositionDate(pos, date, history, date === pos.close_date)
 			date = incDate(date)
-		} while(getDateDiff(date, pos.close_date) >= 0)
+		}
 	})
+
 }
 
 function processPositions() {
-	return Object.keys(positions).forEach((ticker) => {
-		const pos = positions[ticker]
+	for (let [ticker, pos] of Object.entries(positions)) {
     console.log("Processing %d positions on ticker %s", pos.length, ticker)
 		processPosition(ticker, pos)
-	})
+	}
 }
 
 function cleanDb() {
@@ -148,7 +153,6 @@ function saveUpdatedEquity() {
 	return Promise.map(equity, (item) => {
 		const data = updatedEquity[item.date]
 
-		data.original_capital = item.capital
     return new Promise((resolve, reject) => {
 			DB.insert(TABLE_SAVE, data, (err) => {
 				if(err) return reject(err)
@@ -162,13 +166,13 @@ function saveUpdatedEquity() {
 function fetchMaxDrawdown() {
 	return new Promise((resolve, reject) => {
 		DB.sql(`
-			SELECT *, (lowerLaterCapital - capital) / capital * -100 as dd 
-				FROM (SELECT date, capital, 
-					(SELECT MIN(capital) FROM equity_history_real el WHERE el.date > eh.date) as lowerLaterCapital 
+			SELECT *, DATE_FORMAT(date, '%Y-%m-%d') as date, (lowerLaterCapital - equityLow) / equityLow * -100 as dd 
+				FROM (SELECT date, equityLow, 
+					(SELECT MIN(equityLow) FROM equity_history_real el WHERE el.date > eh.date) as lowerLaterCapital 
 				FROM equity_history_real as eh) as tmp 
 			WHERE 
-				lowerLaterCapital IS NOT NULL AND lowerLaterCapital < capital 
-			ORDER BY dd DESC LIMIT 10`, null, (err, res) => {
+				lowerLaterCapital IS NOT NULL AND lowerLaterCapital < equityLow 
+			ORDER BY dd DESC LIMIT 20`, null, (err, res) => {
 			if(err) return reject(err)
 			resolve(res)
 		})
@@ -182,44 +186,46 @@ let updatedEquity = {}
 
 console.log('Cleaning real equity table')
 cleanDb()
-	.then(() => {
+	.then(async () => {
     console.log('Fetching closed positions')
-    return readPositions()
-  })
-	.then((res) => {
+		const res = await readPositions()
+    console.log('Fetched %d positions', res.length)
 		positions = serializePositions(res)
-		console.log('Fetched %d positions', res.length)
+
 		console.log('Calculating boundaries before fetching EOD prices')
-		return getDataBoundaries(positions)
-	})
-	.then((boundaries) => {
-		console.log('Fetching EOD prices for %d tickers', boundaries.length)
-		return readEodData(boundaries)
-	})
-	.then((res) => {
-		data = res
-		return readEquityHistory()
-	})
-	.then((res) => {
-		equity = res
+    const boundaries = getDataBoundaries(positions)
+    console.log('Fetching EOD prices for %d tickers', boundaries.length)
+
+    data = await readEodData(boundaries)
+		equity = await readEquityHistory()
+
+    // positions = {
+    	// KHC: positions.KHC
+		// }
 
 		for(const item of equity)
-			updatedEquity[item.date] = _.clone(item)
+			updatedEquity[item.date] = {
+    		date: item.date,
+				equityHigh:  item.capital,
+				equityLow:  item.capital,
+				equityOriginal:  item.capital,
+				freePieces:  item.free_pieces,
+        unusedCapital:  item.unused_capital,
+      }
 
-		return processPositions()
-	})
-	.then(() =>
-		saveUpdatedEquity()
-	)
-	.then(() => {
+		await processPositions()
+
+		// console.log(updatedEquity)
+		// console.log(positions)
+		// process.exit() // TODO remove me
+		await saveUpdatedEquity()
+
 		console.log("Fetch max open drawdown")
-		return fetchMaxDrawdown()
-	})
-	.then((maxDD) => {
+		const maxDD = await fetchMaxDrawdown()
     if(maxDD.length)
       maxDD.forEach((dd) => {
         console.log("%s: loss %d = %d%",
-          dd.date, dd.capital - dd.lowerLaterCapital, dd.dd)
+          dd.date, dd.equityLow - dd.lowerLaterCapital, dd.dd)
       })
     else
       console.log(" .. no DD")

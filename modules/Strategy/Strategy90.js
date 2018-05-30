@@ -15,7 +15,7 @@ var Strategy = function(app) {
 
 		// rsi - scale when rsi2 < 10
 		// lower - scale when price is lower than previous openPrice
-		scaleStrategy: "rsi" // lower, lowerThanFirst
+		scaleStrategy: "lower" // lower, lowerThanFirst
 	});
 
 	this.config = config;
@@ -39,6 +39,7 @@ var Strategy = function(app) {
 	var _INIT_FREE_PIECES = 20;
 	var _INIT_CAPITAL = 20000;
 	var _CLEAR_DATA_TTL = 20;
+	// var _DB_FULL_HISTORY_TABLE = "stock_history_full_alphavantage";
 	var _DB_FULL_HISTORY_TABLE = "stock_history_full";
 	// var _DB_FULL_HISTORY_TABLE = "stock_history_full_quandl";
 	var _dateFormat = "YYYY-MM-DD";
@@ -148,7 +149,7 @@ var Strategy = function(app) {
 		if(config.internalHistory || config.internalHistorical) {
       const tickers = "'"+config.tickers.join("','")+"'";
       const dateFrom = self.getWeekDaysInPast(addWeekends(barCount) + 20, config.date);
-	    DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date ASC", function(err, res) {
+	    DB.getData("symbol, "+_PRICE_COLUMN_NAME+" as close, date", _DB_FULL_HISTORY_TABLE, "date >= ? AND date <= ? AND symbol IN ("+tickers+")", [dateFrom, dateTo], "date DESC", function(err, res) {
 				if(err) return done(err, config);
 
 				config.data = self.deserializeHistoricalData(res);
@@ -445,9 +446,10 @@ var Strategy = function(app) {
 
 	this.appendActualPrices = function(config, done) {
 		Log.info('Appending actual prices');
-		for(const symbol in config.actual) {
-			if(!config.data[symbol]) {
-				Log.info(("Ticker("+symbol+") does not exists in data feed!").red);
+		for(const symbol in config.data) {
+			if(!config.actual[symbol]) {
+				Log.info(("Ticker("+symbol+") does not exists in actuals!").red);
+				delete config.data[symbol]
 				continue;
 			}
 			config.data[symbol].unshift(config.actual[symbol]);
@@ -491,9 +493,8 @@ var Strategy = function(app) {
 
 			done(err, config);
 		}
-		
 		if(config.internalHistory && !config.disabledLoadingActualsFromDb)
-			DB.getData("*, "+_PRICE_COLUMN_NAME+' as close', _DB_FULL_HISTORY_TABLE, "date = ? AND symbol IN ("+tickers+")", date, processDBResult);
+			DB.getData("*, "+_PRICE_COLUMN_NAME+' as close', _DB_FULL_HISTORY_TABLE, "DATE(date) = ? AND symbol IN ("+tickers+")", date, processDBResult);
 		else
 			Broker.getMarketPriceBulk(config.tickers, processApiResult);
 	};

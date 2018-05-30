@@ -39,7 +39,7 @@
     "fast-csv": "^2.0.0",
     "filestore": "^0.1.3",
     "google-finance": "^0.1.9",
-    "ib": "^0.1.9",
+    "ib": "^0.1.25",
     "lodash": "^4.17.4",
     "log4js": "^0.6.25",
     "log4js-memory-appender": "^1.0.3",

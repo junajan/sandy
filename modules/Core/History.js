@@ -11,6 +11,7 @@ class History {
     this.config = app.config.connector.config;
     this.driver = app.config.connector.driver;
 
+    console.log(app.config.dirConnector + this.driver)
     const PrimaryService = require(app.config.dirConnector + this.driver);
     this.logger.info("Using primary history driver %s", this.driver);
     // connectors
