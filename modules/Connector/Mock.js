@@ -103,10 +103,11 @@ var Mock = function (config, app) {
     return [];
   };
 
-  self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
+  self.sendOrder = function (type, ticker, amount, price, instrument, requestedPrice, doneFilled) {
     doneFilled(null, {
       orderId: getNextOrderId(),
       status: "Filled",
+      instrument: instrument,
       ticker: ticker,
       type: type,
       amount: amount,
@@ -118,7 +119,6 @@ var Mock = function (config, app) {
   self.watchConnection = function () {
     setInterval(function () {
       app.emit("API.time", moment().format("X"));
-
       app.emit("API.connection", app.apiConnection);
     }, HEARTHBEAT_INTERVAL);
   };

@@ -507,17 +507,20 @@ var IBApi = function(config, app) {
         }, done);
     };
 
-    self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
+    self.sendOrder = function (type, ticker, amount, price, instrument, requestedPrice, doneFilled) {
         var order, priceType;
         var orderId = getNextOrderId();
 
         doneFilled = once(doneFilled);
 
+        if(["cfd", "stock"].indexOf(instrument) == -1)
+            throw "Invalid instrument type - "+instrument+" - allowed are cfd or stock";
+
         if(["BUY", "SELL"].indexOf(type) == -1)
-            throw "Undefined order type - "+type+" - allowed types are BUY or SELL";
+            throw "Invalid order type - "+type+" - allowed types are BUY or SELL";
 
         if(!_.isNumber(amount) || amount < 1)
-            throw "Unsupported amount - must be positive number";
+            throw "Unsupported amount - must be a positive number";
 
         if(price == "MKT")
             order = ib.order.market(type, amount);
@@ -556,7 +559,8 @@ var IBApi = function(config, app) {
                 doneFilled(err);
             }, ORDER_TIMEOUT);
 
-            ib.placeOrder(orderId, ib.contract.cfd(ticker), order);
+
+            ib.placeOrder(orderId, ib.contract[instrument](ticker), order);
         });
     };
 

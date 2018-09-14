@@ -8,11 +8,12 @@ var OrderManager = function(app) {
     var DB = app.DB;
     var Log = app.getLogger("ORDER-MGMT");
 
+    var instrument = config.connector.instrument || 'cfd'
     var Broker = require(config.dirConnector+config.connector.driver)(config.connector.config, app);
 
+    Log.info('Initing orderManager with configured instrument: "'+instrument+'"')
     // ===== Attributes
     self.T_MKT = -1;
-
 
     self.savePrices = function(prices, done) {
         var data = [];
@@ -86,15 +87,15 @@ var OrderManager = function(app) {
     };
 
     self.sendOrder = function (type, ticker, amount, price, requestedPrice, doneFilled) {
-        Broker.sendOrder(type, ticker, amount, price, requestedPrice, doneFilled);
+        Broker.sendOrder(type, ticker, amount, price, instrument, requestedPrice, doneFilled);
     };
 
     self.sendSellOrder = function (ticker, amount, price, requestedPrice, doneFilled) {
-        Broker.sendOrder("SELL", ticker, amount, price, requestedPrice, doneFilled);
+        self.sendOrder("SELL", ticker, amount, price, requestedPrice, doneFilled);
     };
 
     self.sendBuyOrder = function (ticker, amount, price, requestedPrice, doneFilled) {
-        Broker.sendOrder("BUY", ticker, amount, price, requestedPrice, doneFilled);
+        self.sendOrder("BUY", ticker, amount, price, requestedPrice, doneFilled);
     };
 
     return this;
