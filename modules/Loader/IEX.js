@@ -2,9 +2,10 @@ var _ = require('lodash');
 var Promise = require('bluebird');
 var request = Promise.promisifyAll(require("request"));
 
-function IEX() {
+function IEX(config) {
   var self = this;
-  const realtime = "https://api.iextrading.com/1.0/stock/market/batch?types=price&symbols="
+  const token = _.get(config, 'iex.token');
+  const realtime = `https://cloud.iexapis.com/stable/stock/market/batch?types=price&range=1m&last=1&token=${token}&symbols=`
   const historical = "https://api.iextrading.com/1.0/stock/market/batch?types=chart&range=1y&symbols="
 
   this.serializeTickers = function (tickers) {

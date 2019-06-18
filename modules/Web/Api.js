@@ -7,7 +7,7 @@ var Api = function(app) {
   var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
-  var DataProvider = require(config.dirLoader+'IEX')();
+  var DataProvider = require(config.dirLoader+'IEX')(config);
 
 	this.openPrices = {};
 
@@ -123,7 +123,7 @@ var Api = function(app) {
       if(err)
         return Log.error('There was an error while retrieving data from DB', err);
 
-      tickers = _.map(tickers, 'ticker');
+      tickers = _(tickers).map('ticker').uniq().value();
       if(DataProvider) {
       	DataProvider.realtimePrices(tickers, function(err, res) {
 					if(err)
