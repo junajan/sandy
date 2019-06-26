@@ -36,6 +36,13 @@ class History {
   removeInvalidData(data) {
     Object.keys(data).forEach(ticker => {
       const tickerData = data[ticker]
+
+      if (tickerData.length === 0) {
+        this.logger.error(`Data for "${ticker}" has no historical records .. disabling ticker`, tickerData);
+        delete data[ticker];
+        return;
+      }
+      
       for (const row of tickerData) {
         if (!row.open || !row.high || !row.low || !row.close) {
           this.logger.error(`Ticker ${ticker} has invalid value on ${row.date} .. disabling ticker.`, row);
