@@ -620,7 +620,7 @@ var IBApi = function(config, app) {
 
         streamingHistoricalPrices[orderId] = orderInfo;
         const contract = ib.contract.stock(tickerInfo.ticker, tickerInfo.market,'USD')
-        ib.reqHistoricalData(orderId, contract, fromDate+' 22:00:00', barCount+' D', '1 day', 'TRADES', 1, 1);
+        ib.reqHistoricalData(orderId, contract, fromDate+' 22:00:00', barCount+' D', '1 day', 'TRADES', 1, 1, true);
       });
     };
 
