@@ -326,7 +326,7 @@ var IBApi = function(config, app) {
             data.market = CSCO_MSFT_INTC_STREAMING_EXCHANGE;
 
         Log.debug("Start watching", ticker, "with ID", id);
-        ib.reqMktData(id, ib.contract[type](data.ticker, data.market), '', false);
+        ib.reqMktData(id, ib.contract[type](data.ticker, data.market), '', false, false);
         streamingIdMap[id] = {ticker: ticker, type: type};
 
         return id;
