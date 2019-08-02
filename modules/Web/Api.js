@@ -129,7 +129,7 @@ var Api = function(app) {
 					if(err)
 						return Log.error("There was an error when requesting actual prices", err);
 
-					self.openPrices = _.defaults(res || {}, self.openPrices);
+          self.openPrices = _.defaults(res || {}, self.openPrices);
           setTimeout(self.loadUfinishedPrices, 20000);
 				});
 			}

@@ -5,7 +5,7 @@ var request = Promise.promisifyAll(require("request"));
 function IEX(config) {
   var self = this;
   const token = _.get(config, 'iex.token');
-  const realtime = `https://cloud.iexapis.com/stable/stock/market/batch?types=price&range=1m&last=1&token=${token}&symbols=`
+  const realtime = `https://cloud.iexapis.com/stable/stock/market/batch?types=quote&range=1m&last=1&token=${token}&symbols=`
   const historical = "https://api.iextrading.com/1.0/stock/market/batch?types=chart&range=1y&symbols="
 
   this.serializeTickers = function (tickers) {
@@ -16,7 +16,7 @@ function IEX(config) {
     const prices = {}
     Object.keys(res.body).forEach((key) => {
       if(res.body[key])
-        prices[key] = res.body[key].price
+        prices[key] = _.get(res.body[key], 'quote.latestPrice');
     })
 
     return prices
