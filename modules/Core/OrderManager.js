@@ -1,6 +1,6 @@
-var moment = require("moment");
-var async = require("async");
-var _ = require("lodash");
+const _ = require("lodash");
+const moment = require("moment");
+const async = require("async");
 
 var OrderManager = function(app) {
     var self = this;

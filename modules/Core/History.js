@@ -9,14 +9,16 @@ class History {
     this.app = app;
     this.logger = app.getLogger("HISTORY");
     this.config = app.config.connector.config;
+    this.secondaryConfig = app.config.worldOfTradingData;
     this.driver = app.config.connector.driver;
 
     const PrimaryService = require(app.config.dirConnector + this.driver);
     this.logger.info("Using primary history driver %s", this.driver);
+
     // connectors
     this.connectors = {
-      secondary: SecondaryService(this.config, app),
-      primary: PrimaryService(this.config, app)
+      primary: PrimaryService(this.config, app),
+      secondary: SecondaryService(this.secondaryConfig, app),
     };
   }
 

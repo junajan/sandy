@@ -1,23 +1,22 @@
-var moment = require("moment");
-var request = require("request");
-var _ = require("lodash");
-var csv = require("fast-csv");
+const _ = require("lodash");
+const moment = require("moment");
+
+const WorldOfTradingData = require("../Loader/WorldOfTradingData");
 
 const HEARTHBEAT_INTERVAL = 1000;
+const DATE_FORMAT = 'YYYY-MM-DD';
 
-var LogMockup = {};
+const LogMockup = {};
 ["fatal", "error", "info", "notice", "debug"].forEach(function (level) {
   LogMockup[level] = console.log.bind(console, "MockupAPI(" + level + "):");
 });
 
-var IEX = require("../Loader/IEX")();
 
-var Mock = function (config, app) {
+const Mock = function (config, app) {
   var self = this;
   var streaming = false;
   var DB = app.DB;
   var orderId = 1;
-  this.dataSource = IEX
 
   app.apiConnection = {
     ib: true,
@@ -26,7 +25,10 @@ var Mock = function (config, app) {
 
   Log = app.Log || LogMockup;
 
-  Log.info("Starting mockup API with config:", config);
+  // Init secondary API for historical data
+  WorldOfTradingData.init(config);
+
+  Log.info('Starting MockAPI');
 
   var getNextOrderId = function () {
     return orderId++;
@@ -37,16 +39,16 @@ var Mock = function (config, app) {
    * @param data Array of pairs [ticker, price]
    * @return Object {ticker: price, ...}
    */
-  var transformPriceData = function (data) {
-    var out = {};
+  const transformPriceData = function (data) {
+    const out = {};
 
-    _.forEach(data, function (price, ticker) {
+    for(const [ticker, price] of Object.entries(data)) {
       out[ticker] = {
-        price: price,
-        origin: "IEX",
-        yahooPrice: price
+        price,
+        origin: "WorldOfTradingData",
+        yahooPrice: price,
       };
-    });
+    }
 
     return out;
   };
@@ -88,11 +90,14 @@ var Mock = function (config, app) {
    * @param tickers List of tickers to load
    * @param done Function(err, {ticker: price, ...}
    */
-  self.getMarketPriceBulk = function (tickers, done) {
-    IEX.realtimePrices(tickers, function (err, prices) {
-      if (err) done(err);
-      done(err, transformPriceData(prices));
-    });
+  self.getMarketPriceBulk = async function (tickers, done) {
+    let data = null;
+    try {
+      data = await WorldOfTradingData.realtimePrices(tickers);
+    } catch (err) {
+      return done(err);
+    }
+    done(null, transformPriceData(data));
   };
 
   self.getPositions = function (done) {
@@ -127,30 +132,16 @@ var Mock = function (config, app) {
     return null;
   }
 
-  self.getDailyHistoryMultiple = function (symbol, dateFrom, barsCount) {
+  self.getDailyHistoryMultiple = async (tickers, dateEnd, barsCount) => {
     const daysInPast = barsCount / 5 * 7;
-    const conf = {
-      symbols: (_.isArray(symbol) ? symbol : [symbol]),
-      to: moment(dateFrom).format('YYYY-MM-DD 22:00:00'),
-      from: moment(dateFrom).subtract(daysInPast, 'day').format('YYYY-MM-DD')
-    };
+    const dateFrom = moment(dateEnd).subtract(daysInPast, 'day').format(DATE_FORMAT);
+    const dateTo = moment(dateEnd).format(DATE_FORMAT);
 
-    Log.debug(`Downloading data for ${symbol} from ${conf.to} till ${conf.from}`);
-    return new Promise((resolve, reject) => {
-      IEX.historical(conf.symbols, (err, res) => {
-        if (err || !res) return reject(err || 'IEX returned invalid response');
-        for(const key of Object.keys(res)) {
-          res[key] = res[key].chart
-          res[key] = res[key].map((row) => {
-            row.adjClose = row.close
-            row.symbol = key
-            return row
-          })
-        }
-        resolve(res);
-      })
-    })
-  }
+    Log.debug(`Downloading data for ${tickers} from ${dateFrom} till ${dateTo}`);
+
+    const data = await WorldOfTradingData.historicalMany(tickers, dateFrom, dateTo);
+    return data;
+  };
 
   app.emit("API.connection", app.apiConnection);
   setTimeout(() => app.emit("API.ready"), 100)
