@@ -4,6 +4,7 @@ const Promise = require('bluebird');
 
 const { RuntimeError, ConfigurationError } = require('../Core/Error');
 
+const CONCURRENCY = 10;
 const HISTORICAL_DATA_API_URL = 'https://api.worldtradingdata.com/api/v1/history?symbol=%ticker%&sort=newest&date_from=%dateFrom%&date_to=%dateTo%&api_token=%token%';
 const REALTIME_DATA_API_URL = 'https://api.worldtradingdata.com/api/v1/stock?symbol=%ticker%&api_token=%token%';
 
@@ -66,7 +67,7 @@ loader._assembleUrlObject = (url, ticker, dateFrom = null, dateTo = null) => {
  *
  * @private
  */
-loader._handleExchaustedToken = (removedToken) => {
+loader._handleExhaustedToken = (removedToken) => {
   const index = loader.config.tokens.indexOf(removedToken);
 
   if (index === -1) {
@@ -96,7 +97,7 @@ loader._callApi = async (urlObject) => {
   if (data.message && data.message.includes(ERROR_MESSAGE_REACHED_LIMIT)) {
     console.error('WorldOfTradingData::Request limit reached for token - retrying.');
 
-    loader._handleExchaustedToken(urlObject.token);
+    loader._handleExhaustedToken(urlObject.token);
     urlObject.token = loader._getToken();
 
     return loader._callApi(urlObject);
@@ -165,7 +166,7 @@ loader.historicalMany = async (tickers, dateFrom, dateTo) => {
     }
 
     return tickerData;
-  }, {concurrency: 10});
+  }, {concurrency: CONCURRENCY});
 
   const serialized = tickers.reduce((all, ticker, index) => ({
     ...all,
@@ -200,7 +201,7 @@ loader.realtimePrices = async (tickers) => {
     } catch (e) {
       console.error('WorldOfTradingData::Error when downloading realtime data for "%s" ticker', ticker, e);
     }
-  }, {concurrency: 10});
+  }, {concurrency: CONCURRENCY});
 
   return prices;
 };
