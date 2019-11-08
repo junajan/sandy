@@ -2,7 +2,7 @@ const _ = require('lodash');
 const axios = require("axios");
 const Promise = require('bluebird');
 
-const {RetriableError, RuntimeError, ConfigurationError} = require('../Core/Error');
+const { RuntimeError, ConfigurationError } = require('../Core/Error');
 
 const HISTORICAL_DATA_API_URL = 'https://api.worldtradingdata.com/api/v1/history?symbol=%ticker%&sort=newest&date_from=%dateFrom%&date_to=%dateTo%&api_token=%token%';
 const REALTIME_DATA_API_URL = 'https://api.worldtradingdata.com/api/v1/stock?symbol=%ticker%&api_token=%token%';
@@ -67,11 +67,19 @@ loader._assembleUrlObject = (url, ticker, dateFrom = null, dateTo = null) => {
  * @private
  */
 loader._handleExchaustedToken = (removedToken) => {
-  loader.config.tokens = loader.config.tokens.filter((token) => token !== removedToken);
+  const index = loader.config.tokens.indexOf(removedToken);
+
+  if (index === -1) {
+    return;
+  }
+
+  console.error('WorldOfTradingData::Suspending token for 12 hours.');
+
+  loader.config.tokens.splice(index, 1);
 
   setTimeout(() => {
     loader.config.tokens.push(removedToken);
-  }, 1000 * 60 * 60 * 24);
+  }, 1000 * 60 * 60 * 12);
 };
 
 /**
@@ -123,7 +131,7 @@ loader.historical = async (ticker, dateFrom, dateTo) => {
       ticker,
       dateFrom,
       dateTo,
-      response: data,
+      response,
     });
   }
 
@@ -175,9 +183,7 @@ loader.realtime = async (ticker) => {
   if (!response.data || !response.data[0] || !response.data[0].price) {
     throw new RuntimeError('WorldOfTradingData::Error while fetching realtime data!', {
       ticker,
-      dateFrom,
-      dateTo,
-      response: data,
+      response,
     });
   }
 
