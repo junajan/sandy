@@ -60,7 +60,7 @@ var IBApi = function(config, app) {
 
     var Log = app.getLogger("IB-API");
     var DB = app.DB;
-    var Mock = MockService(config, app)
+    var Mock = MockService(app.config.worldOfTradingData, app)
 
     var connectionIssueReported = false;
     app.apiConnection = {
