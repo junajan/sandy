@@ -6,7 +6,6 @@ var util = require('util');
 var ibApi = require("ib");
 var events = require('events');
 var moment = require("moment");
-var YahooApi = require("./_yahoo");
 var MockService = require("./Mock");
 var once = require('once');
 Promise = require('bluebird');
@@ -437,7 +436,7 @@ var IBApi = function(config, app) {
 
     self.getSecondaryRealtimePrices = function (tickers) {
       return new Promise((resolve, reject) =>
-        Mock.dataSource.realtimePrices(tickers, (err, res) =>
+        Mock.getMarketPriceBulk(tickers, (err, res) =>
           err ? reject(err) : resolve(res)
         )
       )
