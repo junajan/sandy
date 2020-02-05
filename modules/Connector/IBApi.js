@@ -148,7 +148,7 @@ var IBApi = function(config, app) {
             app.emit("API.time", time);
 
         }).once('nextValidId', function (id) {
-            Log.debug('First valid ID is'.yellow, id);
+            Log.info('First valid ID is'.yellow, id);
             orderId = id;
 
             if(_.isFunction(app.emit)) {
