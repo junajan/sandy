@@ -235,7 +235,7 @@ var Strategy = function(app) {
 		// =========== CLOSE POSITION process
 		config.changedPositions += Object.keys(config.closePositions).length;
 
-		async.each(Object.keys(config.closePositions), function(ticker, done) {
+		async.eachSeries(Object.keys(config.closePositions), function(ticker, done) {
 			var pos = config.closePositions[ticker];
 			var indicators = config.indicators[ticker];
 
@@ -294,7 +294,6 @@ var Strategy = function(app) {
 	};
 
 	this.openPositions = function(config, done) {
-
 		if(config.disableOrders) {
 			Log.error('There was a problem when closing orders - open/scale orders were disabled'.red);
 			return done(null, 1)
@@ -307,7 +306,7 @@ var Strategy = function(app) {
 		if(config.lastDay)
 			return done(null);
 
-		async.each(config.openPositions, function(pos, done) {
+		async.eachSeries(config.openPositions, function(pos, done) {
 			var type = "OPEN";
 			if(config.positionsAggregated[pos.ticker])
 				type = "SCALE";
