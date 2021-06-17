@@ -4,13 +4,18 @@ var request = Promise.promisifyAll(require("request"));
 
 function IEX(config) {
   var self = this;
-  const token = _.get(config, 'iex.token');
-  const realtime = `https://cloud.iexapis.com/stable/stock/market/batch?types=quote&range=1m&last=1&token=${token}&symbols=`
+  const tokens = _.get(config, 'iex.tokens') || [_.get(config, 'iex.token')];
+
+  const getToken = function () {
+    return tokens[Math.floor(Math.random()*tokens.length)];
+  };
+
+  const realtime = `https://cloud.iexapis.com/stable/stock/market/batch?types=quote&range=1m&last=1&token=${getToken()}&symbols=`
   const historical = "https://api.iextrading.com/1.0/stock/market/batch?types=chart&range=1y&symbols="
 
   this.serializeTickers = function (tickers) {
     return _.uniq(_.isArray(tickers) ? tickers : [tickers])
-  }
+  };
 
   this.processRealtimePricesResponse = function (res) {
     const prices = {}
