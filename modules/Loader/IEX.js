@@ -38,7 +38,7 @@ function IEX(config) {
     return request.getAsync(conf)
       .catch(function(err) {
         console.error(
-          `Error when downloading realtime prices for ${tickers} - retrying`,
+          `IEX :: Error when downloading realtime prices for ${tickers} - retrying`,
           err
         )
         return request.getAsync(conf)
@@ -59,7 +59,7 @@ function IEX(config) {
     return request.getAsync(conf)
       .catch(function(err) {
         console.error(
-          `Error when downloading realtime prices for ${tickers} - retrying`,
+          `IEX :: Error when downloading realtime prices for ${tickers} - retrying`,
           err
         )
         return request.getAsync(conf)

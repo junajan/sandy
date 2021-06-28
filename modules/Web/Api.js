@@ -1,13 +1,15 @@
-var _ = require('lodash');
-var async = require('async');
-var moment = require('moment');
+const _ = require('lodash');
+const async = require('async');
 
-var Api = function(app) {
+const AlphaVantageClass = require('../Loader/AlphaVantage');
+
+const Api = function(app) {
 	var self = this;
   var config = app.config;
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
-  var DataProvider = require(config.dirLoader+'IEX')(config);
+
+  const AlphaVantage = new AlphaVantageClass(config.alphaVantage);
 
 	this.openPrices = {};
 
@@ -117,26 +119,23 @@ var Api = function(app) {
 		res.json(self.openPrices);
 	};
 
-  this.loadUfinishedPrices = function() {
+  this.loadUnfinishedPrices = function() {
 		// Log.info('Reading realtime prices');
-    DB.getData('ticker', 'positions', 'close_date IS NULL', function(err, tickers) {
+    DB.getData('ticker', 'positions', 'close_date IS NULL', async function(err, tickers) {
       if(err)
         return Log.error('There was an error while retrieving data from DB', err);
 
       tickers = _(tickers).map('ticker').uniq().value();
-      if(DataProvider) {
-      	DataProvider.realtimePrices(tickers, function(err, res) {
-					if(err)
-						return Log.error("There was an error when requesting actual prices", err);
+			Log.info('Fetching last price on tickers', tickers);
+			const priceByTicker = await AlphaVantage.getLastPrices(tickers);
 
-          self.openPrices = _.defaults(res || {}, self.openPrices);
-          setTimeout(self.loadUfinishedPrices, 20000);
-				});
-			}
+			Log.info('Fetched last price on tickers', tickers, priceByTicker);
+			self.openPrices = _.defaults(priceByTicker || {}, self.openPrices);
+			setTimeout(self.loadUnfinishedPrices, 20000);
     });
   };
 
-  this.loadUfinishedPrices();
+  this.loadUnfinishedPrices();
   return this;
 };
 
