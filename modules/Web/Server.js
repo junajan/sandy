@@ -14,7 +14,7 @@ module.exports = (function() {
         var server = http.createServer(self.app);
 
         server.listen(conf.port, function(){
-            console.log("Express server listening on port " + conf.port);
+            console.log("Express server listening on http://localhost:%s", conf.port);
         });
 
         if(conf.livereload)

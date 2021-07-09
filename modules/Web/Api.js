@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const async = require('async');
 
-const AlphaVantageClass = require('../Loader/AlphaVantage');
+const FinnhubClass = require('../Loader/Finnhub');
 
 const Api = function(app) {
 	var self = this;
@@ -9,7 +9,7 @@ const Api = function(app) {
 	var DB = app.DB;
 	var Log = app.getLogger("WEB-API");
 
-  const AlphaVantage = new AlphaVantageClass(config.alphaVantage);
+  const Finnhub = new FinnhubClass(config.finnhub);
 
 	this.openPrices = {};
 
@@ -127,11 +127,11 @@ const Api = function(app) {
 
       tickers = _(tickers).map('ticker').uniq().value();
 			Log.info('Fetching last price on tickers', tickers);
-			const priceByTicker = await AlphaVantage.getLastPrices(tickers);
+			const priceByTicker = await Finnhub.getLastPrices(tickers);
 
 			Log.info('Fetched last price on tickers', tickers, priceByTicker);
 			self.openPrices = _.defaults(priceByTicker || {}, self.openPrices);
-			setTimeout(self.loadUnfinishedPrices, 20000);
+			setTimeout(self.loadUnfinishedPrices, 1000 * 60 * 10);
     });
   };
 
